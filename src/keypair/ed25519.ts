@@ -1,4 +1,4 @@
-import * as ed from 'noble-ed25519'
+import nacl from 'tweetnacl'
 import BaseKeypair from './base'
 import {  KeyType } from '../types'
 
@@ -12,13 +12,12 @@ export default class EdKeypair extends BaseKeypair {
   }
 
   static async create(): Promise<EdKeypair> {
-    const secretKey = ed.utils.randomPrivateKey()
-    const publicKey = await ed.getPublicKey(secretKey)
-    return new EdKeypair(secretKey, publicKey)
+    const keypair = nacl.sign.keyPair()
+    return new EdKeypair(keypair.secretKey, keypair.publicKey)
   }
 
   async sign(msg: Uint8Array): Promise<Uint8Array> {
-    return ed.sign(msg, this.secretKey)
+    return nacl.sign(msg, this.secretKey)
   }
 
 }
