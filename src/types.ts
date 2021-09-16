@@ -13,6 +13,7 @@ export interface Keypair {
 export enum KeyType {
   RSA = "rsa",
   Edwards = "ed25519",
+  BLS = 'bls12-381'
 }
 
 export type Fact = Record<string, string>

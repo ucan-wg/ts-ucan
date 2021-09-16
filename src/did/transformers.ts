@@ -28,7 +28,7 @@ export function publicKeyBytesToDid(
 export function publicKeyToDid(
   publicKey: string,
   type: KeyType,
-  encoding: Encodings = 'base64'
+  encoding: Encodings = 'base64pad'
 ): string {
   const pubKeyBytes = uint8arrays.fromString(publicKey, encoding)
   return publicKeyBytesToDid(pubKeyBytes, type)
@@ -59,7 +59,7 @@ export function didToPublicKeyBytes(did: string): {
 /**
  * Convert a DID (did:key) to a base64 public key.
  */
-export function didToPublicKey(did: string, encoding: Encodings = 'base64'): {
+export function didToPublicKey(did: string, encoding: Encodings = 'base64pad'): {
   publicKey: string
   type: KeyType
 } {

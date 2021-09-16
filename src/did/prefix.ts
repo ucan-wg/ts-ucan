@@ -14,6 +14,7 @@ export function magicBytes(keyType: KeyType): Uint8Array | null {
   switch (keyType) {
     case KeyType.Edwards: return EDWARDS_DID_PREFIX
     case KeyType.RSA: return RSA_DID_PREFIX
+    case KeyType.BLS: return BLS_DID_PREFIX
     default: return null
   }
 }
@@ -39,6 +40,13 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
       keyBytes: prefixedKey.slice(EDWARDS_DID_PREFIX.byteLength),
       type: KeyType.Edwards
     }
+
+  // EDWARDS
+  } else if (hasPrefix(prefixedKey, BLS_DID_PREFIX)) {
+    return {
+      keyBytes: prefixedKey.slice(BLS_DID_PREFIX.byteLength),
+      type: KeyType.BLS
+    }
   }
 
   throw new Error("Unsupported key algorithm. Try using RSA.")
@@ -55,6 +63,7 @@ export const toKeyType = (str: string): KeyType => {
   switch(str) {
     case "rsa": return KeyType.RSA
     case "ed25519": return KeyType.Edwards
+    case "bls12-381": return KeyType.BLS
   }
   throw new Error(`Key Type ${str} not supported`)
 }
