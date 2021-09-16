@@ -1,6 +1,6 @@
 {
   "name": "ucan",
-  "version": "0.3.1",
+  "version": "0.7.0",
   "description": "Typescript implementation of UCANs",
   "main": "index.js",
   "author": "Daniel Holmgren <daniel@fission.codes>",
