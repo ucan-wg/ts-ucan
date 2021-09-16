@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "declaration": true,
+    "outDir": "dist",
+    "declarationDir": "dist",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/index.ts"
+  ],
+}
