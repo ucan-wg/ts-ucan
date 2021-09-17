@@ -22,8 +22,7 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  * `iss`, Issuer, the ID of who sent this.
  * `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
  * `prf`, Proof, an optional nested token with equal or greater privileges.
- * `ptc`, Potency, which rights come with the token.
- * `rsc`, Resource, the involved resource.
+ * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  *
  */
 
