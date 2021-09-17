@@ -18,10 +18,10 @@ export enum KeyType {
 
 export type Fact = Record<string, string>
 
-export type Resource =
-  "*" | Record<string, string>
-
-export type Potency = string |  Record<string, unknown> | undefined | null
+export type Capability = {
+  [rsc: string]: string
+  cap: string
+}
 
 export type UcanHeader = {
   alg: string
@@ -36,8 +36,7 @@ export type UcanPayload = {
   iss: string
   nbf: number
   prf: string | null
-  ptc: Potency
-  rsc: Resource
+  att: Array<Capability>
 }
 
 export type Ucan = {

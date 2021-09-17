@@ -1,7 +1,8 @@
 import * as uint8arrays from 'uint8arrays'
 import * as base64 from "./base64"
 import { verifySignature } from "./did/validation"
-import { Keypair, KeyType, Potency, Fact, Resource, Ucan, UcanHeader, UcanPayload } from "./types"
+import { validAttenuation } from './attenuation'
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -31,14 +32,13 @@ export type BuildParams = {
   audience: string
   issuer: Keypair
 
+  // capabilities
+  capabilities: Array<Capability>
+
   // time bounds
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
-
-  // capabilities
-  resource?: Resource
-  potency?: Potency
 
   // proof / other info
   facts?: Array<Fact>
@@ -65,14 +65,13 @@ export type BuildPartsParams = {
   issuer: string
   keyType: KeyType
 
+  // capabilities
+  capabilities: Array<Capability>
+
   // time bounds
   lifetimeInSeconds?: number
   expiration?: number
   notBefore?: number
-
-  // capabilities
-  resource?: Resource
-  potency?: Potency
 
   // proof / other info
   facts?: Array<Fact>
@@ -86,15 +85,14 @@ export function buildParts(params: BuildPartsParams): { header: UcanHeader, payl
   const {
     audience,
     issuer,
+    capabilities,
     keyType,
     lifetimeInSeconds = 30,
     expiration,
     notBefore,
-    resource,
-    potency,
     facts,
     proof = null,
-    ucanVersion = "1.0.0"
+    ucanVersion = "0.7.0"
   } = params
 
   // Timestamps
@@ -110,14 +108,12 @@ export function buildParts(params: BuildPartsParams): { header: UcanHeader, payl
     },
     payload: {
       aud: audience,
+      att: capabilities,
       exp,
       fct: facts,
       iss: issuer,
       nbf,
       prf: proof,
-      ptc: potency,
-      rsc: resource
-
     }
   }
 }
@@ -202,8 +198,10 @@ export function isExpired(ucan: Ucan): boolean {
 
   // Verify proofs
   const prf = decode(ucan.payload.prf)
-  const b = prf.payload.aud === ucan.payload.iss
-  if (!b) return b
+  if (prf.payload.aud !== ucan.payload.iss) return false
+
+  // Check attenuation
+  if(!validAttenuation(prf.payload.att, ucan.payload.att)) return false
 
   return await isValid(prf)
 }
@@ -230,7 +228,7 @@ export async function sign(header: UcanHeader, payload: UcanPayload, key: Keypai
   const encodedHeader = encodeHeader(header)
   const encodedPayload = encodePayload(payload)
 
-  const toSign = uint8arrays.fromString(`${encodeHeader}.${encodePayload}`)
+  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
   const sig = await key.sign(toSign)
 
   return {
