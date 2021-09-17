@@ -35,7 +35,7 @@ export type BuildParams = {
   capabilities: Array<Capability>
 
   // time bounds
-  lifetimeInSeconds?: number
+  lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
   expiration?: number
   notBefore?: number
 
@@ -68,7 +68,7 @@ export type BuildPartsParams = {
   capabilities: Array<Capability>
 
   // time bounds
-  lifetimeInSeconds?: number
+  lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
   expiration?: number
   notBefore?: number
 

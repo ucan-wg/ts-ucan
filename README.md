@@ -21,6 +21,9 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
 
  `uav`, UCAN version.
  ### Payload
+
+ `att`, Attenuation, a list of resources and capabilities that the ucan grants.
+
  `aud`, Audience, the ID of who it's intended for.
 
  `exp`, Expiry, unix timestamp of when the jwt is no longer valid.
@@ -33,13 +36,11 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
 
  `prf`, Proof, an optional nested token with equal or greater privileges.
 
- `att`, Attenuation, a list of resources and capabilities that the ucan grants.
-
  ### Signature
  A signature (using `alg`) of the base64 encoded header and payloaded concatenated together and delimited by `.`
 
 ## Build params
-Use `ucan.build` to help in formatting and signing a ucan. It takes the following parameter
+Use `ucan.build` to help in formatting and signing a ucan. It takes the following parameters
 ```ts
 export type BuildParams = {
   // to/from
