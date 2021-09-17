@@ -13,7 +13,7 @@ export default abstract class BaseKeypair implements Keypair {
   }
 
 
-  publicKeyStr(encoding: Encodings = 'base64'): string {
+  publicKeyStr(encoding: Encodings = 'base64pad'): string {
     return uint8arrays.toString(this.publicKey, encoding)
   }
 

@@ -17,7 +17,7 @@ export default class EdKeypair extends BaseKeypair {
   }
 
   async sign(msg: Uint8Array): Promise<Uint8Array> {
-    return nacl.sign(msg, this.secretKey)
+    return nacl.sign.detached(msg, this.secretKey)
   }
 
 }

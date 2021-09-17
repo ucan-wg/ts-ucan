@@ -29,7 +29,7 @@ export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
     key.buffer,
     { name: RSA_ALG, hash: { name: DEFAULT_HASH_ALG }},
     true,
-    ['sign', 'verify']
+    ['verify']
   )
 }
 
