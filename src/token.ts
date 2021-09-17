@@ -224,11 +224,15 @@ export function rootIssuer(ucan: string, level = 0): string {
  * Generate UCAN signature.
  */
 export async function sign(header: UcanHeader, payload: UcanPayload, key: Keypair): Promise<Ucan> {
+  return addSignature(header, payload, (data) => key.sign(data))
+}
+
+export async function addSignature(header: UcanHeader, payload: UcanPayload, signFn: (data: Uint8Array) => Promise<Uint8Array>): Promise<Ucan> {
   const encodedHeader = encodeHeader(header)
   const encodedPayload = encodePayload(payload)
 
   const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
-  const sig = await key.sign(toSign)
+  const sig = await signFn(toSign)
 
   return {
     header,
@@ -236,7 +240,6 @@ export async function sign(header: UcanHeader, payload: UcanPayload, key: Keypai
     signature: uint8arrays.toString(sig, 'base64urlpad')
   }
 }
-
 
 // ㊙️
 
