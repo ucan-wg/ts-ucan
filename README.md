@@ -75,6 +75,7 @@ export type BuildParams = {
 ```ts
 import * as ucan from 'ucans'
 
+// in-memory keypair
 const keypair = await ucan.keypair.create(ucan.KeyType.Edwards)
 const u = await ucan.build({
   audience: audience.did(), //recipient
@@ -95,6 +96,10 @@ const u = await ucan.build({
   ]
 })
 const token = ucan.encode(u) // base64 jwt-formatted auth token
+
+// You can also use your own signing function if you're bringing your own key management solution
+const { header, payload } = await ucan.buildParts(...)
+const u = await ucan.addSignature(header, payload, signingFn)
 ```
 
 ## UCAN Toucan
