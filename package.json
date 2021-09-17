@@ -2,12 +2,20 @@
   "name": "ucan",
   "version": "0.7.0",
   "description": "Typescript implementation of UCANs",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "browser": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
     "url": "https://github.com/fission-suite/ucan"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
   "engines": {
