@@ -1,6 +1,5 @@
 # UCANs
-[![NPM](https://img.shields.io/npm/v/ucan)](https://www.npmjs.com/package/ucan)
-[![Build Status](https://travis-ci.org/fission-suite/ucan.svg?branch=master)](https://travis-ci.org/fission-suite/ucan)
+[![NPM](https://img.shields.io/npm/v/ucans)](https://www.npmjs.com/package/ucans)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fission-suite/blob/master/LICENSE)
 [![Built by FISSION](https://img.shields.io/badge/⌘-Built_by_FISSION-purple.svg)](https://fission.codes)
 [![Discord](https://img.shields.io/discord/478735028319158273.svg)](https://discord.gg/zAQBDEq)
@@ -74,7 +73,7 @@ export type BuildParams = {
 
 ## Example
 ```ts
-import * as ucan from 'ucan'
+import * as ucan from 'ucans'
 
 const keypair = await ucan.keypair.create(ucan.KeyType.Edwards)
 const u = await ucan.build({

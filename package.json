@@ -1,5 +1,5 @@
 {
-  "name": "ucan",
+  "name": "ucans",
   "version": "0.7.0",
   "description": "Typescript implementation of UCANs",
   "main": "dist/index.js",
