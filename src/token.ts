@@ -1,5 +1,6 @@
 import * as uint8arrays from 'uint8arrays'
 import * as base64 from "./base64"
+import * as util from './util'
 import { verifySignature } from "./did/validation"
 import { validAttenuation } from './attenuation'
 import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
@@ -12,7 +13,7 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  *
  * `alg`, Algorithm, the type of signature.
  * `typ`, Type, the type of this data structure, JWT.
- * `uav`, UCAN version.
+ * `ucv`, UCAN version.
  *
  * ### Payload
  *
@@ -21,6 +22,7 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  * `fct`, Facts, an array of extra facts or information to attach to the jwt.
  * `iss`, Issuer, the ID of who sent this.
  * `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
+ * `nnc`, Nonce, a randomly generated string, used to ensure the uniqueness of the jwt.
  * `prf`, Proof, an optional nested token with equal or greater privileges.
  * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  *
@@ -42,6 +44,7 @@ export type BuildParams = {
   // proof / other info
   facts?: Array<Fact>
   proof?: string
+  addNonce?: boolean
 
   // in the weeds
   ucanVersion?: string
@@ -75,6 +78,7 @@ export type BuildPartsParams = {
   // proof / other info
   facts?: Array<Fact>
   proof?: string
+  addNonce?: boolean
 
   // in the weeds
   ucanVersion?: string
@@ -91,6 +95,7 @@ export function buildParts(params: BuildPartsParams): { header: UcanHeader, payl
     notBefore,
     facts,
     proof = null,
+    addNonce = false,
     ucanVersion = "0.7.0"
   } = params
 
@@ -99,22 +104,27 @@ export function buildParts(params: BuildPartsParams): { header: UcanHeader, payl
   let exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
   let nbf = notBefore || currentTimeInSeconds - 60
 
-  return {
-    header: {
-      alg: jwtAlgorithm(keyType),
-      typ: "JWT",
-      uav: ucanVersion,
-    },
-    payload: {
-      aud: audience,
-      att: capabilities,
-      exp,
-      fct: facts,
-      iss: issuer,
-      nbf,
-      prf: proof,
-    }
+  const header = {
+    alg: jwtAlgorithm(keyType),
+    typ: "JWT",
+    ucv: ucanVersion,
+  } as UcanHeader
+
+  const payload = {
+    aud: audience,
+    att: capabilities,
+    exp,
+    fct: facts,
+    iss: issuer,
+    nbf,
+    prf: proof,
+  } as UcanPayload
+
+  if (addNonce) {
+    payload.nnc = util.generateNonce()
   }
+
+  return { header, payload }
 }
 
 /**

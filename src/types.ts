@@ -26,7 +26,7 @@ export type Capability = {
 export type UcanHeader = {
   alg: string
   typ: string
-  uav: string
+  ucv: string
 }
 
 export type UcanPayload = {
@@ -37,6 +37,7 @@ export type UcanPayload = {
   nbf: number
   prf: string | null
   att: Array<Capability>
+  nnc?: string
 }
 
 export type Ucan = {
