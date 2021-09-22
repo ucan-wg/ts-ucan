@@ -1,6 +1,6 @@
 {
   "name": "ucans",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Typescript implementation of UCANs",
   "main": "dist/index.js",
   "browser": "dist/index.js",

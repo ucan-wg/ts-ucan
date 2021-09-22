@@ -6,10 +6,12 @@ export default abstract class BaseKeypair implements Keypair {
 
   publicKey: Uint8Array
   keyType: KeyType
+  exportable: boolean
 
-  constructor (publicKey: Uint8Array, keyType: KeyType) {
+  constructor (publicKey: Uint8Array, keyType: KeyType, exportable: boolean) {
     this.publicKey = publicKey
     this.keyType = keyType
+    this.exportable = exportable
   }
 
 
@@ -22,4 +24,5 @@ export default abstract class BaseKeypair implements Keypair {
   }
 
   abstract sign(msg: Uint8Array): Promise<Uint8Array>
+  abstract export(): Promise<Uint8Array>
 }

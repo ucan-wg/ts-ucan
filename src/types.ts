@@ -8,6 +8,7 @@ export interface Keypair {
   publicKeyStr: (format?: SupportedEncodings) => string
   did: () => string
   sign: (msg: Uint8Array) => Promise<Uint8Array>
+  export: () => Promise<Uint8Array>
 }
 
 export enum KeyType {
