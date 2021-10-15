@@ -1,4 +1,4 @@
-import webcrypto  from "../webcrypto"
+import { webcrypto } from "one-webcrypto"
 
 export const RSA_ALG = 'RSASSA-PKCS1-v1_5'
 export const DEFAULT_KEY_SIZE = 2048
@@ -6,7 +6,7 @@ export const DEFAULT_HASH_ALG = 'SHA-256'
 export const SALT_LEGNTH = 128
 
 export const generateKeypair = async (size: number = DEFAULT_KEY_SIZE): Promise<CryptoKeyPair> => {
-  return await webcrypto.generateKey(
+  return await webcrypto.subtle.generateKey(
     { 
       name: RSA_ALG,
       modulusLength: size,
@@ -19,12 +19,12 @@ export const generateKeypair = async (size: number = DEFAULT_KEY_SIZE): Promise<
 }
 
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
-  const buf = await webcrypto.exportKey('spki', key)
+  const buf = await webcrypto.subtle.exportKey('spki', key)
   return new Uint8Array(buf)
 }
 
 export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
-  return await webcrypto.importKey(
+  return await webcrypto.subtle.importKey(
     'spki',
     key.buffer,
     { name: RSA_ALG, hash: { name: DEFAULT_HASH_ALG }},
@@ -34,7 +34,7 @@ export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
 }
 
 export const sign = async (msg: Uint8Array, keypair: CryptoKeyPair): Promise<Uint8Array> => {
-  const buf = await webcrypto.sign(
+  const buf = await webcrypto.subtle.sign(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
     keypair.privateKey,
     msg.buffer
@@ -43,7 +43,7 @@ export const sign = async (msg: Uint8Array, keypair: CryptoKeyPair): Promise<Uin
 }
 
 export const verify = async (msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Array): Promise<boolean> => {
-  return await webcrypto.verify(
+  return await webcrypto.subtle.verify(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
     await importKey(pubKey),
     sig.buffer,
