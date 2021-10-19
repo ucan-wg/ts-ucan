@@ -5,10 +5,10 @@ export type Encodings = SupportedEncodings
 export interface Keypair {
   publicKey: Uint8Array
   keyType: KeyType
-  publicKeyStr: (format?: SupportedEncodings) => string
+  publicKeyStr: (format?: Encodings) => string
   did: () => string
   sign: (msg: Uint8Array) => Promise<Uint8Array>
-  export: () => Promise<Uint8Array>
+  export: (format?: Encodings) => Promise<string>
 }
 
 export enum KeyType {

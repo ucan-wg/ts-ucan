@@ -1,8 +1,9 @@
 import nacl from 'tweetnacl'
+import * as uint8arrays from 'uint8arrays'
 import BaseKeypair from './base'
-import {  KeyType } from '../types'
+import { Encodings, KeyType } from '../types'
 
-export default class EdKeypair extends BaseKeypair {
+export class EdKeypair extends BaseKeypair {
 
   private secretKey: Uint8Array
 
@@ -11,11 +12,21 @@ export default class EdKeypair extends BaseKeypair {
     this.secretKey = secretKey
   }
 
-  static async create(params: {
+  static async create(params?: {
     exportable: boolean
   }): Promise<EdKeypair> {
-    const { exportable } = params
+    const { exportable } = params || {}
     const keypair = nacl.sign.keyPair()
+    return new EdKeypair(keypair.secretKey, keypair.publicKey, exportable)
+  }
+
+  static fromSecretKey(key: string, params?: {
+    format?: Encodings
+    exportable?: boolean
+  }): EdKeypair {
+    const { format = 'base64pad', exportable = false } = params || {}
+    const secretKey = uint8arrays.fromString(key, format)
+    const keypair = nacl.sign.keyPair.fromSecretKey(secretKey)
     return new EdKeypair(keypair.secretKey, keypair.publicKey, exportable)
   }
 
@@ -23,11 +34,13 @@ export default class EdKeypair extends BaseKeypair {
     return nacl.sign.detached(msg, this.secretKey)
   }
 
-  async export(): Promise<Uint8Array> {
+  async export(format: Encodings = 'base64pad'): Promise<string> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    return this.secretKey
+    return uint8arrays.toString(this.secretKey, format)
   }
 
 }
+
+export default EdKeypair

@@ -24,5 +24,5 @@ export default abstract class BaseKeypair implements Keypair {
   }
 
   abstract sign(msg: Uint8Array): Promise<Uint8Array>
-  abstract export(): Promise<Uint8Array>
+  abstract export(): Promise<string>
 }
