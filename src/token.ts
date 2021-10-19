@@ -28,13 +28,13 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  *
  */
 
-export type BuildParams = {
+export async function build(params: {
   // to/from
   audience: string
   issuer: Keypair
 
   // capabilities
-  capabilities: Array<Capability>
+  capabilities?: Array<Capability>
 
   // time bounds
   lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
@@ -48,9 +48,7 @@ export type BuildParams = {
 
   // in the weeds
   ucanVersion?: string
-}
-
-export async function build(params: BuildParams): Promise<Ucan> {
+}): Promise<Ucan> {
   const keypair = params.issuer
   const { header, payload } = buildParts({
     ...params,
@@ -58,17 +56,16 @@ export async function build(params: BuildParams): Promise<Ucan> {
     keyType: keypair.keyType
   })
   return sign(header, payload, keypair)
-
 }
 
-export type BuildPartsParams = {
+export function buildParts(params: {
   // to/from
   audience: string
   issuer: string
   keyType: KeyType
 
   // capabilities
-  capabilities: Array<Capability>
+  capabilities?: Array<Capability>
 
   // time bounds
   lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
@@ -82,13 +79,11 @@ export type BuildPartsParams = {
 
   // in the weeds
   ucanVersion?: string
-}
-
-export function buildParts(params: BuildPartsParams): { header: UcanHeader, payload: UcanPayload } {
+}): { header: UcanHeader, payload: UcanPayload } {
   const {
     audience,
     issuer,
-    capabilities,
+    capabilities = [],
     keyType,
     lifetimeInSeconds = 30,
     expiration,
