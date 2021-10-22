@@ -8,11 +8,16 @@ export interface Keypair {
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 
-export enum KeyType {
-  RSA = "rsa",
-  Edwards = "ed25519",
-  BLS = 'bls12-381'
+export interface Didable {
+  publicKeyStr: (format?: Encodings) => string
+  did: () => string
 }
+
+export interface ExportableKey {
+  export: (format?: Encodings) => Promise<string>
+}
+
+export type KeyType = 'rsa' | 'ed25519' | 'bls12-381'
 
 export type Fact = Record<string, string>
 

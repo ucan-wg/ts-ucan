@@ -1,13 +1,13 @@
 import * as rsa  from '../crypto/rsa'
 import BaseKeypair from './base'
-import { Encodings, KeyType } from '../types'
+import { Encodings } from '../types'
 
 export class RsaKeypair extends BaseKeypair {
 
   private keypair: CryptoKeyPair
 
   constructor(keypair: CryptoKeyPair, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, KeyType.RSA, exportable)
+    super(publicKey, 'rsa', exportable)
     this.keypair = keypair
   }
 

@@ -8,7 +8,7 @@ export class EdKeypair extends BaseKeypair {
   private secretKey: Uint8Array
 
   constructor(secretKey: Uint8Array, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, KeyType.Edwards, exportable)
+    super(publicKey, 'ed25519', exportable)
     this.secretKey = secretKey
   }
 

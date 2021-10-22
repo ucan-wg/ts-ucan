@@ -1,8 +1,8 @@
 import * as uint8arrays from 'uint8arrays'
 import { publicKeyBytesToDid } from '../did/transformers'
-import { Keypair, KeyType, Encodings } from '../types'
+import { Keypair, KeyType, Encodings, Didable, ExportableKey } from '../types'
 
-export default abstract class BaseKeypair implements Keypair {
+export default abstract class BaseKeypair implements Keypair, Didable, ExportableKey {
 
   publicKey: Uint8Array
   keyType: KeyType

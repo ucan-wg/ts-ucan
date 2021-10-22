@@ -1,15 +1,15 @@
 import * as did from '../src/did'
-import * as Key from '../src/keypair'
+import RSAKeypair from '../src/keypair/rsa'
 import { Keypair, KeyType } from '../src/types'
 
 describe("rsa", () => {
 
-  let keypair: Keypair
+  let keypair: RSAKeypair
   let signature: Uint8Array
   const data = new Uint8Array([1,2,3,4,5,6,7,8,9])
 
   it("creates an rsa keypair", async () => {
-    keypair = await Key.create(KeyType.RSA)
+    keypair = await RSAKeypair.create()
   })
 
   it("returns a publicKeyStr and did", () => {
@@ -17,7 +17,7 @@ describe("rsa", () => {
     const keyDid = keypair.did()
     const transformed = did.didToPublicKey(keyDid)
     expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual(KeyType.RSA)
+    expect(transformed.type).toEqual('rsa')
   })
 
   it("signs data", async () => {

@@ -256,8 +256,8 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
  */
 function jwtAlgorithm(keyType: KeyType): string | null {
   switch (keyType) {
-    case KeyType.Edwards: return "EdDSA"
-    case KeyType.RSA: return "RS256"
+    case 'ed25519': return "EdDSA"
+    case 'rsa': return "RS256"
     default: return null
   }
 }
