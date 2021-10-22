@@ -1,6 +1,7 @@
 import * as uint8arrays from 'uint8arrays'
 import * as base64 from "./base64"
 import * as util from './util'
+import * as did from './did'
 import { verifySignature } from "./did/validation"
 import { validAttenuation } from './attenuation'
 import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
@@ -50,9 +51,10 @@ export async function build(params: {
   ucanVersion?: string
 }): Promise<Ucan> {
   const keypair = params.issuer
+  const didStr = did.publicKeyBytesToDid(keypair.publicKey, keypair.keyType)
   const { header, payload } = buildParts({
     ...params,
-    issuer: keypair.did(),
+    issuer: didStr,
     keyType: keypair.keyType
   })
   return sign(header, payload, keypair)
@@ -254,8 +256,8 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
  */
 function jwtAlgorithm(keyType: KeyType): string | null {
   switch (keyType) {
-    case KeyType.Edwards: return "EdDSA"
-    case KeyType.RSA: return "RS256"
+    case 'ed25519': return "EdDSA"
+    case 'rsa': return "RS256"
     default: return null
   }
 }

@@ -1,15 +1,15 @@
 import * as token from '../src/token'
-import * as Key from '../src/keypair'
-import { Keypair, KeyType, Ucan } from '../src'
+import EdKey from '../src/keypair/ed25519'
+import { Ucan } from '../src'
 
 describe('token', () => {
-  let issuer: Keypair
-  let audience: Keypair
+  let issuer: EdKey
+  let audience: EdKey
   let ucan: Ucan
 
   it('builds a ucan', async () => {
-    issuer = await Key.create(KeyType.Edwards)
-    audience = await Key.create(KeyType.Edwards)
+    issuer = await EdKey.create()
+    audience = await EdKey.create()
     ucan = await token.build({
       audience: audience.did(),
       issuer,

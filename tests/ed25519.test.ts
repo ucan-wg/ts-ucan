@@ -1,16 +1,16 @@
 import * as did from '../src/did'
-import * as Key from '../src/keypair'
+import EdwardsKey from '../src/keypair/ed25519'
 import nacl from 'tweetnacl'
 import { Keypair, KeyType } from '../src/types'
 
 describe("ed25519", () => {
 
-  let keypair: Keypair
+  let keypair: EdwardsKey
   let signature: Uint8Array
   const data = new Uint8Array([1,2,3,4,5,6,7,8,9])
 
   it("creates an rsa keypair", async () => {
-    keypair = await Key.create(KeyType.Edwards)
+    keypair = await EdwardsKey.create()
   })
 
   it("returns a publicKeyStr and did", () => {
@@ -18,7 +18,7 @@ describe("ed25519", () => {
     const keyDid = keypair.did()
     const transformed = did.didToPublicKey(keyDid)
     expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual(KeyType.Edwards)
+    expect(transformed.type).toEqual('ed25519')
   })
 
   it("signs data", async () => {

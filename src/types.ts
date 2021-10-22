@@ -5,17 +5,19 @@ export type Encodings = SupportedEncodings
 export interface Keypair {
   publicKey: Uint8Array
   keyType: KeyType
+  sign: (msg: Uint8Array) => Promise<Uint8Array>
+}
+
+export interface Didable {
   publicKeyStr: (format?: Encodings) => string
   did: () => string
-  sign: (msg: Uint8Array) => Promise<Uint8Array>
+}
+
+export interface ExportableKey {
   export: (format?: Encodings) => Promise<string>
 }
 
-export enum KeyType {
-  RSA = "rsa",
-  Edwards = "ed25519",
-  BLS = 'bls12-381'
-}
+export type KeyType = 'rsa' | 'ed25519' | 'bls12-381'
 
 export type Fact = Record<string, string>
 

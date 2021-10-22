@@ -2,7 +2,6 @@ import * as rsa from "../crypto/rsa"
 import nacl from "tweetnacl"
 import * as uint8arrays from "uint8arrays"
 import { didToPublicKeyBytes } from "./transformers"
-import { KeyType } from "../types"
 
 
 /**
@@ -14,10 +13,10 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
 
     switch (type) {
 
-      case KeyType.Edwards:
+      case 'ed25519':
         return await nacl.sign.detached.verify(data, signature, publicKey)
 
-      case KeyType.RSA: 
+      case 'rsa': 
       return await rsa.verify(data, signature, publicKey)
 
       default: return false

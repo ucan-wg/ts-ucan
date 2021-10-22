@@ -12,9 +12,9 @@ export const BASE58_DID_PREFIX = "did:key:z"
  */
 export function magicBytes(keyType: KeyType): Uint8Array | null {
   switch (keyType) {
-    case KeyType.Edwards: return EDWARDS_DID_PREFIX
-    case KeyType.RSA: return RSA_DID_PREFIX
-    case KeyType.BLS: return BLS_DID_PREFIX
+    case 'ed25519': return EDWARDS_DID_PREFIX
+    case 'rsa': return RSA_DID_PREFIX
+    case 'bls12-381': return BLS_DID_PREFIX
     default: return null
   }
 }
@@ -31,21 +31,21 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
   if (hasPrefix(prefixedKey, RSA_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(RSA_DID_PREFIX.byteLength),
-      type: KeyType.RSA
+      type: 'rsa'
     }
 
   // EDWARDS
   } else if (hasPrefix(prefixedKey, EDWARDS_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(EDWARDS_DID_PREFIX.byteLength),
-      type: KeyType.Edwards
+      type: 'ed25519'
     }
 
   // EDWARDS
   } else if (hasPrefix(prefixedKey, BLS_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(BLS_DID_PREFIX.byteLength),
-      type: KeyType.BLS
+      type: 'bls12-381'
     }
   }
 
@@ -57,13 +57,4 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
  */
 export const hasPrefix = (prefixedKey: Uint8Array, prefix: Uint8Array): boolean => {
   return uint8arrays.equals(prefix, prefixedKey.slice(0, prefix.byteLength))
-}
-
-export const toKeyType = (str: string): KeyType => {
-  switch(str) {
-    case "rsa": return KeyType.RSA
-    case "ed25519": return KeyType.Edwards
-    case "bls12-381": return KeyType.BLS
-  }
-  throw new Error(`Key Type ${str} not supported`)
 }
