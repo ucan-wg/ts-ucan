@@ -14,7 +14,6 @@ export default abstract class BaseKeypair implements Keypair {
     this.exportable = exportable
   }
 
-
   publicKeyStr(encoding: Encodings = 'base64pad'): string {
     return uint8arrays.toString(this.publicKey, encoding)
   }
