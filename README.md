@@ -77,7 +77,7 @@ export type BuildParams = {
 import * as ucan from 'ucans'
 
 // in-memory keypair
-const keypair = await ucan.keypair.create(ucan.KeyType.Edwards)
+const keypair = await ucan.EdKeypair.create()
 const u = await ucan.build({
   audience: audience.did(), //recipient
   issuer: keypair, //signing key
