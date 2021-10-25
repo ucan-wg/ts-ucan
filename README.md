@@ -79,7 +79,7 @@ import * as ucan from 'ucans'
 // in-memory keypair
 const keypair = await ucan.EdKeypair.create()
 const u = await ucan.build({
-  audience: audience.did(), //recipient
+  audience: "did:key:zabcde...", //recipient DID
   issuer: keypair, //signing key
   capabilities: [ // permissions for ucan
     {
