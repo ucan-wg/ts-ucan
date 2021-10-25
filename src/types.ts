@@ -17,7 +17,13 @@ export interface ExportableKey {
   export: (format?: Encodings) => Promise<string>
 }
 
-export type KeyType = 'rsa' | 'ed25519' | 'bls12-381'
+export const KeyTypes = {
+  rsa: "rsa",
+  ed25519: 'ed25519',
+  'bls12-381': 'bls12-381',
+}
+
+export type KeyType = keyof typeof KeyTypes;
 
 export type Fact = Record<string, string>
 

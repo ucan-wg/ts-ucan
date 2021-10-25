@@ -1,7 +1,7 @@
 import * as ucan from '../src'
 
-describe('ucan.KeyType', () => {
+describe('ucan.KeyTypes', () => {
     it('should have KeyType property', () => {
-        expect(ucan).toHaveProperty('KeyType')
+        expect(ucan).toHaveProperty('KeyTypes')
     })
 })
