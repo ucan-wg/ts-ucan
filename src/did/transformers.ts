@@ -1,7 +1,7 @@
 import * as uint8arrays from "uint8arrays"
 
-import { BASE58_DID_PREFIX, magicBytes, parseMagicBytes } from "./prefix"
-import { KeyType, Encodings } from "../types"
+import { BASE58_DID_PREFIX, magicBytes, parseMagicBytes } from "./prefix.js"
+import { KeyType, Encodings } from "../types.js"
 
 /**
  * Convert a public key in bytes to a DID (did:key).

@@ -1,9 +1,9 @@
 import * as uint8arrays from 'uint8arrays'
-import * as base64 from "./base64"
-import * as util from './util'
-import * as did from './did'
-import { verifySignature } from "./did/validation"
-import { validAttenuation } from './attenuation'
+import * as base64 from "./base64.js"
+import * as util from './util.js'
+import * as did from './did/index.js'
+import { verifySignature } from "./did/validation.js"
+import { validAttenuation } from './attenuation.js'
 import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
 
 /**

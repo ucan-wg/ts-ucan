@@ -1,12 +1,24 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "ES2018",
+    "module":"ESNext",
+    "lib": ["dom", "es2021"],
+    "sourceMap": true,
     "declaration": true,
-    "outDir": "dist",
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
     "declarationDir": "dist",
-    "resolveJsonModule": true
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
   },
   "include": [
-    "src/index.ts"
+    "src/**/*"
   ],
+  "exlcude": [
+    "tests/**/*"
+  ]
 }

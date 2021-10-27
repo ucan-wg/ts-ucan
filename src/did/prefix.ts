@@ -1,5 +1,5 @@
 import * as uint8arrays from 'uint8arrays'
-import { KeyType } from "../types"
+import { KeyType } from "../types.js"
 
 
 export const EDWARDS_DID_PREFIX = new Uint8Array([ 0xed, 0x01 ])

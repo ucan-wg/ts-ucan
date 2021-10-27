@@ -1,3 +1,3 @@
-export * from './ed25519'
-export * from './rsa'
-export * from './base'
+export * from './ed25519.js'
+export * from './rsa.js'
+export * from './base.js'

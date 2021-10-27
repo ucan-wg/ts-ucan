@@ -1,4 +1,5 @@
 module.exports = { // eslint-disable-line
+  resolver: "jest-ts-webcompat-resolver",
   transform: {
     ".(ts|tsx)": "ts-jest"
   },

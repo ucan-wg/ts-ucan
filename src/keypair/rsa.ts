@@ -1,6 +1,6 @@
-import * as rsa  from '../crypto/rsa'
-import BaseKeypair from './base'
-import { Encodings } from '../types'
+import * as rsa  from '../crypto/rsa.js'
+import BaseKeypair from './base.js'
+import { Encodings } from '../types.js'
 
 export class RsaKeypair extends BaseKeypair {
 

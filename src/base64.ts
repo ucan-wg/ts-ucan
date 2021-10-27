@@ -1,5 +1,5 @@
 import * as uint8arrays from "uint8arrays"
-import { Encodings } from "./types"
+import { Encodings } from "./types.js"
 
 export function decode(base64: string, encoding: Encodings = 'base64pad'): string {
   return uint8arrays.toString(uint8arrays.fromString(base64, encoding))

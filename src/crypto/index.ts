@@ -1,1 +1,1 @@
-export * as rsa from './rsa'
+export * as rsa from './rsa.js'

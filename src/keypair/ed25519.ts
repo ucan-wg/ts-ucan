@@ -1,7 +1,7 @@
 import nacl from 'tweetnacl'
 import * as uint8arrays from 'uint8arrays'
-import BaseKeypair from './base'
-import { Encodings, KeyType } from '../types'
+import BaseKeypair from './base.js'
+import { Encodings, KeyType } from '../types.js'
 
 export class EdKeypair extends BaseKeypair {
 
