@@ -186,6 +186,15 @@ export function isExpired(ucan: Ucan): boolean {
 }
 
 /**
+ * Check if a UCAN is not valid yet.
+ *
+ * @param ucan The UCAN to validate
+ */
+export const isNotValidYet = (ucan: Ucan): boolean => {
+  return ucan.payload.nbf > Math.floor(Date.now() / 1000)
+}
+
+/**
  * Check if a UCAN is valid.
  *
  * @param ucan The decoded UCAN

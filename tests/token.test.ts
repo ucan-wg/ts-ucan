@@ -86,4 +86,18 @@ describe('token', () => {
     const isValid = await token.isValid(childUcan)
     expect(isValid).toBe(false)
   })
+
+  it('identifies a ucan that is not valid yet', async () => {
+    const badUcan = {
+      ...ucan,
+      payload: {
+        ...ucan.payload,
+        nbf: 2637252774,
+        exp: 2637352774
+      }
+    }
+
+    const isNotValidYet = await token.isNotValidYet(badUcan)
+    expect(isNotValidYet).toBe(true)
+  })
 })
