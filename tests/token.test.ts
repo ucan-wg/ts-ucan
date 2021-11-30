@@ -87,7 +87,7 @@ describe('token', () => {
     expect(isValid).toBe(false)
   })
 
-  it('identifies a ucan that is not valid yet', async () => {
+  it('identifies a ucan that is not active yet', async () => {
     const badUcan = {
       ...ucan,
       payload: {
@@ -97,7 +97,7 @@ describe('token', () => {
       }
     }
 
-    const isNotValidYet = await token.isNotValidYet(badUcan)
-    expect(isNotValidYet).toBe(true)
+    const isTooEarly = await token.isTooEarly(badUcan)
+    expect(isTooEarly).toBe(true)
   })
 })
