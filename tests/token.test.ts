@@ -63,7 +63,7 @@ describe('token', () => {
           "cap": "OVERWRITE"
         },
       ],
-      proof: token.encode(ucan)
+      proofs: [token.encode(ucan)]
     })
 
     const isValid = await token.isValid(childUcan)
@@ -80,7 +80,7 @@ describe('token', () => {
           "cap": "SUPER"
         },
       ],
-      proof: token.encode(ucan)
+      proofs: [token.encode(ucan)]
     })
 
     const isValid = await token.isValid(childUcan)
