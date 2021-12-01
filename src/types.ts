@@ -22,8 +22,14 @@ export type KeyType = 'rsa' | 'ed25519' | 'bls12-381'
 export type Fact = Record<string, string>
 
 export type Capability = {
-  [rsc: string]: string
+  [rsc: string]: unknown // Can be anything application-specific
   cap: string
+}
+
+export interface CapabilityParser<C> {
+  name: string
+  parse: (cap: Capability) => C | null
+  subsumedBy(cap: C, caps: C[]): boolean
 }
 
 export type UcanHeader = {

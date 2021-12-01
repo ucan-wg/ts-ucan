@@ -3,8 +3,8 @@ import * as base64 from "./base64"
 import * as util from './util'
 import * as did from './did'
 import { verifySignature } from "./did/validation"
-import { validAttenuation } from './attenuation'
-import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
+import { validateAttenuations } from './attenuation'
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, ResourceType } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -191,7 +191,7 @@ export function isExpired(ucan: Ucan): boolean {
  * @param ucan The decoded UCAN
  * @param did The DID associated with the signature of the UCAN
  */
- export async function isValid(ucan: Ucan): Promise<boolean> {
+ export async function validate(ucan: Ucan, knownResourceTypes: Record<string, ResourceType> = builtInResourceTypes): Promise<Capability[] | false> {
   const encodedHeader = encodeHeader(ucan.header)
   const encodedPayload = encodePayload(ucan.payload)
 
@@ -200,16 +200,17 @@ export function isExpired(ucan: Ucan): boolean {
 
   const valid = await verifySignature(data, sig, ucan.payload.iss)
   if (!valid) return false
-  if (!ucan.payload.prf) return true
+  if (!ucan.payload.prf) return ucan.payload.att
 
   // Verify proofs
   const prf = decode(ucan.payload.prf)
   if (prf.payload.aud !== ucan.payload.iss) return false
+  
+  const parentAttenuations = await validate(prf, knownResourceTypes)
+  if (typeof parentAttenuations === "boolean" && !parentAttenuations) return false
 
   // Check attenuation
-  if(!validAttenuation(prf.payload.att, ucan.payload.att)) return false
-
-  return await isValid(prf)
+  return validateAttenuations(ucan.payload.att, parentAttenuations, knownResourceTypes)
 }
 
 /**
@@ -246,6 +247,12 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
     payload,
     signature: uint8arrays.toString(sig, 'base64urlpad')
   }
+}
+
+export const builtInResourceTypes: {
+  wnfs: ResourceType
+  } = {
+
 }
 
 // ㊙️
