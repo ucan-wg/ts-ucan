@@ -10,9 +10,9 @@ export function encode(str: string, encoding: Encodings = 'base64pad'): string {
 }
 
 export function urlDecode(base64: string): string {
-  return decode(base64, 'base64urlpad')
+  return decode(base64, 'base64url')
 }
 
 export function urlEncode(str: string): string {
-  return encode(str, 'base64urlpad')
+  return encode(str, 'base64url')
 }

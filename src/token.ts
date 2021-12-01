@@ -196,7 +196,7 @@ export function isExpired(ucan: Ucan): boolean {
   const encodedPayload = encodePayload(ucan.payload)
 
   const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
-  const sig = uint8arrays.fromString(ucan.signature, 'base64urlpad')
+  const sig = uint8arrays.fromString(ucan.signature, 'base64url')
 
   const valid = await verifySignature(data, sig, ucan.payload.iss)
   if (!valid) return false
@@ -244,7 +244,7 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   return {
     header,
     payload,
-    signature: uint8arrays.toString(sig, 'base64urlpad')
+    signature: uint8arrays.toString(sig, 'base64url')
   }
 }
 
