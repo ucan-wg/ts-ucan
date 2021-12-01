@@ -100,4 +100,18 @@ describe('token', () => {
     const isTooEarly = await token.isTooEarly(badUcan)
     expect(isTooEarly).toBe(true)
   })
+
+  it('identifies a ucan that has become active', async () => {
+    const activeUcan = {
+      ...ucan,
+      payload: {
+        ...ucan.payload,
+        nbf: Math.floor(Date.now() / 1000),
+        lifetimeInSeonds: 30
+      }
+    }
+
+    const isTooEarly = await token.isTooEarly(activeUcan)
+    expect(isTooEarly).toBe(false)
+  })
 })
