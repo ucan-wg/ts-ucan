@@ -86,4 +86,32 @@ describe('token', () => {
     const isValid = await token.isValid(childUcan)
     expect(isValid).toBe(false)
   })
+
+  it('identifies a ucan that is not active yet', async () => {
+    const badUcan = {
+      ...ucan,
+      payload: {
+        ...ucan.payload,
+        nbf: 2637252774,
+        exp: 2637352774
+      }
+    }
+
+    const isTooEarly = await token.isTooEarly(badUcan)
+    expect(isTooEarly).toBe(true)
+  })
+
+  it('identifies a ucan that has become active', async () => {
+    const activeUcan = {
+      ...ucan,
+      payload: {
+        ...ucan.payload,
+        nbf: Math.floor(Date.now() / 1000),
+        lifetimeInSeonds: 30
+      }
+    }
+
+    const isTooEarly = await token.isTooEarly(activeUcan)
+    expect(isTooEarly).toBe(false)
+  })
 })
