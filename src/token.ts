@@ -4,7 +4,7 @@ import * as util from './util'
 import * as did from './did'
 import { verifySignature } from "./did/validation"
 import { validateAttenuations } from './attenuation'
-import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, ResourceType } from "./types"
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, CapabilityParser } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -191,7 +191,7 @@ export function isExpired(ucan: Ucan): boolean {
  * @param ucan The decoded UCAN
  * @param did The DID associated with the signature of the UCAN
  */
- export async function validate(ucan: Ucan, knownResourceTypes: Record<string, ResourceType> = builtInResourceTypes): Promise<Capability[] | false> {
+ export async function validate<C>(ucan: Ucan, capabilityParsers: CapabilityParser<C>[]): Promise<(C | Capability)[] | false> {
   const encodedHeader = encodeHeader(ucan.header)
   const encodedPayload = encodePayload(ucan.payload)
 
@@ -206,11 +206,11 @@ export function isExpired(ucan: Ucan): boolean {
   const prf = decode(ucan.payload.prf)
   if (prf.payload.aud !== ucan.payload.iss) return false
   
-  const parentAttenuations = await validate(prf, knownResourceTypes)
-  if (typeof parentAttenuations === "boolean" && !parentAttenuations) return false
+  const parentValidity = await validate(prf, capabilityParsers)
+  if (typeof parentValidity === "boolean" && !parentValidity) return false
 
   // Check attenuation
-  return validateAttenuations(ucan.payload.att, parentAttenuations, knownResourceTypes)
+  return validateAttenuations(ucan.payload.att, prf.payload.att, capabilityParsers)
 }
 
 /**
@@ -249,11 +249,6 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   }
 }
 
-export const builtInResourceTypes: {
-  wnfs: ResourceType
-  } = {
-
-}
 
 // ㊙️
 

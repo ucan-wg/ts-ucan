@@ -1,107 +1,129 @@
 import { Capability, CapabilityParser } from "./types"
 
-export const validAttenuation = (parent: Array<Capability>, child: Array<Capability>): boolean => {
-  for(let i=0; i<child.length; i++) {
-    const childCap = child[i]
-    const found = parent.find((cap) => JSON.stringify(cap) == JSON.stringify(childCap))
-    if(!found) return false
-  }
-  return true
-}
+type Parsed<C> = null | { cap: C, parser: CapabilityParser<C> }
 
-export function validateAttenuations(
-  child: Capability[],
-  parent: Capability[],
-  parsers: CapabilityParser<unknown>[]
-): Capability[] | false {
-  const validatedCaps: Capability[] = []
-  loop: for (const childCap of child) {
-    const resource = resourceTypeFromCapability(childCap)
-    if (resource == null) {
-      // we don't know this capability type
-      // thus we can neither validate it nor prove that it's incorrect
-      continue
+export function validateAttenuations<C>(
+  childAtt: Capability[],
+  parentAtt: Capability[],
+  parsers: CapabilityParser<C>[]
+): (C | Capability)[] | false {
+  const valid: (C | Capability)[] = []
+  for (const childCap of childAtt) {
+    
+    // find the first parser that parses the capability (and return the parsed capability)
+    const child: Parsed<C> = parsers.reduce((acc: Parsed<C>, parser: CapabilityParser<C>) => {
+      if (acc != null) return acc
+      const cap = parser.parse(childCap)
+      if (cap != null) return { cap, parser }
+      return null
+    }, null)
+
+    // if we couldn't find a fitting parser we fall back to json-equivalence
+    if (child == null) {
+      if (parentAtt.find(cap => JSON.stringify(cap) === JSON.stringify(childCap))) {
+        // return the fallback
+        valid.push(childCap)
+        continue
+      } else {
+        // we couldn't validate this capability
+        // this doesn't mean the UCAN is invalid: We might just not know about the
+        // semantics that need to be used for this kind of capability
+        continue
+      }
     }
+    
+    // we know about the precise semantics for this kind of capability: we have a fitting parser
+    // filter out fitting parent capabilities
+    const parentCaps = parentAtt.flatMap(cap => {
+      const parsed = child.parser.parse(cap)
+      if (parsed == null) return []
+      return [parsed]
+    })
 
-    const resourceType = knownResourceTypes[resource]
-
-    if (resourceType != null) {
-      if (!resourceType.isValid(childCap)) {
-        return false
-      }
-
-      for (const parentCap of parent) {
-        const parentResourceType = knownResourceTypes[resourceTypeFromCapability(parentCap)]
-        if (parentResourceType == null) {
-          // the resource is ill-formed
-          // we can't verify the current capability against this
-          continue
-        }
-        
-        if (!parentResourceType.isValid(parentCap)) {
-          // we know that the parent capability is ill-formed
-          return false
-        }
-
-        if (resourceType.subsumes(childCap, parentCap)) {
-          // we can justify the child capability, so move on to check more
-          validatedCaps.push(childCap)
-          continue loop
-        } else {
-          // we couldn't justify the child capability
-          return false
-        }
-      }
+    if (child.parser.subsumedBy(child.cap, parentCaps)) {
+      valid.push(child.cap)
     } else {
-      // fallback: We don't really know the child capability.
-      // But we know it's justified if we can find the same one at a parent
-      if (parent.find(parentCap => JSON.stringify(parentCap) === JSON.stringify(parentCap))) {
-        validatedCaps.push(childCap)
-      }
+      return false
     }
   }
-  return validatedCaps
+  return valid
 }
 
-function resourceTypeFromCapability(cap: Capability): string | null {
-  const resource = Object.keys(cap).filter(name => name != "cap")[0]
-  if (typeof resource !== "string") {
-    return null
-  }
-  return resource
-}
 
 export type WNFSCapability
-  = { public: string[],  }
-  | { private: Uint8Array /* bloom filter */ }
+  = { path: string[], potency: WNFSPotency }
 
-export type WNFSPotency = "CREATE" | "REVISE" | "SOFT_DELETE" | "OVERWRITE" | "SUPER_USER"
+export const wnfsPotencyIdx = {
+  "CREATE": 4,
+  "REVISE": 3,
+  "SOFT_DELETE": 2,
+  "OVERWRITE": 1,
+  "SUPER_USER": 0,
+}
+
+export type WNFSPotency = keyof typeof wnfsPotencyIdx
 
 export function isWNFSPotency(obj: unknown): obj is WNFSPotency {
   if (typeof obj !== "string") return false
-  return ["CREATE", "REVISE", "SOFT_DELETE", "OVERWRITE", "SUPER_USER"].includes(obj)
+  return Object.keys(wnfsPotencyIdx).includes(obj)
+}
+
+export function potencySubsumes(lesserPot: WNFSPotency, biggerPot: WNFSPotency): boolean {
+  return wnfsPotencyIdx[lesserPot] >= wnfsPotencyIdx[biggerPot]
 }
 
 export const wnfs: CapabilityParser<WNFSCapability> = {
   name: "wnfs",
   parse: capability => {
-    if (capability.wnfs == null || typeof capability.wnfs !== "string" || !isWNFSPotency(capability)) {
+    if (capability.wnfs == null || typeof capability.wnfs !== "string" || !isWNFSPotency(capability.cap)) {
       return null
     }
-    let path = capability.wnfs
-
-    // ensure a trailing slash (even for files)
-    // this way we prevent /public/something to match with /public/somethingelse
-    if (!path.endsWith("/")) {
-      path = `${path}/`
+    let pathStr = capability.wnfs
+    pathStr = pathStr.startsWith("/") ? pathStr.slice(1) : pathStr
+    pathStr = pathStr.endsWith("/") ? pathStr.slice(0, -1) : pathStr
+    const path = pathStr.split("/")
+    // disallow empty path segments
+    if (path.some(str => str === "")) {
+      return null
     }
-    
-    const publicPrefix = "/public/"
-    const privatePrefix = "/private/"
-    if (path.startsWith(publicPrefix)) {
-      // remove /public/ prefix and trailing slash
-      return { public: path.slice(publicPrefix.length, -1).split("/") }
-    }
-    if (path.startsWith())
+    return { path, potency: capability.cap }
+  },
+  subsumedBy: (cap, parentCaps) => {
+    return parentCaps.some(parentCap => prefixMatches(parentCap.path, cap.path) && potencySubsumes(cap.potency, parentCap.potency))
   }
+}
+
+function prefixMatches(prefix: string[], whole: string[]): boolean {
+  if (prefix.length > whole.length) return false
+  for (let i = 0; i < prefix.length; i++) {
+    if (whole[i] !== prefix[i]) return false
+  }
+  return true
+}
+
+
+export interface EmailCapability {
+  email: string,
+  potency: EmailPotency
+}
+
+export type EmailPotency = "SEND"
+
+export function isEmailPotency(obj: unknown): obj is EmailPotency {
+  return obj === "SEND"
+}
+
+export const email: CapabilityParser<EmailCapability> = {
+  name: "email",
+  parse: capability => {
+    if (typeof capability.email !== "string" || !isEmailPotency(capability.cap)) {
+      return null
+    }
+    const email = capability.email
+    const potency = capability.cap
+    return { email, potency }
+  },
+  subsumedBy: (cap, parentCaps) => {
+    return parentCaps.some(parentCap => parentCap.email === cap.email && parentCap.potency === cap.potency)
+  },
 }

@@ -33,7 +33,7 @@ describe('wnfs capability', () => {
         ],
         proof: token.encode(authUCAN)
     })
-
-    console.log(token.encode(thirdAppUCAN))
+    
+    // TODO actually write a good test for this
   })
 })
