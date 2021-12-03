@@ -1,6 +1,7 @@
 import * as token from "../src/token"
-import { UcanChain } from "../src/chain"
+import { Chained } from "../src/chain"
 import { alice, bob, mallory } from "./fixtures"
+
 
 describe("UcanChain.fromToken", () => {
     
@@ -18,7 +19,7 @@ describe("UcanChain.fromToken", () => {
             proofs: [leafUcan]
         }))
 
-        const chain = await UcanChain.fromToken(ucan)
+        const chain = await Chained.fromToken(ucan)
         expect(chain.audience()).toEqual(mallory.did())
         expect(chain.proofs()[0]?.issuer()).toEqual(alice.did())
     })
@@ -37,7 +38,7 @@ describe("UcanChain.fromToken", () => {
             proofs: [leafUcan]
         }))
 
-        await expect(() => UcanChain.fromToken(ucan)).rejects.toBeDefined()
+        await expect(() => Chained.fromToken(ucan)).rejects.toBeDefined()
     })
 
     it("can handle multiple ucan leafs", async () => {
@@ -58,6 +59,6 @@ describe("UcanChain.fromToken", () => {
             proofs: [leafUcanAlice, leafUcanMallory]
         }))
 
-        await UcanChain.fromToken(ucan)
+        await Chained.fromToken(ucan)
     })
 })

@@ -1,22 +1,28 @@
 import { Ucan, Capability, Fact } from "./types"
 import * as token from "./token"
 
-export class UcanChain {
+
+/**
+ * Represents a deeply verified chain of UCANs.
+ * 
+ * These chains can actually be trees sometimes (if a ucan has >1 proofs).
+ */
+export class Chained {
 
     // We need to keep the encoded version around to preserve the signature
     private _encoded: string
-    private _decoded: Ucan<UcanChain>
+    private _decoded: Ucan<Chained>
 
-    constructor(encoded: string, decoded: Ucan<UcanChain>) {
+    constructor(encoded: string, decoded: Ucan<Chained>) {
         this._encoded = encoded
         this._decoded = decoded
     }
 
-    static async fromToken(encodedUcan: string, options?: token.ValidateOptions): Promise<UcanChain> {
+    static async fromToken(encodedUcan: string, options?: token.ValidateOptions): Promise<Chained> {
         const ucan = await token.validate(encodedUcan, options)
 
         // parse proofs recursively
-        const proofs = await Promise.all(ucan.payload.prf.map(encodedPrf => UcanChain.fromToken(encodedPrf, options)))
+        const proofs = await Promise.all(ucan.payload.prf.map(encodedPrf => Chained.fromToken(encodedPrf, options)))
 
         // check sender/receiver matchups. A parent ucan's audience must match the child ucan's issuer
         const incorrectProof = proofs.find(proof => proof.audience() !== ucan.payload.iss)
@@ -24,14 +30,14 @@ export class UcanChain {
             throw new Error(`Invalid UCAN: Audience ${incorrectProof.audience()} doesn't match issuer ${ucan.payload.iss}`)
         }
 
-        const ucanTransformed: Ucan<UcanChain> = {
+        const ucanTransformed: Ucan<Chained> = {
             ...ucan,
             payload: {
                 ...ucan.payload,
                 prf: proofs
             },
         }
-        return new UcanChain(encodedUcan, ucanTransformed)
+        return new Chained(encodedUcan, ucanTransformed)
     }
 
     encoded(): string {
@@ -78,7 +84,7 @@ export class UcanChain {
         return this._decoded.payload.fct ?? []
     }
 
-    proofs(): UcanChain[] {
+    proofs(): Chained[] {
         return this._decoded.payload.prf
     }
 
