@@ -19,8 +19,8 @@ describe("UcanChain.fromToken", () => {
         }))
 
         const chain = await UcanChain.fromToken(ucan)
-        expect(chain.payload().aud).toEqual(mallory.did())
-        expect(chain.proofs()[0]?.payload().iss).toEqual(alice.did())
+        expect(chain.audience()).toEqual(mallory.did())
+        expect(chain.proofs()[0]?.issuer()).toEqual(alice.did())
     })
 
     it("fails with incorrect chaining", async () => {
