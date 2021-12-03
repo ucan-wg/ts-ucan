@@ -18,7 +18,7 @@ export interface ExportableKey {
   export: (format?: Encodings) => Promise<string>
 }
 
-export type KeyType = 'rsa' | 'ed25519' | 'bls12-381'
+export type KeyType = "rsa" | "ed25519" | "bls12-381"
 
 export type Fact = Record<string, unknown>
 

@@ -1,14 +1,14 @@
-import nacl from 'tweetnacl'
-import * as uint8arrays from 'uint8arrays'
-import BaseKeypair from './base'
-import { Encodings, KeyType } from '../types'
+import nacl from "tweetnacl"
+import * as uint8arrays from "uint8arrays"
+import BaseKeypair from "./base"
+import { Encodings } from "../types"
 
 export class EdKeypair extends BaseKeypair {
 
   private secretKey: Uint8Array
 
   constructor(secretKey: Uint8Array, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, 'ed25519', exportable)
+    super(publicKey, "ed25519", exportable)
     this.secretKey = secretKey
   }
 
@@ -24,7 +24,7 @@ export class EdKeypair extends BaseKeypair {
     format?: Encodings
     exportable?: boolean
   }): EdKeypair {
-    const { format = 'base64pad', exportable = false } = params || {}
+    const { format = "base64pad", exportable = false } = params || {}
     const secretKey = uint8arrays.fromString(key, format)
     const keypair = nacl.sign.keyPair.fromSecretKey(secretKey)
     return new EdKeypair(keypair.secretKey, keypair.publicKey, exportable)
@@ -34,7 +34,7 @@ export class EdKeypair extends BaseKeypair {
     return nacl.sign.detached(msg, this.secretKey)
   }
 
-  async export(format: Encodings = 'base64pad'): Promise<string> {
+  async export(format: Encodings = "base64pad"): Promise<string> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }

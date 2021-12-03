@@ -1,8 +1,8 @@
 import { webcrypto } from "one-webcrypto"
 
-export const RSA_ALG = 'RSASSA-PKCS1-v1_5'
+export const RSA_ALG = "RSASSA-PKCS1-v1_5"
 export const DEFAULT_KEY_SIZE = 2048
-export const DEFAULT_HASH_ALG = 'SHA-256'
+export const DEFAULT_HASH_ALG = "SHA-256"
 export const SALT_LEGNTH = 128
 
 export const generateKeypair = async (size: number = DEFAULT_KEY_SIZE): Promise<CryptoKeyPair> => {
@@ -14,22 +14,22 @@ export const generateKeypair = async (size: number = DEFAULT_KEY_SIZE): Promise<
       hash: { name: DEFAULT_HASH_ALG }
     },
     false,
-    ['sign', 'verify']
+    ["sign", "verify"]
   )
 }
 
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
-  const buf = await webcrypto.subtle.exportKey('spki', key)
+  const buf = await webcrypto.subtle.exportKey("spki", key)
   return new Uint8Array(buf)
 }
 
 export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
   return await webcrypto.subtle.importKey(
-    'spki',
+    "spki",
     key.buffer,
     { name: RSA_ALG, hash: { name: DEFAULT_HASH_ALG }},
     true,
-    ['verify']
+    ["verify"]
   )
 }
 

@@ -1,13 +1,13 @@
-import * as rsa  from '../crypto/rsa'
-import BaseKeypair from './base'
-import { Encodings } from '../types'
+import * as rsa  from "../crypto/rsa"
+import BaseKeypair from "./base"
+import { Encodings } from "../types"
 
 export class RsaKeypair extends BaseKeypair {
 
   private keypair: CryptoKeyPair
 
   constructor(keypair: CryptoKeyPair, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, 'rsa', exportable)
+    super(publicKey, "rsa", exportable)
     this.keypair = keypair
   }
 
@@ -25,7 +25,7 @@ export class RsaKeypair extends BaseKeypair {
     return await rsa.sign(msg, this.keypair)
   }
 
-  async export(format: Encodings = 'base64pad'): Promise<string> {
+  async export(format: Encodings = "base64pad"): Promise<string> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }

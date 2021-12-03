@@ -1,7 +1,7 @@
-import * as uint8arrays from 'uint8arrays'
+import * as uint8arrays from "uint8arrays"
 import * as base64 from "./base64"
-import * as util from './util'
-import * as did from './did'
+import * as util from "./util"
+import * as did from "./did"
 import { verifySignature } from "./did/validation"
 import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, isUcanHeader, isUcanPayload } from "./types"
 
@@ -80,7 +80,7 @@ export function buildParts(params: {
 
   // in the weeds
   ucanVersion?: string
-}): { header: UcanHeader, payload: UcanPayload } {
+}): { header: UcanHeader; payload: UcanPayload } {
   const {
     audience,
     issuer,
@@ -97,8 +97,8 @@ export function buildParts(params: {
 
   // Timestamps
   const currentTimeInSeconds = Math.floor(Date.now() / 1000)
-  let exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
-  let nbf = notBefore || currentTimeInSeconds - 60
+  const exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
+  const nbf = notBefore || currentTimeInSeconds - 60
 
   const header = {
     alg: jwtAlgorithm(keyType),
@@ -282,7 +282,7 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   return {
     header,
     payload,
-    signature: uint8arrays.toString(sig, 'base64url')
+    signature: uint8arrays.toString(sig, "base64url")
   }
 }
 
@@ -294,8 +294,8 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
  */
 function jwtAlgorithm(keyType: KeyType): string | null {
   switch (keyType) {
-    case 'ed25519': return "EdDSA"
-    case 'rsa': return "RS256"
+    case "ed25519": return "EdDSA"
+    case "rsa": return "RS256"
     default: return null
   }
 }

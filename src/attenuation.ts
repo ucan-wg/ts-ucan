@@ -1,4 +1,4 @@
-import { Capability } from "./types";
+import { Capability } from "./types"
 
 export const validAttenuation = (parent: Array<Capability>, child: Array<Capability>): boolean => {
   for(let i=0; i<child.length; i++) {
