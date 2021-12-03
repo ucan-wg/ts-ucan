@@ -1,5 +1,4 @@
 import * as uint8arrays from "uint8arrays"
-import * as base64 from "./base64"
 import * as util from "./util"
 import * as did from "./did"
 import { verifySignature } from "./did/validation"
@@ -143,7 +142,7 @@ export function encode(ucan: Ucan): string {
  * @param header The UcanHeader to encode
  */
  export function encodeHeader(header: UcanHeader): string {
-  return base64.urlEncode(JSON.stringify(header))
+  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(header), "utf8"), "base64url")
 }
 
 /**
@@ -152,9 +151,7 @@ export function encode(ucan: Ucan): string {
  * @param payload The UcanPayload to encode
  */
 export function encodePayload(payload: UcanPayload): string {
-  return base64.urlEncode(JSON.stringify({
-    ...payload
-  }))
+  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(payload), "utf8"), "base64url")
 }
 
 /**
