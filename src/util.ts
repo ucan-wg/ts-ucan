@@ -7,3 +7,11 @@ export const generateNonce = (len = 6): string => {
   }
   return nonce
 }
+
+export function hasProp<K extends PropertyKey>(data: unknown, prop: K): data is Record<K, unknown> {
+  return typeof data === "object" && data != null && prop in data
+}
+
+export function isRecord(data: unknown): data is Record<PropertyKey, unknown> {
+  return typeof data === "object" && data != null
+}
