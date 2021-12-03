@@ -38,7 +38,7 @@ export type UcanPayload = {
   fct: Array<Fact>
   iss: string
   nbf: number
-  prf: string | null
+  prf: Array<string>
   att: Array<Capability>
   nnc?: string
 }

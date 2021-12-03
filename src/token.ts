@@ -24,7 +24,7 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  * `iss`, Issuer, the ID of who sent this.
  * `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
  * `nnc`, Nonce, a randomly generated string, used to ensure the uniqueness of the jwt.
- * `prf`, Proof, an optional nested token with equal or greater privileges.
+ * `prf`, Proofs, nested tokens with equal or greater privileges.
  * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  *
  */
@@ -42,9 +42,9 @@ export async function build(params: {
   expiration?: number
   notBefore?: number
 
-  // proof / other info
+  // proofs / other info
   facts?: Array<Fact>
-  proof?: string
+  proofs?: Array<string>
   addNonce?: boolean
 
   // in the weeds
@@ -74,9 +74,9 @@ export function buildParts(params: {
   expiration?: number
   notBefore?: number
 
-  // proof / other info
+  // proofs / other info
   facts?: Array<Fact>
-  proof?: string
+  proofs?: Array<string>
   addNonce?: boolean
 
   // in the weeds
@@ -91,7 +91,7 @@ export function buildParts(params: {
     expiration,
     notBefore,
     facts,
-    proof = null,
+    proofs = [],
     addNonce = false,
     ucanVersion = "0.7.0"
   } = params
@@ -114,7 +114,7 @@ export function buildParts(params: {
     fct: facts,
     iss: issuer,
     nbf,
-    prf: proof,
+    prf: proofs,
   } as UcanPayload
 
   if (addNonce) {
@@ -205,36 +205,25 @@ export const isTooEarly = (ucan: Ucan): boolean => {
   const encodedPayload = encodePayload(ucan.payload)
 
   const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
-  const sig = uint8arrays.fromString(ucan.signature, 'base64urlpad')
+  const sig = uint8arrays.fromString(ucan.signature, 'base64url')
 
   const valid = await verifySignature(data, sig, ucan.payload.iss)
   if (!valid) return false
   if (!ucan.payload.prf) return true
 
   // Verify proofs
-  const prf = decode(ucan.payload.prf)
-  if (prf.payload.aud !== ucan.payload.iss) return false
+  for (const prf of ucan.payload.prf) {
+    const proof = decode(prf)
+    if (proof.payload.aud !== ucan.payload.iss) return false
 
-  // Check attenuation
-  if(!validAttenuation(prf.payload.att, ucan.payload.att)) return false
+    // Check attenuation
+    if(!validAttenuation(proof.payload.att, ucan.payload.att)) return false
+    if (!await isValid(proof)) return false
+  }
 
-  return await isValid(prf)
+  return true
 }
 
-/**
- * Given a UCAN, lookup the root issuer.
- *
- * Throws when given an improperly formatted UCAN.
- * This could be a nested UCAN (ie. proof).
- *
- * @param ucan A UCAN.
- * @returns The root issuer.
- */
-export function rootIssuer(ucan: string, level = 0): string {
-  const p = extractPayload(ucan, level)
-  if (p.prf) return rootIssuer(p.prf, level + 1)
-  return p.iss
-}
 
 /**
  * Generate UCAN signature.
@@ -253,7 +242,7 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   return {
     header,
     payload,
-    signature: uint8arrays.toString(sig, 'base64urlpad')
+    signature: uint8arrays.toString(sig, 'base64url')
   }
 }
 
