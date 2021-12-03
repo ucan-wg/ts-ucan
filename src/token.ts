@@ -28,9 +28,9 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, isUc
  */
 
 export async function build(params: {
-  // to/from
-  audience: string
+  // from/to
   issuer: Keypair
+  audience: string
 
   // capabilities
   capabilities?: Array<Capability>
@@ -59,10 +59,10 @@ export async function build(params: {
 }
 
 export function buildParts(params: {
-  // to/from
-  audience: string
-  issuer: string
+  // from/to
   keyType: KeyType
+  issuer: string
+  audience: string
 
   // capabilities
   capabilities?: Array<Capability>
@@ -81,10 +81,10 @@ export function buildParts(params: {
   ucanVersion?: string
 }): { header: UcanHeader; payload: UcanPayload } {
   const {
-    audience,
-    issuer,
-    capabilities = [],
     keyType,
+    issuer,
+    audience,
+    capabilities = [],
     lifetimeInSeconds = 30,
     expiration,
     notBefore,

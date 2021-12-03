@@ -33,7 +33,7 @@ export type UcanHeader = {
   ucv: string
 }
 
-export type UcanPayload = {
+export type UcanPayload<Prf = string> = {
   iss: string
   aud: string
   exp: number
@@ -41,12 +41,12 @@ export type UcanPayload = {
   nnc?: string
   att: Array<Capability>
   fct?: Array<Fact>
-  prf: Array<string>
+  prf: Array<Prf>
 }
 
-export interface Ucan {
+export type Ucan<Prf = string> = {
   header: UcanHeader
-  payload: UcanPayload
+  payload: UcanPayload<Prf>
   signature: string
 }
 
