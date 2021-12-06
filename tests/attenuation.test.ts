@@ -10,28 +10,29 @@ describe("attenuation.emailCapabilities", () => {
         // alice -> bob, bob -> mallory
         // alice delegates access to sending email as her to bob
         // and bob delegates it further to mallory
-        const leafUcan = token.encode(await token.build({
+        const leafUcan = await token.build({
             issuer: alice,
             audience: bob.did(),
             capabilities: [{
                 email: "alice@email.com",
                 cap: "SEND",
             }]
-        }))
+        })
 
-        const ucan = token.encode(await token.build({
+        const ucan = await token.build({
             issuer: bob,
             audience: mallory.did(),
             capabilities: [{
                 email: "alice@email.com",
                 cap: "SEND",
             }],
-            proofs: [leafUcan]
-        }))
+            proofs: [token.encode(leafUcan)]
+        })
 
-        const emailCaps = emailCapabilities(await Chained.fromToken(ucan))
+        const emailCaps = emailCapabilities(await Chained.fromToken(token.encode(ucan)))
         expect(emailCaps).toEqual([{
             originator: alice.did(),
+            expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
             email: "alice@email.com",
             potency: "SEND"
         }])
@@ -41,24 +42,25 @@ describe("attenuation.emailCapabilities", () => {
         // alice -> bob, bob -> mallory
         // alice delegates nothing to bob
         // and bob delegates his email to mallory
-        const leafUcan = token.encode(await token.build({
+        const leafUcan = await token.build({
             issuer: alice,
             audience: bob.did(),
-        }))
+        })
 
-        const ucan = token.encode(await token.build({
+        const ucan = await token.build({
             issuer: bob,
             audience: mallory.did(),
             capabilities: [{
                 email: "bob@email.com",
                 cap: "SEND",
             }],
-            proofs: [leafUcan]
-        }))
+            proofs: [token.encode(leafUcan)]
+        })
 
         // we implicitly expect the originator to become bob
-        expect(emailCapabilities(await Chained.fromToken(ucan))).toEqual([{
+        expect(emailCapabilities(await Chained.fromToken(token.encode(ucan)))).toEqual([{
             originator: bob.did(),
+            expiresAt: ucan.payload.exp,
             email: "bob@email.com",
             potency: "SEND"
         }])
@@ -68,25 +70,25 @@ describe("attenuation.emailCapabilities", () => {
         // alice -> mallory, bob -> mallory, mallory -> alice
         // both alice and bob delegate their email access to mallory
         // mallory then creates a UCAN with capability to send both
-        const leafUcanAlice = token.encode(await token.build({
+        const leafUcanAlice = await token.build({
             issuer: alice,
             audience: mallory.did(),
             capabilities: [{
                 email: "alice@email.com",
                 cap: "SEND",
             }]
-        }))
+        })
 
-        const leafUcanBob = token.encode(await token.build({
+        const leafUcanBob = await token.build({
             issuer: bob,
             audience: mallory.did(),
             capabilities: [{
                 email: "bob@email.com",
                 cap: "SEND",
             }]
-        }))
+        })
 
-        const ucan = token.encode(await token.build({
+        const ucan = await token.build({
             issuer: mallory,
             audience: alice.did(),
             capabilities: [
@@ -99,17 +101,19 @@ describe("attenuation.emailCapabilities", () => {
                     cap: "SEND",
                 }
             ],
-            proofs: [leafUcanAlice, leafUcanBob]
-        }))
+            proofs: [token.encode(leafUcanAlice), token.encode(leafUcanBob)]
+        })
 
-        expect(emailCapabilities(await Chained.fromToken(ucan))).toEqual([
+        expect(emailCapabilities(await Chained.fromToken(token.encode(ucan)))).toEqual([
             {
                 originator: alice.did(),
+                expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
                 email: "alice@email.com",
                 potency: "SEND",
             },
             {
                 originator: bob.did(),
+                expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
                 email: "bob@email.com",
                 potency: "SEND",
             }

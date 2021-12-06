@@ -4,7 +4,7 @@ import * as token from "./token"
 
 /**
  * Represents a deeply verified chain of UCANs.
- * 
+ *
  * These chains can actually be trees sometimes (if a ucan has >1 proofs).
  */
 export class Chained {
@@ -55,6 +55,16 @@ export class Chained {
     }
 
     /* payload */
+
+    payload(): Ucan<never> {
+        return {
+            ...this._decoded,
+            payload: {
+                ...this._decoded.payload,
+                prf: ([] as never[])
+            }
+        }
+    }
 
     issuer(): string {
         return this._decoded.payload.iss
