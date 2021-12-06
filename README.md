@@ -1,14 +1,18 @@
-# UCANs
+# ts-ucan 
 [![NPM](https://img.shields.io/npm/v/ucans)](https://www.npmjs.com/package/ucans)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fission-suite/blob/master/LICENSE)
-[![Built by FISSION](https://img.shields.io/badge/⌘-Built_by_FISSION-purple.svg)](https://fission.codes)
-[![Discord](https://img.shields.io/discord/478735028319158273.svg)](https://discord.gg/zAQBDEq)
-[![Discourse](https://img.shields.io/discourse/https/talk.fission.codes/topics)](https://talk.fission.codes)
+[![Discussions](https://img.shields.io/github/discussions/ucan-wg/ts-ucan)](https://github.com/ucan-wg/ts-ucan/discussions)
 
-UCANs are simply JWTs that contain special keys.
-At a high level, UCANs (“User Controlled Authorization Network”) are a way of doing authorization ("what you can do") where users are fully in control. There's no all-powerful authorization server, or server of any kind required. Everything that a users is allowed to do is captured directly in a key or token, and can be sent to anyone that knows how to interpret this format. This works server -> server, client -> server, or p2p.
+UCANs are JWTs that contain special keys.
 
-**OAuth is designed for a centralized world, UCAN is the distributed user controlled version.**
+At a high level, UCANs (“User Controlled Authorization Network”) are an authorization scheme ("what you can do") where users are fully in control. No all-powerful authorization server or server of any kind is required. Everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. 
+
+UCANs work 
+- Server -> Server
+- Client -> Server
+- Peer-to-peer
+
+**OAuth is designed for a centralized world, UCAN is the distributed user-controlled version.**
 
 Read more in the whitepaper: https://whitepaper.fission.codes/access-control/ucan
 
@@ -37,7 +41,7 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
  `prf`, Proof, an optional nested token with equal or greater privileges.
 
  ### Signature
- A signature (using `alg`) of the base64 encoded header and payloaded concatenated together and delimited by `.`
+ A signature (using `alg`) of the base64 encoded header and payload concatenated together and delimited by `.`
 
 ## Build params
 Use `ucan.build` to help in formatting and signing a ucan. It takes the following parameters
@@ -102,6 +106,14 @@ const token = ucan.encode(u) // base64 jwt-formatted auth token
 const { header, payload } = await ucan.buildParts(...)
 const u = await ucan.addSignature(header, payload, signingFn)
 ```
+
+## Sponsors
+
+Sponsors that contribute developer time or resources to this implementation of UCANs:
+
+- [Fission](https://fission.codes/)
+
+
 
 ## UCAN Toucan
 ![](https://ipfs.runfission.com/ipfs/QmcyAwK7AjvLXbGuL4cqG5nufEKJquFmFGo2SDsaAe939Z)
