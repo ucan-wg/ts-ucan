@@ -5,7 +5,10 @@
 
 UCANs are JWTs that contain special keys.
 
-At a high level, UCANs (“User Controlled Authorization Network”) are an authorization scheme ("what you can do") where users are fully in control. No all-powerful authorization server or server of any kind is required. Everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. 
+At a high level, UCANs (“User Controlled Authorization Network”) are an authorization scheme ("what you can do") where users are fully in control. UCANs use DIDs ("Decentralized Identifiers") to identify users and services ("who you are").
+
+No all-powerful authorization server or server of any kind is required for UCANs. Instead, everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. Because UCANs are self-contained, they are easy to consume permissionlessly, and they work well offline and in distributed systems.
+
 
 UCANs work 
 - Server -> Server
@@ -28,13 +31,13 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
 
  `att`, Attenuation, a list of resources and capabilities that the ucan grants.
 
- `aud`, Audience, the ID of who it's intended for.
+ `aud`, Audience, the DID of who it's intended for.
 
  `exp`, Expiry, unix timestamp of when the jwt is no longer valid.
 
  `fct`, Facts, an array of extra facts or information to attach to the jwt.
 
- `iss`, Issuer, the ID of who sent this.
+ `iss`, Issuer, the DID of who sent this.
 
  `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
 
