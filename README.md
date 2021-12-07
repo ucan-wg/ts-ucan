@@ -1,14 +1,21 @@
-# UCANs
+# ts-ucan 
 [![NPM](https://img.shields.io/npm/v/ucans)](https://www.npmjs.com/package/ucans)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fission-suite/blob/master/LICENSE)
-[![Built by FISSION](https://img.shields.io/badge/⌘-Built_by_FISSION-purple.svg)](https://fission.codes)
-[![Discord](https://img.shields.io/discord/478735028319158273.svg)](https://discord.gg/zAQBDEq)
-[![Discourse](https://img.shields.io/discourse/https/talk.fission.codes/topics)](https://talk.fission.codes)
+[![Discussions](https://img.shields.io/github/discussions/ucan-wg/ts-ucan)](https://github.com/ucan-wg/ts-ucan/discussions)
 
-UCANs are simply JWTs that contain special keys.
-At a high level, UCANs (“User Controlled Authorization Network”) are a way of doing authorization ("what you can do") where users are fully in control. There's no all-powerful authorization server, or server of any kind required. Everything that a users is allowed to do is captured directly in a key or token, and can be sent to anyone that knows how to interpret this format. This works server -> server, client -> server, or p2p.
+UCANs are JWTs that contain special keys.
 
-**OAuth is designed for a centralized world, UCAN is the distributed user controlled version.**
+At a high level, UCANs (“User Controlled Authorization Network”) are an authorization scheme ("what you can do") where users are fully in control. UCANs use DIDs ("Decentralized Identifiers") to identify users and services ("who you are").
+
+No all-powerful authorization server or server of any kind is required for UCANs. Instead, everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. Because UCANs are self-contained, they are easy to consume permissionlessly, and they work well offline and in distributed systems.
+
+
+UCANs work 
+- Server -> Server
+- Client -> Server
+- Peer-to-peer
+
+**OAuth is designed for a centralized world, UCAN is the distributed user-controlled version.**
 
 Read more in the whitepaper: https://whitepaper.fission.codes/access-control/ucan
 
@@ -24,20 +31,20 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
 
  `att`, Attenuation, a list of resources and capabilities that the ucan grants.
 
- `aud`, Audience, the ID of who it's intended for.
+ `aud`, Audience, the DID of who it's intended for.
 
  `exp`, Expiry, unix timestamp of when the jwt is no longer valid.
 
  `fct`, Facts, an array of extra facts or information to attach to the jwt.
 
- `iss`, Issuer, the ID of who sent this.
+ `iss`, Issuer, the DID of who sent this.
 
  `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
 
  `prf`, Proof, an optional nested token with equal or greater privileges.
 
  ### Signature
- A signature (using `alg`) of the base64 encoded header and payloaded concatenated together and delimited by `.`
+ A signature (using `alg`) of the base64 encoded header and payload concatenated together and delimited by `.`
 
 ## Build params
 Use `ucan.build` to help in formatting and signing a ucan. It takes the following parameters
@@ -102,6 +109,14 @@ const token = ucan.encode(u) // base64 jwt-formatted auth token
 const { header, payload } = await ucan.buildParts(...)
 const u = await ucan.addSignature(header, payload, signingFn)
 ```
+
+## Sponsors
+
+Sponsors that contribute developer time or resources to this implementation of UCANs:
+
+- [Fission](https://fission.codes/)
+
+
 
 ## UCAN Toucan
 ![](https://ipfs.runfission.com/ipfs/QmcyAwK7AjvLXbGuL4cqG5nufEKJquFmFGo2SDsaAe939Z)
