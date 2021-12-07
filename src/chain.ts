@@ -18,6 +18,18 @@ export class Chained {
         this._decoded = decoded
     }
 
+    /**
+     * Validate a UCAN chain from a given JWT-encoded UCAN.
+     * 
+     * This will validate
+     * - The encoding
+     * - The signatures (unless turned off in the `options`)
+     * - The UCAN time bounds (unless turned off in the `options`)
+     * - The audience from parent proof UCANs matching up with the issuer of child UCANs
+     * 
+     * @returns A promise of a deeply-validated, deeply-parsed UCAN.
+     * @throws If the UCAN chain can't be validated.
+     */
     static async fromToken(encodedUcan: string, options?: token.ValidateOptions): Promise<Chained> {
         const ucan = await token.validate(encodedUcan, options)
 
@@ -40,22 +52,36 @@ export class Chained {
         return new Chained(encodedUcan, ucanTransformed)
     }
 
+    /**
+     * @returns The original JWT-encoded UCAN this chain was parsed from.
+     */
     encoded(): string {
         return this._encoded
     }
 
     /* Header */
 
+    /**
+     * @returns An identifier for the signature algorithm used.
+     * Possible values include "RS256" and "EdDSA".
+     */
     algorithm(): string {
         return this._decoded.header.alg
     }
 
+    /**
+     * @returns A string encoding the semantic version specified in the original encoded UCAN.
+     */
     version(): string {
         return this._decoded.header.ucv
     }
 
     /* payload */
 
+    /**
+     * @returns the payload the top level represented by this Chain element.
+     *          Its proofs are omitted. To access proofs, use `.proofs()`
+     */
     payload(): Ucan<never> {
         return {
             ...this._decoded,
@@ -66,40 +92,76 @@ export class Chained {
         }
     }
 
+    /**
+     * @returns `iss`: The issuer as a DID string ("did:key:...").
+     * 
+     * The UCAN must be signed with the private key of the issuer to be valid.
+     */
     issuer(): string {
         return this._decoded.payload.iss
     }
 
+    /**
+     * @returns `aud`: The audience as a DID string ("did:key:...").
+     * 
+     * This is the identity this UCAN transfers rights to.
+     * It could e.g. be the DID of a service you're posting this UCAN as a JWT to,
+     * or it could be the DID of something that'll use this UCAN as a proof to
+     * continue the UCAN chain as an issuer.
+     */
     audience(): string {
         return this._decoded.payload.aud
     }
 
+    /**
+     * @returns `exp`: The POSIX timestamp for when the UCAN expires.
+     */
     expiresAt(): number {
         return this._decoded.payload.exp
     }
 
+    /**
+     * @returns `nbf`: The POSIX timestamp of when the UCAN becomes active.
+     * If `null`, then it's only bound by `.expiresAt()`.
+     */
     notBefore(): number | null {
         return this._decoded.payload.nbf ?? null
     }
 
+    /**
+     * @returns `nnc`: A nonce (number used once).
+     */
     nonce(): string | null {
         return this._decoded.payload.nnc ?? null
     }
 
+    /**
+     * @returns `att`: Attenuated capabilities.
+     */
     attenuation(): Capability[] {
         return this._decoded.payload.att
     }
 
+    /**
+     * @returns `fct`: Arbitrary facts or proofs of knowledge in this UCAN as an array of records.
+     */
     facts(): Fact[] {
         return this._decoded.payload.fct ?? []
     }
 
+    /**
+     * @returns `prf`: Further UCANs possibly providing proof or origin for some capabilities in this UCAN.
+     */
     proofs(): Chained[] {
         return this._decoded.payload.prf
     }
 
     /* signature */
 
+    /**
+     * @returns a base64-encoded signature.
+     * @see algorithm
+     */
     signature(): string {
         return this._decoded.signature
     }
