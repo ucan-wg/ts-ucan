@@ -9,6 +9,12 @@ export interface Keypair {
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 
+/** Unlike tslib's CryptoKeyPair, this requires the `privateKey` and `publicKey` fields */
+export interface AvailableCryptoKeyPair {
+  privateKey: CryptoKey;
+  publicKey: CryptoKey;
+}
+
 export interface Didable {
   publicKeyStr: (format?: Encodings) => string
   did: () => string
@@ -74,4 +80,8 @@ export function isUcanPayload(obj: unknown): obj is UcanPayload {
 
 export function isCapability(obj: unknown): obj is Capability {
   return util.isRecord(obj) && util.hasProp(obj, "cap") && typeof obj.cap === "string"
+}
+
+export function isAvailableCryptoKeyPair(keypair: CryptoKeyPair): keypair is AvailableCryptoKeyPair {
+  return keypair.publicKey != null && keypair.privateKey != null
 }

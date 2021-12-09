@@ -17,7 +17,7 @@ export class EdKeypair extends BaseKeypair {
   }): Promise<EdKeypair> {
     const { exportable } = params || {}
     const keypair = nacl.sign.keyPair()
-    return new EdKeypair(keypair.secretKey, keypair.publicKey, exportable)
+    return new EdKeypair(keypair.secretKey, keypair.publicKey, exportable ?? false)
   }
 
   static fromSecretKey(key: string, params?: {

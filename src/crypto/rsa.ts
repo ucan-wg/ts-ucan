@@ -33,10 +33,10 @@ export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
   )
 }
 
-export const sign = async (msg: Uint8Array, keypair: CryptoKeyPair): Promise<Uint8Array> => {
+export const sign = async (msg: Uint8Array, privateKey: CryptoKey): Promise<Uint8Array> => {
   const buf = await webcrypto.subtle.sign(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
-    keypair.privateKey,
+    privateKey,
     msg.buffer
   )
   return new Uint8Array(buf)
