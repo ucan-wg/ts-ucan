@@ -1,10 +1,11 @@
 import * as token from "../src/token"
 import { Chained } from "../src/chained"
 import { alice, bob, mallory } from "./fixtures"
+import { Ucan } from "../src/types"
 
 
-describe("UcanChain.fromToken", () => {
-    
+describe("Chained.fromToken", () => {
+
     it("decodes deep ucan chains", async () => {
         // alice -> bob, bob -> mallory
         // delegating rights from alice to mallory through bob
@@ -61,4 +62,39 @@ describe("UcanChain.fromToken", () => {
 
         await Chained.fromToken(ucan)
     })
+})
+
+
+describe("Chained.reduce", () => {
+
+    it("can reconstruct the UCAN tree", async () => {
+        // alice -> bob, mallory -> bob, bob -> alice
+        const ucan = await Chained.fromToken(token.encode(await token.build({
+            issuer: bob,
+            audience: alice.did(),
+            proofs: [
+                token.encode(await token.build({
+                    issuer: mallory,
+                    audience: bob.did(),
+                })),
+                token.encode(await token.build({
+                    issuer: alice,
+                    audience: bob.did(),
+                })),
+            ]
+        })))
+
+        const reconstruction = ucan.reduce<string>((ucan: Ucan<never>, iterProofs: Iterable<string>) => {
+            const proofs = Array.from(iterProofs)
+            return token.encode({
+                ...ucan,
+                payload: {
+                    ...ucan.payload,
+                    prf: proofs
+                }
+            })
+        })
+        expect(reconstruction).toEqual(ucan.encoded())
+    })
+
 })
