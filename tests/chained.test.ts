@@ -1,5 +1,5 @@
 import * as token from "../src/token"
-import { Chained } from "../src/chain"
+import { Chained } from "../src/chained"
 import { alice, bob, mallory } from "./fixtures"
 
 

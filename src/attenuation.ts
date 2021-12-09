@@ -1,7 +1,7 @@
 // https://whitepaper.fission.codes/access-control/ucan/jwt-authentication#attenuation
 import * as util from "./util"
 import { Capability, Ucan } from "./types"
-import { Chained } from "./chain"
+import { Chained } from "./chained"
 
 export interface CapabilityChecker {
 
@@ -33,6 +33,7 @@ export function emailCapabilities(chain: Chained): EmailCapability[] {
           expiresAt: ucan.payload.exp
         }
       }
+      return null
     }
 
     const matchAttenutation = (proof: Ucan<never>) => proof.payload.att.reduce(
@@ -41,10 +42,10 @@ export function emailCapabilities(chain: Chained): EmailCapability[] {
       null
     )
 
-    const delegate = (ucan: Ucan<never>, findInParent: Generator<CapabilityInfo | null>) => {
+    const delegate = (ucan: Ucan<never>, delegatedInParent: Iterable<CapabilityInfo | null>) => {
       const child: CapabilityInfo | null = matchAttenutation(ucan)
       if (child == null) return null
-      for (const parent of findInParent) {
+      for (const parent of delegatedInParent) {
         if (parent != null) {
           return {
             originator: parent.originator,
@@ -55,7 +56,7 @@ export function emailCapabilities(chain: Chained): EmailCapability[] {
       return child
     }
 
-    const info = findChain<CapabilityInfo | null>(chain, delegate)
+    const info = chain.reduce(delegate)
     return info == null ? [] : [{
       originator: info.originator,
       expiresAt: info.expiresAt,
@@ -65,19 +66,6 @@ export function emailCapabilities(chain: Chained): EmailCapability[] {
   })
 }
 
-/**
- * @returns A representation of delgated capabilities throughout all ucan chains
- */
-export function findChain<A>(
-  ucan: Chained,
-  delegate: (ucan: Ucan<never>, findInParent: Generator<A>) => A
-): A {
-  return delegate(ucan.payload(), (function *() {
-    for (const proof of ucan.proofs()) {
-      yield findChain(proof, delegate)
-    }
-  })())
-}
 
 function isEmailCapability(obj: Capability): obj is { email: string; cap: "SEND" } {
   return util.isRecord(obj)

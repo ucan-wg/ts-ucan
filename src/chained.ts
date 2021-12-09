@@ -20,13 +20,13 @@ export class Chained {
 
     /**
      * Validate a UCAN chain from a given JWT-encoded UCAN.
-     * 
+     *
      * This will validate
      * - The encoding
      * - The signatures (unless turned off in the `options`)
      * - The UCAN time bounds (unless turned off in the `options`)
      * - The audience from parent proof UCANs matching up with the issuer of child UCANs
-     * 
+     *
      * @returns A promise of a deeply-validated, deeply-parsed UCAN.
      * @throws If the UCAN chain can't be validated.
      */
@@ -57,6 +57,21 @@ export class Chained {
      */
     encoded(): string {
         return this._encoded
+    }
+
+    /**
+     * @returns A representation of delgated capabilities throughout all ucan chains
+     */
+    reduce<A>(reduceLayer: (ucan: Ucan<never>, reducedProofs: Iterable<A>) => A): A {
+        const that = this
+
+        function* reduceProofs() {
+            for (const proof of that.proofs()) {
+                yield proof.reduce(reduceLayer)
+            }
+        }
+
+        return reduceLayer(this.payload(), reduceProofs())
     }
 
     /* Header */
@@ -94,7 +109,7 @@ export class Chained {
 
     /**
      * @returns `iss`: The issuer as a DID string ("did:key:...").
-     * 
+     *
      * The UCAN must be signed with the private key of the issuer to be valid.
      */
     issuer(): string {
@@ -103,7 +118,7 @@ export class Chained {
 
     /**
      * @returns `aud`: The audience as a DID string ("did:key:...").
-     * 
+     *
      * This is the identity this UCAN transfers rights to.
      * It could e.g. be the DID of a service you're posting this UCAN as a JWT to,
      * or it could be the DID of something that'll use this UCAN as a proof to
