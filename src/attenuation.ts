@@ -7,68 +7,73 @@ export interface CapabilityChecker {
 
 }
 
-export interface EmailCapability {
+export interface CapabilityInfo {
   originator: string // DID
   expiresAt: number
   // notBefore?: number
+}
+
+export interface EmailCapability extends CapabilityInfo {
   email: string
   potency: "SEND"
 }
 
-interface CapabilityInfo {
-  originator: string // DID
-  expiresAt: number
-}
-
-export function emailCapabilities(chain: Chained): EmailCapability[] {
-  return chain.attenuation().flatMap(bareCap => {
-    if (!isEmailCapability(bareCap)) {
-      return []
-    }
-
-    const matchesEmailCapability = (cap: Capability, ucan: Ucan<never>) => {
-      if (isEmailCapability(cap) && cap.email === bareCap.email) {
-        return {
-          originator: ucan.payload.iss,
-          expiresAt: ucan.payload.exp
-        }
-      }
-      return null
-    }
-
-    const matchAttenutation = (proof: Ucan<never>) => proof.payload.att.reduce(
-      (acc: CapabilityInfo | null, cap: Capability) =>
-        acc != null ? acc : matchesEmailCapability(cap, proof),
-      null
-    )
-
-    const delegate = (ucan: Ucan<never>, delegatedInParent: Iterable<CapabilityInfo | null>) => {
-      const child: CapabilityInfo | null = matchAttenutation(ucan)
-      if (child == null) return null
-      for (const parent of delegatedInParent) {
-        if (parent != null) {
-          return {
-            originator: parent.originator,
-            expiresAt: Math.min(parent.expiresAt, child.expiresAt),
-          }
-        }
-      }
-      return child
-    }
-
-    const info = chain.reduce(delegate)
-    return info == null ? [] : [{
-      originator: info.originator,
-      expiresAt: info.expiresAt,
-      email: bareCap.email,
-      potency: bareCap.cap,
-    }]
-  })
-}
-
-
-function isEmailCapability(obj: Capability): obj is { email: string; cap: "SEND" } {
+function isEmailCap(obj: Capability): obj is { email: string; cap: "SEND" } {
   return util.isRecord(obj)
     && util.hasProp(obj, "email") && typeof obj.email === "string"
     && util.hasProp(obj, "cap") && obj.cap === "SEND"
+}
+
+export function* emailCapabilities(ucan: Chained): Iterable<EmailCapability> {
+  const parseCap = (cap: Capability, ucan: Ucan<never>) => {
+    if (isEmailCap(cap)) {
+      return {
+        originator: ucan.payload.iss,
+        expiresAt: ucan.payload.exp,
+        email: cap.email,
+        potency: cap.cap,
+      } as EmailCapability
+    }
+    return null
+  }
+
+  const findParsedCaps = function* (ucan: Ucan<never>) {
+    for (const cap of ucan.payload.att) {
+      const emailCap = parseCap(cap, ucan)
+      if (emailCap != null) yield emailCap as EmailCapability
+    }
+  }
+
+  const isCapabilityLessThan = (childCap: EmailCapability, parentCap: EmailCapability) => {
+    return childCap.email === parentCap.email // potency is always "SEND" anyway, so doesn't need to be checked
+  }
+
+  const delegate = (ucan: Ucan<never>, delegatedInParent: () => Iterable<() => Iterable<EmailCapability>>) => {
+    return function* () {
+      for (const parsedChildCap of findParsedCaps(ucan)) {
+        console.log("processing", parsedChildCap)
+        let isCoveredByProof = false
+        for (const parent of delegatedInParent()) {
+          for (const parsedParentCap of parent()) {
+            isCoveredByProof = true
+            if (isCapabilityLessThan(parsedChildCap, parsedParentCap)) {
+              console.log("Found a subsumed capability", parsedChildCap, parsedParentCap)
+              yield ({
+                ...parsedChildCap,
+                originator: parsedParentCap.originator,
+                expiresAt: Math.min(parsedParentCap.expiresAt, parsedChildCap.expiresAt),
+              })
+            } else {
+              console.log("NOT subsumed by parent", parsedChildCap, parsedParentCap)
+            }
+          }
+        }
+        if (!isCoveredByProof) {
+          yield parsedChildCap
+        }
+      }
+    }
+  }
+
+  yield* ucan.reduce(delegate)()
 }

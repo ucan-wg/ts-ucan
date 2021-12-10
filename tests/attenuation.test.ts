@@ -29,7 +29,7 @@ describe("attenuation.emailCapabilities", () => {
             proofs: [token.encode(leafUcan)]
         })
 
-        const emailCaps = emailCapabilities(await Chained.fromToken(token.encode(ucan)))
+        const emailCaps = Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))
         expect(emailCaps).toEqual([{
             originator: alice.did(),
             expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
@@ -58,7 +58,7 @@ describe("attenuation.emailCapabilities", () => {
         })
 
         // we implicitly expect the originator to become bob
-        expect(emailCapabilities(await Chained.fromToken(token.encode(ucan)))).toEqual([{
+        expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([{
             originator: bob.did(),
             expiresAt: ucan.payload.exp,
             email: "bob@email.com",
@@ -106,7 +106,7 @@ describe("attenuation.emailCapabilities", () => {
 
         const chained = await Chained.fromToken(token.encode(ucan))
 
-        expect(emailCapabilities(chained)).toEqual([
+        expect(Array.from(emailCapabilities(chained))).toEqual([
             {
                 originator: alice.did(),
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
@@ -154,7 +154,7 @@ describe("attenuation.emailCapabilities", () => {
 
         const chained = await Chained.fromToken(token.encode(ucan))
 
-        expect(emailCapabilities(chained)).toEqual([
+        expect(Array.from(emailCapabilities(chained))).toEqual([
             {
                 originator: alice.did(),
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),

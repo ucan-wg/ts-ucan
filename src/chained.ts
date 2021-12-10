@@ -62,7 +62,7 @@ export class Chained {
     /**
      * @returns A representation of delgated capabilities throughout all ucan chains
      */
-    reduce<A>(reduceLayer: (ucan: Ucan<never>, reducedProofs: Iterable<A>) => A): A {
+    reduce<A>(reduceLayer: (ucan: Ucan<never>, reducedProofs: () => Iterable<A>) => A): A {
         const that = this
 
         function* reduceProofs() {
@@ -71,7 +71,7 @@ export class Chained {
             }
         }
 
-        return reduceLayer(this.payload(), reduceProofs())
+        return reduceLayer(this.payload(), reduceProofs)
     }
 
     /* Header */
