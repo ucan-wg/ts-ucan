@@ -9,7 +9,7 @@ export interface CapabilityChecker {
 export interface CapabilityInfo {
   originator: string // DID
   expiresAt: number
-  // notBefore?: number
+  notBefore?: number
 }
 
 export interface EmailCapability {
@@ -74,10 +74,19 @@ export function* capabilities<A>(
 }
 
 function delegateCapabilityInfo<A extends CapabilityInfo>(childCap: A, parentCap: A): A {
+  let notBefore = {}
+  if (childCap.notBefore != null && parentCap.notBefore != null) {
+    notBefore = { notBefore: Math.max(childCap.notBefore, parentCap.notBefore) }
+  } else if (parentCap.notBefore != null) {
+    notBefore = { notBefore: parentCap.notBefore }
+  } else {
+    notBefore = { notBefore: childCap.notBefore }
+  }
   return {
     ...childCap,
     originator: parentCap.originator,
     expiresAt: Math.min(childCap.expiresAt, parentCap.expiresAt),
+    ...notBefore,
   }
 }
 
@@ -85,5 +94,6 @@ function parseCapabilityInfo(ucan: Ucan<never>): CapabilityInfo {
   return {
     originator: ucan.payload.iss,
     expiresAt: ucan.payload.exp,
+    ...(ucan.payload.nbf != null ? { notBefore: ucan.payload.nbf } : {}),
   }
 }

@@ -33,6 +33,7 @@ describe("attenuation.emailCapabilities", () => {
         expect(emailCaps).toEqual([{
             originator: alice.did(),
             expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
+            notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
             email: "alice@email.com",
             potency: "SEND"
         }])
@@ -61,6 +62,7 @@ describe("attenuation.emailCapabilities", () => {
         expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([{
             originator: bob.did(),
             expiresAt: ucan.payload.exp,
+            notBefore: ucan.payload.nbf,
             email: "bob@email.com",
             potency: "SEND"
         }])
@@ -110,12 +112,14 @@ describe("attenuation.emailCapabilities", () => {
             {
                 originator: alice.did(),
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
+                notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
                 potency: "SEND",
             },
             {
                 originator: bob.did(),
                 expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
+                notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
                 email: "bob@email.com",
                 potency: "SEND",
             }
@@ -158,12 +162,14 @@ describe("attenuation.emailCapabilities", () => {
             {
                 originator: alice.did(),
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
+                notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
                 potency: "SEND",
             },
             {
                 originator: bob.did(),
                 expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
+                notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
                 potency: "SEND",
             }
@@ -171,3 +177,10 @@ describe("attenuation.emailCapabilities", () => {
     })
 
 })
+
+function maxNbf(parentNbf: number | undefined, childNbf: number | undefined): number | undefined {
+    if (parentNbf == null && childNbf == null) return undefined
+    if (parentNbf != null && childNbf != null) return Math.max(parentNbf, childNbf)
+    if (parentNbf != null) return parentNbf
+    return childNbf
+}
