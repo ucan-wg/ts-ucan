@@ -84,8 +84,8 @@ describe("Chained.reduce", () => {
             ]
         })))
 
-        const reconstruction = ucan.reduce<string>((ucan: Ucan<never>, iterProofs: Iterable<string>) => {
-            const proofs = Array.from(iterProofs)
+        const reconstruction = ucan.reduce<string>((ucan: Ucan<never>, iterProofs: () => Iterable<string>) => {
+            const proofs = Array.from(iterProofs())
             return token.encode({
                 ...ucan,
                 payload: {
