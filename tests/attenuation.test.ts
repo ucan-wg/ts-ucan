@@ -37,7 +37,7 @@ describe("attenuation.emailCapabilities", () => {
             expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
             notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
             email: "alice@email.com",
-            potency: "SEND"
+            cap: "SEND"
         }])
     })
 
@@ -66,7 +66,7 @@ describe("attenuation.emailCapabilities", () => {
             expiresAt: ucan.payload.exp,
             notBefore: ucan.payload.nbf,
             email: "bob@email.com",
-            potency: "SEND"
+            cap: "SEND"
         }])
     })
 
@@ -116,14 +116,14 @@ describe("attenuation.emailCapabilities", () => {
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
                 notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
-                potency: "SEND",
+                cap: "SEND",
             },
             {
                 originator: bob.did(),
                 expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
                 notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
                 email: "bob@email.com",
-                potency: "SEND",
+                cap: "SEND",
             }
         ])
     })
@@ -166,14 +166,14 @@ describe("attenuation.emailCapabilities", () => {
                 expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
                 notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
-                potency: "SEND",
+                cap: "SEND",
             },
             {
                 originator: bob.did(),
                 expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
                 notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
                 email: "alice@email.com",
-                potency: "SEND",
+                cap: "SEND",
             }
         ])
     })

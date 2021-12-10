@@ -1,7 +1,7 @@
 import * as token from "../src/token"
 import { Chained } from "../src/chained"
-import { alice, bob, mallory } from "./fixtures"
 import { Ucan } from "../src/types"
+import { alice, bob, mallory } from "./fixtures"
 
 
 describe("Chained.fromToken", () => {
