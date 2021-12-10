@@ -51,20 +51,17 @@ export function* emailCapabilities(ucan: Chained): Iterable<EmailCapability> {
   const delegate = (ucan: Ucan<never>, delegatedInParent: () => Iterable<() => Iterable<EmailCapability>>) => {
     return function* () {
       for (const parsedChildCap of findParsedCaps(ucan)) {
-        console.log("processing", parsedChildCap)
         let isCoveredByProof = false
         for (const parent of delegatedInParent()) {
           for (const parsedParentCap of parent()) {
             isCoveredByProof = true
             if (isCapabilityLessThan(parsedChildCap, parsedParentCap)) {
-              console.log("Found a subsumed capability", parsedChildCap, parsedParentCap)
               yield ({
                 ...parsedChildCap,
                 originator: parsedParentCap.originator,
                 expiresAt: Math.min(parsedParentCap.expiresAt, parsedChildCap.expiresAt),
               })
             } else {
-              console.log("NOT subsumed by parent", parsedChildCap, parsedParentCap)
             }
           }
         }
