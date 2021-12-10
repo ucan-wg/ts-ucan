@@ -1,7 +1,9 @@
-import { emailCapabilities } from "../src/attenuation"
 import { Chained } from "../src/chained"
 import * as token from "../src/token"
+
 import { alice, bob, mallory } from "./fixtures"
+import { emailCapabilities } from "./emailCapabilities"
+
 
 
 describe("attenuation.emailCapabilities", () => {

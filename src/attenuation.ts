@@ -10,41 +10,6 @@ export interface CapabilitySemantics<A> {
   // TODO builders
 }
 
-export interface EmailCapability {
-  email: string
-  potency: "SEND"
-}
-
-export const emailSemantics: CapabilitySemantics<EmailCapability> = {
-  
-  parse(cap: Capability): EmailCapability | null {
-    if (typeof cap.email === "string" && cap.cap === "SEND") {
-      return {
-        email: cap.email,
-        potency: cap.cap,
-      }
-    }
-    return null
-  },
-
-  toCapability(parsed: EmailCapability): Capability {
-    return {
-      email: parsed.email,
-      cap: parsed.potency,
-    }
-  },
-
-  tryDelegating(parentCap: EmailCapability, childCap: EmailCapability): EmailCapability | null {
-    // potency is always "SEND" anyway, so doesn't need to be checked
-    return childCap.email === parentCap.email ? childCap : null
-  },
-
-}
-
-export function emailCapabilities(ucan: Chained) {
-  return capabilities(ucan, emailSemantics)
-}
-
 export interface CapabilityInfo {
   originator: string // DID
   expiresAt: number
