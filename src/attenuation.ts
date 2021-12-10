@@ -2,8 +2,47 @@
 import { Capability, Ucan } from "./types"
 import { Chained } from "./chained"
 
-export interface CapabilityChecker {
 
+export interface CapabilitySemantics<A> {
+  parse(cap: Capability): A | null
+  toCapability(parsedCap: A): Capability
+  tryDelegating(parentCap: A, childCap: A): A | null
+  // TODO builders
+}
+
+export interface EmailCapability {
+  email: string
+  potency: "SEND"
+}
+
+export const emailSemantics: CapabilitySemantics<EmailCapability> = {
+  
+  parse(cap: Capability): EmailCapability | null {
+    if (typeof cap.email === "string" && cap.cap === "SEND") {
+      return {
+        email: cap.email,
+        potency: cap.cap,
+      }
+    }
+    return null
+  },
+
+  toCapability(parsed: EmailCapability): Capability {
+    return {
+      email: parsed.email,
+      cap: parsed.potency,
+    }
+  },
+
+  tryDelegating(parentCap: EmailCapability, childCap: EmailCapability): EmailCapability | null {
+    // potency is always "SEND" anyway, so doesn't need to be checked
+    return childCap.email === parentCap.email ? childCap : null
+  },
+
+}
+
+export function emailCapabilities(ucan: Chained) {
+  return capabilities(ucan, emailSemantics)
 }
 
 export interface CapabilityInfo {
@@ -12,40 +51,15 @@ export interface CapabilityInfo {
   notBefore?: number
 }
 
-export interface EmailCapability {
-  email: string
-  potency: "SEND"
-}
-
-function parseEmailCapability(cap: Capability): EmailCapability | null {
-  if (typeof cap.email === "string" && cap.cap === "SEND") {
-    return {
-      email: cap.email,
-      potency: cap.cap,
-    }
-  }
-  return null
-}
-
-function delegateEmailCap(childCap: EmailCapability, parentCap: EmailCapability): EmailCapability | null {
-  // potency is always "SEND" anyway, so doesn't need to be checked
-  return childCap.email === parentCap.email ? childCap : null
-}
-
-export function emailCapabilities(ucan: Chained) {
-  return capabilities(ucan, parseEmailCapability, delegateEmailCap)
-}
-
-export function* capabilities<A>(
+export function capabilities<A>(
   ucan: Chained,
-  parseCap: (cap: Capability) => A | null,
-  delegateCap: (childCap: A, parentCap: A) => A | null
-): Iterable<A> {
+  capability: CapabilitySemantics<A>,
+): Iterable<A & CapabilityInfo> {
 
   function* findParsingCaps(ucan: Ucan<never>): Iterable<A & CapabilityInfo> {
     const capInfo = parseCapabilityInfo(ucan)
     for (const cap of ucan.payload.att) {
-      const parsedCap = parseCap(cap)
+      const parsedCap = capability.parse(cap)
       if (parsedCap != null) yield { ...parsedCap, ...capInfo }
     }
   }
@@ -57,12 +71,15 @@ export function* capabilities<A>(
         for (const parent of delegatedInParent()) {
           for (const parsedParentCap of parent()) {
             isCoveredByProof = true
-            const delegated = delegateCap(parsedChildCap, parsedParentCap)
+            const delegated = capability.tryDelegating(parsedParentCap, parsedChildCap)
             if (delegated != null) {
               yield delegateCapabilityInfo({ ...parsedChildCap, ...delegated }, parsedParentCap)
             }
           }
         }
+        // If a capability can't be considered to be delegated by any of its proofs
+        // (or if there are no proofs),
+        // then we root its origin in the UCAN we're looking at.
         if (!isCoveredByProof) {
           yield parsedChildCap
         }
@@ -70,7 +87,7 @@ export function* capabilities<A>(
     }
   }
 
-  yield* ucan.reduce(delegate)()
+  return ucan.reduce(delegate)()
 }
 
 function delegateCapabilityInfo<A extends CapabilityInfo>(childCap: A, parentCap: A): A {
