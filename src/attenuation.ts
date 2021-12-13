@@ -5,6 +5,14 @@ import * as util from "./util"
 
 
 export interface CapabilitySemantics<A> {
+  /**
+   * Try to parse a capability into a representation used for
+   * delegation & returning in the `capabilities` call.
+   * 
+   * If the capability doesn't seem to match the format expected
+   * for the capabilities with the semantics currently defined,
+   * return `null`.
+   */
   tryParsing(cap: Capability): A | null
   /**
    * This figures out whether a given `childCap` can be delegated from `parentCap`.
