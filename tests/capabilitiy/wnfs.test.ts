@@ -24,12 +24,16 @@ describe("wnfs public capability", () => {
 
     expect(Array.from(wnfsPublicCapabilities(chain))).toEqual([
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        publicPath: ["Apps", "appinator"],
-        cap: "REVISE",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          publicPath: ["Apps", "appinator"],
+          cap: "REVISE",
+        }
       }
     ])
   })
@@ -81,12 +85,16 @@ describe("wnfs public capability", () => {
         }
       },
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        publicPath: ["Apps", "appinator"],
-        cap: "OVERWRITE",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          publicPath: ["Apps", "appinator"],
+          cap: "OVERWRITE",
+        }
       }
     ])
   })
@@ -109,12 +117,16 @@ describe("wnfs private capability", () => {
 
     expect(Array.from(wnfsPrivateCapabilities(chain))).toEqual([
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        requiredINumbers: new Set(["abc", "def"]),
-        cap: "REVISE",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          requiredINumbers: new Set(["abc", "def"]),
+          cap: "REVISE",
+        }
       }
     ])
   })
@@ -171,12 +183,16 @@ describe("wnfs private capability", () => {
         }
       },
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        requiredINumbers: new Set(["abc", "ghi"]),
-        cap: "CREATE",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leaf.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leaf.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          requiredINumbers: new Set(["abc", "ghi"]),
+          cap: "CREATE",
+        }
       }
     ])
   })
@@ -201,20 +217,28 @@ describe("wnfs private capability", () => {
 
     expect(Array.from(wnfsPrivateCapabilities(chain))).toEqual([
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leafAlice.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafAlice.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        requiredINumbers: new Set(["inumalice", "subinum"]),
-        cap: "OVERWRITE",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leafAlice.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafAlice.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          requiredINumbers: new Set(["inumalice", "subinum"]),
+          cap: "OVERWRITE",
+        }
       },
       {
-        originator: bob.did(),
-        expiresAt: Math.min(leafBob.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafBob.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        requiredINumbers: new Set(["inumbob", "subinum"]),
-        cap: "OVERWRITE",
+        info: {
+          originator: bob.did(),
+          expiresAt: Math.min(leafBob.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafBob.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          requiredINumbers: new Set(["inumbob", "subinum"]),
+          cap: "OVERWRITE",
+        }
       }
     ])
   })
@@ -247,12 +271,16 @@ describe("wnfs private capability", () => {
         }
       },
       {
-        originator: bob.did(),
-        expiresAt: Math.min(leafBob.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafBob.payload.nbf, ucan.payload.nbf),
-        user: "boris.fission.name",
-        requiredINumbers: new Set(["inumbob", "subinum"]),
-        cap: "OVERWRITE",
+        info: {
+          originator: bob.did(),
+          expiresAt: Math.min(leafBob.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafBob.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          user: "boris.fission.name",
+          requiredINumbers: new Set(["inumbob", "subinum"]),
+          cap: "OVERWRITE",
+        }
       }
     ])
   })

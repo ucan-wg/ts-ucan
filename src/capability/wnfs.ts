@@ -57,23 +57,32 @@ export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
     }
   },
 
-  tryDelegating<T extends WnfsPublicCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<WnfsPublicCapability> {
+  tryDelegating(parentCap: WnfsPublicCapability, childCap: WnfsPublicCapability): WnfsPublicCapability | null | CapabilityEscalation<WnfsPublicCapability> {
     // need to delegate the same user's file system
     if (childCap.user !== parentCap.user) return null
 
     // must not escalate capability level
     if (wnfsCapLevels[childCap.cap] > wnfsCapLevels[parentCap.cap]) {
-      return escalationPublic("Capability level escalation", childCap)
+      return {
+        escalation: "Capability level escalation",
+        capability: childCap,
+      }
     }
 
     // parentCap path must be a prefix of childCap path
     if (childCap.publicPath.length < parentCap.publicPath.length) {
-      return escalationPublic("WNFS Public path access escalation", childCap)
+      return {
+        escalation: "WNFS Public path access escalation",
+        capability: childCap,
+      }
     }
 
     for (let i = 0; i < parentCap.publicPath.length; i++) {
       if (childCap.publicPath[i] !== parentCap.publicPath[i]) {
-        return escalationPublic("WNFS Public path access escalation", childCap)
+        return {
+          escalation: "WNFS Public path access escalation",
+          capability: childCap,
+        }
       }
     }
 
@@ -134,7 +143,10 @@ const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
 
     // This escalation *could* be wrong, but we shouldn't assume they're unrelated either.
     if (wnfsCapLevels[childCap.cap] > wnfsCapLevels[parentCap.cap]) {
-      return escalationPrivate("Capability level escalation", childCap)
+      return {
+        escalation: "Capability level escalation",
+        capability: childCap,
+      }
     }
 
     return {
@@ -147,24 +159,4 @@ const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
 
 export function wnfsPrivateCapabilities(ucan: Chained) {
   return capabilities(ucan, wnfsPrivateSemantics)
-}
-
-
-
-// ㊙️
-
-
-function escalationPublic<T extends WnfsPublicCapability>(reason: string, cap: T): CapabilityEscalation<WnfsPublicCapability> {
-  return {
-    escalation: reason,
-    capability: { user: cap.user, publicPath: cap.publicPath, cap: cap.cap }
-  }
-}
-
-
-function escalationPrivate<T extends WnfsPrivateCapability>(reason: string, cap: T): CapabilityEscalation<WnfsPrivateCapability> {
-  return {
-    escalation: reason,
-    capability: { user: cap.user, requiredINumbers: cap.requiredINumbers, cap: cap.cap }
-  }
 }

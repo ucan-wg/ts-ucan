@@ -21,7 +21,7 @@ export interface CapabilitySemantics<A> {
    * - `null`: The capabilities from `parentCap` and `childCap` are unrelated and can't be compared nor delegated.
    * - `CapabilityEscalation<A>`: It's clear that `childCap` is meant to be delegated from `parentCap`, but there's a rights escalation.
    */
-  tryDelegating<T extends A>(parentCap: T, childCap: T): T | null | CapabilityEscalation<A>
+  tryDelegating(parentCap: A, childCap: A): A | null | CapabilityEscalation<A>
   // TODO builders
 }
 
@@ -31,6 +31,17 @@ export interface CapabilityInfo {
   expiresAt: number
   notBefore?: number
 }
+
+
+export interface CapabilityWithInfo<A> {
+  info: CapabilityInfo
+  capability: A
+}
+
+
+export type CapabilityResult<A>
+  = CapabilityWithInfo<A>
+  | CapabilityEscalation<A>
 
 
 export interface CapabilityEscalation<A> {
@@ -45,21 +56,16 @@ function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A>
 }
 
 
-export type CapabilityResult<A>
-  = A & CapabilityInfo
-  | CapabilityEscalation<A>
-
-
 export function capabilities<A>(
   ucan: Chained,
   capability: CapabilitySemantics<A>,
 ): Iterable<CapabilityResult<A>> {
 
-  function* findParsingCaps(ucan: Ucan<never>): Iterable<A & CapabilityInfo> {
+  function* findParsingCaps(ucan: Ucan<never>): Iterable<CapabilityWithInfo<A>> {
     const capInfo = parseCapabilityInfo(ucan)
     for (const cap of ucan.payload.att) {
       const parsedCap = capability.tryParsing(cap)
-      if (parsedCap != null) yield { ...parsedCap, ...capInfo }
+      if (parsedCap != null) yield { info: capInfo, capability: parsedCap }
     }
   }
 
@@ -74,7 +80,7 @@ export function capabilities<A>(
               yield parsedParentCap
             } else {
               // try figuring out whether we can delegate the capabilities from this to the parent
-              const delegated = capability.tryDelegating(parsedParentCap, parsedChildCap)
+              const delegated = capability.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
               // if the capabilities *are* related, then this will be non-null
               // otherwise we just continue looking
               if (delegated != null) {
@@ -84,7 +90,10 @@ export function capabilities<A>(
                 if (isCapabilityEscalation(delegated)) {
                   yield delegated // which is an escalation
                 } else {
-                  yield delegateCapabilityInfo({ ...parsedChildCap, ...delegated }, parsedParentCap)
+                  yield {
+                    info: delegateCapabilityInfo(parsedChildCap.info, parsedParentCap.info),
+                    capability: delegated
+                  }
                 }
               }
             }
@@ -103,19 +112,18 @@ export function capabilities<A>(
   return ucan.reduce(delegate)()
 }
 
-function delegateCapabilityInfo<A extends CapabilityInfo>(childCap: A, parentCap: A): A {
+function delegateCapabilityInfo(childInfo: CapabilityInfo, parentInfo: CapabilityInfo): CapabilityInfo {
   let notBefore = {}
-  if (childCap.notBefore != null && parentCap.notBefore != null) {
-    notBefore = { notBefore: Math.max(childCap.notBefore, parentCap.notBefore) }
-  } else if (parentCap.notBefore != null) {
-    notBefore = { notBefore: parentCap.notBefore }
+  if (childInfo.notBefore != null && parentInfo.notBefore != null) {
+    notBefore = { notBefore: Math.max(childInfo.notBefore, parentInfo.notBefore) }
+  } else if (parentInfo.notBefore != null) {
+    notBefore = { notBefore: parentInfo.notBefore }
   } else {
-    notBefore = { notBefore: childCap.notBefore }
+    notBefore = { notBefore: childInfo.notBefore }
   }
   return {
-    ...childCap,
-    originator: parentCap.originator,
-    expiresAt: Math.min(childCap.expiresAt, parentCap.expiresAt),
+    originator: parentInfo.originator,
+    expiresAt: Math.min(childInfo.expiresAt, parentInfo.expiresAt),
     ...notBefore,
   }
 }

@@ -33,11 +33,15 @@ describe("attenuation.emailCapabilities", () => {
 
     const emailCaps = Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))
     expect(emailCaps).toEqual([{
-      originator: alice.did(),
-      expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
-      notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
-      email: "alice@email.com",
-      cap: "SEND"
+      info: {
+        originator: alice.did(),
+        expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
+        notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
+      },
+      capability: {
+        email: "alice@email.com",
+        cap: "SEND"
+      }
     }])
   })
 
@@ -62,11 +66,15 @@ describe("attenuation.emailCapabilities", () => {
 
     // we implicitly expect the originator to become bob
     expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([{
-      originator: bob.did(),
-      expiresAt: ucan.payload.exp,
-      notBefore: ucan.payload.nbf,
-      email: "bob@email.com",
-      cap: "SEND"
+      info: {
+        originator: bob.did(),
+        expiresAt: ucan.payload.exp,
+        notBefore: ucan.payload.nbf,
+      },
+      capability: {
+        email: "bob@email.com",
+        cap: "SEND"
+      }
     }])
   })
 
@@ -112,18 +120,26 @@ describe("attenuation.emailCapabilities", () => {
 
     expect(Array.from(emailCapabilities(chained))).toEqual([
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
-        email: "alice@email.com",
-        cap: "SEND",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          email: "alice@email.com",
+          cap: "SEND",
+        }
       },
       {
-        originator: bob.did(),
-        expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
-        email: "bob@email.com",
-        cap: "SEND",
+        info: {
+          originator: bob.did(),
+          expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          email: "bob@email.com",
+          cap: "SEND",
+        }
       }
     ])
   })
@@ -162,18 +178,26 @@ describe("attenuation.emailCapabilities", () => {
 
     expect(Array.from(emailCapabilities(chained))).toEqual([
       {
-        originator: alice.did(),
-        expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
-        email: "alice@email.com",
-        cap: "SEND",
+        info: {
+          originator: alice.did(),
+          expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          email: "alice@email.com",
+          cap: "SEND",
+        }
       },
       {
-        originator: bob.did(),
-        expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
-        notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
-        email: "alice@email.com",
-        cap: "SEND",
+        info: {
+          originator: bob.did(),
+          expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
+          notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
+        },
+        capability: {
+          email: "alice@email.com",
+          cap: "SEND",
+        }
       }
     ])
   })
