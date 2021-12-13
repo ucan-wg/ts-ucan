@@ -1,14 +1,23 @@
 // https://whitepaper.fission.codes/access-control/ucan/jwt-authentication#attenuation
 import { Capability, Ucan } from "./types"
 import { Chained } from "./chained"
+import * as util from "./util"
 
 
 export interface CapabilitySemantics<A> {
   parse(cap: Capability): A | null
   toCapability(parsedCap: A): Capability
-  tryDelegating(parentCap: A, childCap: A): A | null
+  /**
+   * This figures out whether a given `childCap` can be delegated from `parentCap`.
+   * There are three possible results with three return types respectively:
+   * - `A`: The delegation is possible and results in the rights returned.
+   * - `null`: The capabilities from `parentCap` and `childCap` are unrelated and can't be compared nor delegated.
+   * - `CapabilityEscalation<A>`: It's clear that `childCap` is meant to be delegated from `parentCap`, but there's a rights escalation.
+   */
+  tryDelegating(parentCap: A, childCap: A): A | null | CapabilityEscalation<A>
   // TODO builders
 }
+
 
 export interface CapabilityInfo {
   originator: string // DID
@@ -16,10 +25,28 @@ export interface CapabilityInfo {
   notBefore?: number
 }
 
+
+export interface CapabilityEscalation<A> {
+  escalation: string // reason
+  capability: A // the capability that escalated rights
+}
+
+function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
+  return util.isRecord(obj)
+    && util.hasProp(obj, "escalation") && typeof obj.escalation === "string"
+    && util.hasProp(obj, "capability")
+}
+
+
+export type CapabilityResult<A>
+  = A & CapabilityInfo
+  | CapabilityEscalation<A>
+
+
 export function capabilities<A>(
   ucan: Chained,
   capability: CapabilitySemantics<A>,
-): Iterable<A & CapabilityInfo> {
+): Iterable<CapabilityResult<A>> {
 
   function* findParsingCaps(ucan: Ucan<never>): Iterable<A & CapabilityInfo> {
     const capInfo = parseCapabilityInfo(ucan)
@@ -29,16 +56,30 @@ export function capabilities<A>(
     }
   }
 
-  const delegate = (ucan: Ucan<never>, delegatedInParent: () => Iterable<() => Iterable<A & CapabilityInfo>>) => {
+  const delegate = (ucan: Ucan<never>, capabilitiesInProofs: () => Iterable<() => Iterable<CapabilityResult<A>>>) => {
     return function* () {
       for (const parsedChildCap of findParsingCaps(ucan)) {
         let isCoveredByProof = false
-        for (const parent of delegatedInParent()) {
-          for (const parsedParentCap of parent()) {
-            isCoveredByProof = true
-            const delegated = capability.tryDelegating(parsedParentCap, parsedChildCap)
-            if (delegated != null) {
-              yield delegateCapabilityInfo({ ...parsedChildCap, ...delegated }, parsedParentCap)
+        for (const capabilitiesInProof of capabilitiesInProofs()) {
+          for (const parsedParentCap of capabilitiesInProof()) {
+            // pass through capability escalations from parents
+            if (isCapabilityEscalation(parsedParentCap)) {
+              yield parsedParentCap
+            } else {
+              // try figuring out whether we can delegate the capabilities from this to the parent
+              const delegated = capability.tryDelegating(parsedParentCap, parsedChildCap)
+              // if the capabilities *are* related, then this will be non-null
+              // otherwise we just continue looking
+              if (delegated != null) {
+                // we infer that the capability was meant to be delegated
+                isCoveredByProof = true
+                // it's still possible that that delegation was invalid, i.e. an escalation, though
+                if (isCapabilityEscalation(delegated)) {
+                  yield delegated // which is an escalation
+                } else {
+                  yield delegateCapabilityInfo({ ...parsedChildCap, ...delegated }, parsedParentCap)
+                }
+              }
             }
           }
         }
