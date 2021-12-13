@@ -1,4 +1,4 @@
-import { WnfsPublicCapability, wnfsPublicCapabilities } from "../../src/capability/wnfs"
+import { wnfsPublicCapabilities } from "../../src/capability/wnfs"
 import * as token from "../../src/token"
 import { Chained } from "../../src/chained"
 import { Capability } from "../../src/types"

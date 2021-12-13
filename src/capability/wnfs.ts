@@ -1,5 +1,5 @@
 import { Capability } from "../types"
-import { capabilities, CapabilityEscalation, CapabilityResult, CapabilitySemantics } from "../attenuation"
+import { capabilities, CapabilityEscalation, CapabilitySemantics } from "../attenuation"
 import { Chained } from "../chained"
 
 
@@ -49,38 +49,36 @@ export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
     }
   },
 
-  tryDelegating(parentCap: WnfsPublicCapability, childCap: WnfsPublicCapability): WnfsPublicCapability | null | CapabilityEscalation<WnfsPublicCapability> {
+  tryDelegating<T extends WnfsPublicCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<WnfsPublicCapability> {
     // need to delegate the same user's file system
     if (childCap.user !== parentCap.user) return null
 
     // must not escalate capability level
     if (wnfsCapLevels[childCap.cap] > wnfsCapLevels[parentCap.cap]) {
-      return {
-        escalation: "Capability level escalation",
-        capability: { user: childCap.user, publicPath: childCap.publicPath, cap: childCap.cap },
-      }
+      return escalation("Capability level escalation", childCap)
     }
 
     // parentCap path must be a prefix of childCap path
     if (childCap.publicPath.length < parentCap.publicPath.length) {
-      return {
-        escalation: "WNFS Public path access escalation",
-        capability: { user: childCap.user, publicPath: childCap.publicPath, cap: childCap.cap },
-      }
+      return escalation("WNFS Public path access escalation", childCap)
     }
 
     for (let i = 0; i < parentCap.publicPath.length; i++) {
       if (childCap.publicPath[i] !== parentCap.publicPath[i]) {
-        return {
-          escalation: "WNFS Public path access escalation",
-          capability: { user: childCap.user, publicPath: childCap.publicPath, cap: childCap.cap },
-        }
+        return escalation("WNFS Public path access escalation", childCap)
       }
     }
 
     return childCap
   },
 
+}
+
+function escalation<T extends WnfsPublicCapability>(reason: string, cap: T): CapabilityEscalation<WnfsPublicCapability> {
+  return {
+    escalation: reason,
+    capability: { user: cap.user, publicPath: cap.publicPath, cap: cap.cap }
+  }
 }
 
 export function wnfsPublicCapabilities(ucan: Chained) {

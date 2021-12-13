@@ -1,4 +1,4 @@
-import { capabilities, CapabilitySemantics } from "../src/attenuation"
+import { capabilities, CapabilityEscalation, CapabilitySemantics } from "../src/attenuation"
 import { Chained } from "../src/chained"
 import { Capability } from "../src/types"
 
@@ -28,7 +28,7 @@ export const emailSemantics: CapabilitySemantics<EmailCapability> = {
     }
   },
 
-  tryDelegating(parentCap: EmailCapability, childCap: EmailCapability): EmailCapability | null {
+  tryDelegating<T extends EmailCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<EmailCapability> {
     // potency is always "SEND" anyway, so doesn't need to be checked
     return childCap.email === parentCap.email ? childCap : null
   },

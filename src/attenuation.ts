@@ -14,7 +14,7 @@ export interface CapabilitySemantics<A> {
    * - `null`: The capabilities from `parentCap` and `childCap` are unrelated and can't be compared nor delegated.
    * - `CapabilityEscalation<A>`: It's clear that `childCap` is meant to be delegated from `parentCap`, but there's a rights escalation.
    */
-  tryDelegating(parentCap: A, childCap: A): A | null | CapabilityEscalation<A>
+  tryDelegating<T extends A>(parentCap: T, childCTp: T): T | null | CapabilityEscalation<A>
   // TODO builders
 }
 
