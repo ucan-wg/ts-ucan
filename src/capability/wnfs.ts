@@ -41,7 +41,7 @@ export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
    * }
    * ```
    */
-  parse(cap: Capability): WnfsPublicCapability | null {
+  tryParsing(cap: Capability): WnfsPublicCapability | null {
     if (typeof cap.wnfs !== "string" || !isWnfsCap(cap.cap)) return null
 
     // remove trailing slash
@@ -54,13 +54,6 @@ export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
       user,
       publicPath,
       cap: cap.cap,
-    }
-  },
-
-  toCapability(parsed: WnfsPublicCapability): Capability {
-    return {
-      wnfs: `${parsed.user}/public/${parsed.publicPath.join("/")}`,
-      cap: parsed.cap,
     }
   },
 
@@ -118,7 +111,7 @@ const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
    * }
    * ```
    */
-  parse(cap: Capability): WnfsPrivateCapability | null {
+  tryParsing(cap: Capability): WnfsPrivateCapability | null {
     if (typeof cap.wnfs !== "string" || !isWnfsCap(cap.cap)) return null
 
     // split up "boris.fission.name/private/fccXmZ8HYmpwxkvPSjwW9A" into "<user>/private/<inumberBase64url>"
@@ -132,20 +125,6 @@ const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
       user,
       requiredINumbers: new Set([inumberBase64url]),
       cap: cap.cap,
-    }
-  },
-
-  toCapability(parsed: WnfsPrivateCapability): Capability {
-    const inumbers = Array.from(parsed.requiredINumbers.values())
-    const [inumber] = inumbers
-    if (inumbers.length !== 1 || inumber == null) {
-      // Private wnfs capabilities will only have an encoding with a single inumber.
-      // Multiple inumbers are the result of delegations with multiple private capabilities interacting.
-      throw new Error(`Can only construct a private capability with exactly one inumber.`)
-    }
-    return {
-      wnfs: `${parsed.user}/private/${inumber}`,
-      cap: parsed.cap,
     }
   },
 

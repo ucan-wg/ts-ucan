@@ -11,7 +11,7 @@ export interface EmailCapability {
 
 export const emailSemantics: CapabilitySemantics<EmailCapability> = {
 
-  parse(cap: Capability): EmailCapability | null {
+  tryParsing(cap: Capability): EmailCapability | null {
     if (typeof cap.email === "string" && cap.cap === "SEND") {
       return {
         email: cap.email,
@@ -19,13 +19,6 @@ export const emailSemantics: CapabilitySemantics<EmailCapability> = {
       }
     }
     return null
-  },
-
-  toCapability(parsed: EmailCapability): Capability {
-    return {
-      email: parsed.email,
-      cap: parsed.cap,
-    }
   },
 
   tryDelegating<T extends EmailCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<EmailCapability> {

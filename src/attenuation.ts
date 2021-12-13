@@ -5,8 +5,7 @@ import * as util from "./util"
 
 
 export interface CapabilitySemantics<A> {
-  parse(cap: Capability): A | null
-  toCapability(parsedCap: A): Capability
+  tryParsing(cap: Capability): A | null
   /**
    * This figures out whether a given `childCap` can be delegated from `parentCap`.
    * There are three possible results with three return types respectively:
@@ -51,7 +50,7 @@ export function capabilities<A>(
   function* findParsingCaps(ucan: Ucan<never>): Iterable<A & CapabilityInfo> {
     const capInfo = parseCapabilityInfo(ucan)
     for (const cap of ucan.payload.att) {
-      const parsedCap = capability.parse(cap)
+      const parsedCap = capability.tryParsing(cap)
       if (parsedCap != null) yield { ...parsedCap, ...capInfo }
     }
   }
