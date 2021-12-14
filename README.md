@@ -79,6 +79,20 @@ export type BuildParams = {
 }
 ```
 
+## Installation
+
+### NPM:
+
+```
+npm install --save ucans
+```
+
+### yarn:
+
+```
+yarn add ucans
+```
+
 ## Example
 ```ts
 import * as ucan from 'ucans'
