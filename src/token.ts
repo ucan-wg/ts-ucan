@@ -211,7 +211,7 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   }
 
   if (checkSignature) {
-    const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "ascii")
+    const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
     const sig = uint8arrays.fromString(signature, "base64url")
     if (!await verifySignature(data, sig, payload.iss)) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Signature invalid.`)
@@ -273,7 +273,7 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   const encodedHeader = encodeHeader(header)
   const encodedPayload = encodePayload(payload)
 
-  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
+  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
   const sig = await signFn(toSign)
 
   return {
