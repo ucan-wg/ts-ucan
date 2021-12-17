@@ -31,7 +31,6 @@
     "prepare": "yarn build"
   },
   "dependencies": {
-    "multiformats": "^9.5.4",
     "one-webcrypto": "^1.0.1",
     "tweetnacl": "^1.0.3",
     "uint8arrays": "^3.0.0"
