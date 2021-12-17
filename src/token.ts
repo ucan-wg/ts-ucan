@@ -2,7 +2,7 @@ import * as uint8arrays from "uint8arrays"
 import * as util from "./util"
 import * as did from "./did"
 import { verifySignature } from "./did/validation"
-import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, isUcanHeader, isUcanPayload } from "./types"
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, UcanParts, isUcanHeader, isUcanPayload } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -79,7 +79,7 @@ export function buildParts(params: {
 
   // in the weeds
   ucanVersion?: string
-}): { header: UcanHeader; payload: UcanPayload } {
+}): UcanParts {
   const {
     keyType,
     issuer,
