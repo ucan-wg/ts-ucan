@@ -8,7 +8,7 @@ export function maxNbf(parentNbf: number | undefined, childNbf: number | undefin
   return childNbf
 }
 
-export function combineTimeBounds(ucan: Ucan<unknown>, ...ucans: Ucan<unknown>[]): { expiresAt: number, notBefore?: number } {
+export function combineTimeBounds(ucan: Ucan<unknown>, ...ucans: Ucan<unknown>[]): { expiresAt: number; notBefore?: number } {
   const expiresAt = ucans.map(u => u.payload.exp).reduce((a, b) => Math.min(a, b), ucan.payload.exp)
   const notBefore = ucans.map(u => u.payload.nbf).reduce(maxNbf, ucan.payload.nbf)
   if (notBefore != null) {

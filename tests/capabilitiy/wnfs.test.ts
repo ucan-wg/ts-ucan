@@ -320,7 +320,7 @@ async function makeSimpleDelegation(aliceCapabilities: Capability[], bobCapabili
  * The first argument are the capabilities delegated in the first two arrows,
  * the second argument are the capabilities delegated in the last arrow.
  */
-async function makeComplexDelegation(proofs: { alice: Capability[], bob: Capability[] }, final: Capability[]) {
+async function makeComplexDelegation(proofs: { alice: Capability[]; bob: Capability[] }, final: Capability[]) {
   const leafAlice = await token.build({
     issuer: alice,
     audience: mallory.did(),
