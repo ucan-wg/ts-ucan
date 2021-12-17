@@ -29,7 +29,7 @@ export type KeyType = "rsa" | "ed25519" | "bls12-381"
 export type Fact = Record<string, unknown>
 
 export type Capability = {
-  [rsc: string]: string
+  [rsc: string]: unknown
   cap: string
 }
 
