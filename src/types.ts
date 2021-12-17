@@ -11,8 +11,8 @@ export interface Keypair {
 
 /** Unlike tslib's CryptoKeyPair, this requires the `privateKey` and `publicKey` fields */
 export interface AvailableCryptoKeyPair {
-  privateKey: CryptoKey;
-  publicKey: CryptoKey;
+  privateKey: CryptoKey
+  publicKey: CryptoKey
 }
 
 export interface Didable {
