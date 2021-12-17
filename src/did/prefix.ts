@@ -41,7 +41,7 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
       type: "ed25519"
     }
 
-  // EDWARDS
+  // BLS
   } else if (hasPrefix(prefixedKey, BLS_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(BLS_DID_PREFIX.byteLength),
