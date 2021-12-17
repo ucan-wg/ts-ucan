@@ -169,6 +169,9 @@ export function isExpired(ucan: Ucan): boolean {
  * @param ucan The UCAN to validate
  */
 export const isTooEarly = (ucan: Ucan): boolean => {
+  if (ucan.payload.nbf == null) {
+    return false
+  }
   return ucan.payload.nbf > Math.floor(Date.now() / 1000)
 }
 

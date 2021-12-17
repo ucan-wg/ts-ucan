@@ -1,10 +1,13 @@
 {
   "compilerOptions": {
+    "target": "ES2015",
+    "module": "CommonJS",
+    "strict": true,
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "declaration": true,
     "outDir": "dist",
-    "declarationDir": "dist",
-    "resolveJsonModule": true
+    "declarationDir": "dist"
   },
   "include": [
     "src/**/*"
