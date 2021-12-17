@@ -1,10 +1,8 @@
-import * as uint8arrays from 'uint8arrays'
-import * as base64 from "./base64"
-import * as util from './util'
-import * as did from './did'
+import * as uint8arrays from "uint8arrays"
+import * as util from "./util"
+import * as did from "./did"
 import { verifySignature } from "./did/validation"
-import { validAttenuation } from './attenuation'
-import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } from "./types"
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, isUcanHeader, isUcanPayload } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -30,9 +28,9 @@ import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload } fro
  */
 
 export async function build(params: {
-  // to/from
-  audience: string
+  // from/to
   issuer: Keypair
+  audience: string
 
   // capabilities
   capabilities?: Array<Capability>
@@ -61,10 +59,10 @@ export async function build(params: {
 }
 
 export function buildParts(params: {
-  // to/from
-  audience: string
-  issuer: string
+  // from/to
   keyType: KeyType
+  issuer: string
+  audience: string
 
   // capabilities
   capabilities?: Array<Capability>
@@ -81,12 +79,12 @@ export function buildParts(params: {
 
   // in the weeds
   ucanVersion?: string
-}): { header: UcanHeader, payload: UcanPayload } {
+}): { header: UcanHeader; payload: UcanPayload } {
   const {
-    audience,
-    issuer,
-    capabilities = [],
     keyType,
+    issuer,
+    audience,
+    capabilities = [],
     lifetimeInSeconds = 30,
     expiration,
     notBefore,
@@ -98,8 +96,8 @@ export function buildParts(params: {
 
   // Timestamps
   const currentTimeInSeconds = Math.floor(Date.now() / 1000)
-  let exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
-  let nbf = notBefore || currentTimeInSeconds - 60
+  const exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
+  const nbf = notBefore || currentTimeInSeconds - 60
 
   const header = {
     alg: jwtAlgorithm(keyType),
@@ -125,24 +123,6 @@ export function buildParts(params: {
 }
 
 /**
- * Try to decode a UCAN.
- * Will throw if it fails.
- *
- * @param ucan The encoded UCAN to decode
- */
-export function decode(ucan: string): Ucan  {
-  const split = ucan.split(".")
-  const header = JSON.parse(base64.urlDecode(split[0]))
-  const payload = JSON.parse(base64.urlDecode(split[1]))
-
-  return {
-    header,
-    payload,
-    signature: split[2] || null
-  }
-}
-
-/**
  * Encode a UCAN.
  *
  * @param ucan The UCAN to encode
@@ -162,7 +142,7 @@ export function encode(ucan: Ucan): string {
  * @param header The UcanHeader to encode
  */
  export function encodeHeader(header: UcanHeader): string {
-  return base64.urlEncode(JSON.stringify(header))
+  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(header), "utf8"), "base64url")
 }
 
 /**
@@ -171,9 +151,7 @@ export function encode(ucan: Ucan): string {
  * @param payload The UcanPayload to encode
  */
 export function encodePayload(payload: UcanPayload): string {
-  return base64.urlEncode(JSON.stringify({
-    ...payload
-  }))
+  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(payload), "utf8"), "base64url")
 }
 
 /**
@@ -194,34 +172,93 @@ export const isTooEarly = (ucan: Ucan): boolean => {
   return ucan.payload.nbf > Math.floor(Date.now() / 1000)
 }
 
+
+export interface ValidateOptions {
+  checkSignature?: boolean
+  checkIsExpired?: boolean
+  checkIsTooEarly?: boolean
+}
+
 /**
- * Check if a UCAN is valid.
- *
- * @param ucan The decoded UCAN
- * @param did The DID associated with the signature of the UCAN
+ * Parse & Validate **one layer** of a UCAN.
+ * This doesn't validate attenutations and doesn't validate the whole UCAN chain.
+ * 
+ * By default, this will check the signature and time bounds.
+ * 
+ * @param encodedUcan the JWT-encoded UCAN to validate
+ * @param options an optional parameter to configure turning off some validation options
+ * @returns the parsed & validated UCAN (one layer)
+ * @throws Error if the UCAN is invalid
  */
- export async function isValid(ucan: Ucan): Promise<boolean> {
-  const encodedHeader = encodeHeader(ucan.header)
-  const encodedPayload = encodePayload(ucan.payload)
+export async function validate(encodedUcan: string, options?: ValidateOptions): Promise<Ucan> {
+  const checkSignature = options?.checkSignature ?? true
+  const checkIsExpired = options?.checkIsExpired ?? true
+  const checkIsTooEarly = options?.checkIsTooEarly ?? true
 
-  const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
-  const sig = uint8arrays.fromString(ucan.signature, 'base64url')
-
-  const valid = await verifySignature(data, sig, ucan.payload.iss)
-  if (!valid) return false
-  if (!ucan.payload.prf) return true
-
-  // Verify proofs
-  for (const prf of ucan.payload.prf) {
-    const proof = decode(prf)
-    if (proof.payload.aud !== ucan.payload.iss) return false
-
-    // Check attenuation
-    if(!validAttenuation(proof.payload.att, ucan.payload.att)) return false
-    if (!await isValid(proof)) return false
+  const [encodedHeader, encodedPayload, signature] = encodedUcan.split(".")
+  if (encodedHeader == null || encodedPayload == null || signature == null) {
+    throw new Error(`Can't parse UCAN: ${encodedUcan}: Expected JWT format: 3 dot-separated base64url-encoded values.`)
   }
 
-  return true
+  const header = parseHeader(encodedHeader)
+  const payload = parsePayload(encodedPayload)
+
+  if (!isUcanHeader(header)) {
+    throw new Error(`Can't parse UCAN header: ${encodedHeader}: Invalid format.`)
+  }
+  if (!isUcanPayload(payload)) {
+    throw new Error(`Can't parse UCAN payload. ${encodedPayload}: Invalid format.`)
+  }
+
+  if (checkSignature) {
+    const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
+    const sig = uint8arrays.fromString(signature, "base64url")
+    if (!await verifySignature(data, sig, payload.iss)) {
+      throw new Error(`Invalid UCAN: ${encodedUcan}: Signature invalid.`)
+    }
+  }
+
+  const ucan: Ucan = { header, payload, signature }
+
+  if (checkIsExpired && isExpired(ucan)) {
+    throw new Error(`Invalid UCAN: ${encodedUcan}: Expired.`)
+  }
+
+  if (checkIsTooEarly && isTooEarly(ucan)) {
+    throw new Error(`Invalid UCAN: ${encodedUcan}: Not active yet (too early).`)
+  }
+
+  return ucan
+}
+
+export function parseHeader(encodedUcanHeader: string): unknown {
+  let decodedUcanHeader: string
+  try {
+    decodedUcanHeader = uint8arrays.toString(uint8arrays.fromString(encodedUcanHeader, "base64url"), "utf8")
+  } catch {
+    throw new Error(`Can't parse UCAN header: ${encodedUcanHeader}: Can't parse as base64url.`)
+  }
+
+  try {
+    return JSON.parse(decodedUcanHeader)
+  } catch {
+    throw new Error(`Can't parse UCAN header: ${encodedUcanHeader}: Can't parse base64url encoded JSON inside.`)
+  }
+}
+
+export function parsePayload(encodedUcanPayload: string): unknown {
+  let decodedUcanPayload: string
+  try {
+    decodedUcanPayload = uint8arrays.toString(uint8arrays.fromString(encodedUcanPayload, "base64url"), "utf8")
+  } catch {
+    throw new Error(`Can't parse UCAN payload: ${encodedUcanPayload}: Can't parse as base64url.`)
+  }
+
+  try {
+    return JSON.parse(decodedUcanPayload)
+  } catch {
+    throw new Error(`Can't parse UCAN payload: ${encodedUcanPayload}: Can't parse base64url encoded JSON inside.`)
+  }
 }
 
 
@@ -236,13 +273,13 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
   const encodedHeader = encodeHeader(header)
   const encodedPayload = encodePayload(payload)
 
-  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`)
+  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
   const sig = await signFn(toSign)
 
   return {
     header,
     payload,
-    signature: uint8arrays.toString(sig, 'base64url')
+    signature: uint8arrays.toString(sig, "base64url")
   }
 }
 
@@ -254,22 +291,8 @@ export async function addSignature(header: UcanHeader, payload: UcanPayload, sig
  */
 function jwtAlgorithm(keyType: KeyType): string | null {
   switch (keyType) {
-    case 'ed25519': return "EdDSA"
-    case 'rsa': return "RS256"
+    case "ed25519": return "EdDSA"
+    case "rsa": return "RS256"
     default: return null
-  }
-}
-
-
-/**
- * Extract the payload of a UCAN.
- *
- * Throws when given an improperly formatted UCAN.
- */
-function extractPayload(ucan: string, level: number): { iss: string; prf: string | null } {
-  try {
-    return JSON.parse(base64.urlDecode(ucan.split(".")[1]))
-  } catch (_) {
-    throw new Error(`Invalid UCAN (${level} level${level === 1 ? "" : "s"} deep): \`${ucan}\``)
   }
 }

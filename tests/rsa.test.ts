@@ -1,6 +1,5 @@
-import * as did from '../src/did'
-import RSAKeypair from '../src/keypair/rsa'
-import { Keypair, KeyType } from '../src/types'
+import * as did from "../src/did"
+import RSAKeypair from "../src/keypair/rsa"
 
 describe("rsa", () => {
 
@@ -17,7 +16,7 @@ describe("rsa", () => {
     const keyDid = keypair.did()
     const transformed = did.didToPublicKey(keyDid)
     expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual('rsa')
+    expect(transformed.type).toEqual("rsa")
   })
 
   it("signs data", async () => {

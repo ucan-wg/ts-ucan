@@ -1,18 +1,12 @@
-import * as token from '../src/token'
-import EdKey from '../src/keypair/ed25519'
-import { Ucan } from '../src'
+import * as token from "../src/token"
+import { alice, bob } from "./fixtures"
 
-describe('token', () => {
-  let issuer: EdKey
-  let audience: EdKey
-  let ucan: Ucan
 
-  it('builds a ucan', async () => {
-    issuer = await EdKey.create()
-    audience = await EdKey.create()
-    ucan = await token.build({
-      audience: audience.did(),
-      issuer,
+describe("token.validate", () => {
+  async function makeUcan() {
+    return await token.build({
+      audience: bob.did(),
+      issuer: alice,
       capabilities: [
         {
           "wnfs": "boris.fission.name/public/photos/",
@@ -28,66 +22,28 @@ describe('token', () => {
         }
       ]
     })
+  }
+
+  it("round-trips with token.build", async () => {
+    const ucan = await makeUcan()
+    const parsedUcan = await token.validate(token.encode(ucan))
+    expect(parsedUcan).toBeDefined()
   })
 
-  it('validates a ucan', async () => {
-    const isValid = await token.isValid(ucan)
-    expect(isValid).toBe(true)
-  })
-
-  it('does not validate a bad ucan', async () => {
-    const badUcan = {
+  it("throws with a bad audience", async () => {
+    const ucan = await makeUcan()
+    const badUcan = token.encode({
       ...ucan,
       payload: {
         ...ucan.payload,
-        audience: "fakeaudience"
+        aud: "fakeaudience"
       }
-    }
-    const isValid = await token.isValid(badUcan)
-    expect(isValid).toBe(false)
-  })
-
-  it('encodes and decodes ucans', () => {
-    const encoded = token.encode(ucan)
-    const decoded = token.decode(encoded)
-    expect(decoded).toEqual(ucan)
-  })
-
-  it('attenuates valid children', async () => {
-    const childUcan = await token.build({
-      audience: "did:key:z6MkgYGF3thn8k1Fv4p4dWXKtsXCnLH7q9yw4QgNPULDmDKB",
-      issuer: audience,
-      capabilities: [
-        {
-          "wnfs": "boris.fission.name/public/photos/",
-          "cap": "OVERWRITE"
-        },
-      ],
-      proofs: [token.encode(ucan)]
     })
-
-    const isValid = await token.isValid(childUcan)
-    expect(isValid).toBe(true)
+    await expect(() => token.validate(badUcan)).rejects.toBeDefined()
   })
 
-  it('identifies invalid attenuation', async () => {
-    const childUcan = await token.build({
-      audience: "did:key:z6MkgYGF3thn8k1Fv4p4dWXKtsXCnLH7q9yw4QgNPULDmDKB",
-      issuer: audience,
-      capabilities: [
-        {
-          "wnfs": "boris.fission.name/public/photos/",
-          "cap": "SUPER"
-        },
-      ],
-      proofs: [token.encode(ucan)]
-    })
-
-    const isValid = await token.isValid(childUcan)
-    expect(isValid).toBe(false)
-  })
-
-  it('identifies a ucan that is not active yet', async () => {
+  it("identifies a ucan that is not active yet", async () => {
+    const ucan = await makeUcan()
     const badUcan = {
       ...ucan,
       payload: {
@@ -96,12 +52,11 @@ describe('token', () => {
         exp: 2637352774
       }
     }
-
-    const isTooEarly = await token.isTooEarly(badUcan)
-    expect(isTooEarly).toBe(true)
+    expect(token.isTooEarly(badUcan)).toBe(true)
   })
 
-  it('identifies a ucan that has become active', async () => {
+  it("identifies a ucan that has become active", async () => {
+    const ucan = await makeUcan()
     const activeUcan = {
       ...ucan,
       payload: {
@@ -110,8 +65,6 @@ describe('token', () => {
         lifetimeInSeonds: 30
       }
     }
-
-    const isTooEarly = await token.isTooEarly(activeUcan)
-    expect(isTooEarly).toBe(false)
+    expect(token.isTooEarly(activeUcan)).toBe(false)
   })
 })

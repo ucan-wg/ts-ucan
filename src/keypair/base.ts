@@ -1,6 +1,6 @@
-import * as uint8arrays from 'uint8arrays'
-import { publicKeyBytesToDid } from '../did/transformers'
-import { Keypair, KeyType, Encodings, Didable, ExportableKey } from '../types'
+import * as uint8arrays from "uint8arrays"
+import { publicKeyBytesToDid } from "../did/transformers"
+import { Keypair, KeyType, Encodings, Didable, ExportableKey } from "../types"
 
 export default abstract class BaseKeypair implements Keypair, Didable, ExportableKey {
 
@@ -14,7 +14,7 @@ export default abstract class BaseKeypair implements Keypair, Didable, Exportabl
     this.exportable = exportable
   }
 
-  publicKeyStr(encoding: Encodings = 'base64pad'): string {
+  publicKeyStr(encoding: Encodings = "base64pad"): string {
     return uint8arrays.toString(this.publicKey, encoding)
   }
 

@@ -1,7 +1,5 @@
-import * as did from '../src/did'
-import EdwardsKey from '../src/keypair/ed25519'
-import nacl from 'tweetnacl'
-import { Keypair, KeyType } from '../src/types'
+import * as did from "../src/did"
+import EdwardsKey from "../src/keypair/ed25519"
 
 describe("ed25519", () => {
 
@@ -18,7 +16,7 @@ describe("ed25519", () => {
     const keyDid = keypair.did()
     const transformed = did.didToPublicKey(keyDid)
     expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual('ed25519')
+    expect(transformed.type).toEqual("ed25519")
   })
 
   it("signs data", async () => {

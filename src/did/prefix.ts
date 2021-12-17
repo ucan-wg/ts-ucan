@@ -1,4 +1,4 @@
-import * as uint8arrays from 'uint8arrays'
+import * as uint8arrays from "uint8arrays"
 import { KeyType } from "../types"
 
 
@@ -12,9 +12,9 @@ export const BASE58_DID_PREFIX = "did:key:z"
  */
 export function magicBytes(keyType: KeyType): Uint8Array | null {
   switch (keyType) {
-    case 'ed25519': return EDWARDS_DID_PREFIX
-    case 'rsa': return RSA_DID_PREFIX
-    case 'bls12-381': return BLS_DID_PREFIX
+    case "ed25519": return EDWARDS_DID_PREFIX
+    case "rsa": return RSA_DID_PREFIX
+    case "bls12-381": return BLS_DID_PREFIX
     default: return null
   }
 }
@@ -31,21 +31,21 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
   if (hasPrefix(prefixedKey, RSA_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(RSA_DID_PREFIX.byteLength),
-      type: 'rsa'
+      type: "rsa"
     }
 
   // EDWARDS
   } else if (hasPrefix(prefixedKey, EDWARDS_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(EDWARDS_DID_PREFIX.byteLength),
-      type: 'ed25519'
+      type: "ed25519"
     }
 
-  // EDWARDS
+  // BLS
   } else if (hasPrefix(prefixedKey, BLS_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(BLS_DID_PREFIX.byteLength),
-      type: 'bls12-381'
+      type: "bls12-381"
     }
   }
 
