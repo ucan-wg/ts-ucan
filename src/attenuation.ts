@@ -49,7 +49,7 @@ export interface CapabilityEscalation<A> {
   capability: A // the capability that escalated rights
 }
 
-function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
+export function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
   return util.isRecord(obj)
     && util.hasProp(obj, "escalation") && typeof obj.escalation === "string"
     && util.hasProp(obj, "capability")
