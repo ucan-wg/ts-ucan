@@ -68,20 +68,28 @@ export class Builder<State extends Partial<BuildableState>> {
     return new Builder(this.state, { ...this.defaultable, notBefore: notBeforeTimestamp })
   }
 
-  withFact(...facts: Fact[]): Builder<State> {
+  withFact(fact: Fact): Builder<State>
+  withFact(fact: Fact, ...facts: Fact[]): Builder<State>
+  withFact(fact: Fact, ...facts: Fact[]): Builder<State> {
     return new Builder(this.state, {
       ...this.defaultable,
-      facts: [...this.defaultable.facts, ...facts]
+      facts: [...this.defaultable.facts, fact, ...facts]
     })
+  }
+
+  withNonce(): Builder<State> {
+    return new Builder(this.state, { ...this.defaultable, addNonce: true })
   }
 
   /**
    * Claim capabilities 'by parenthood'.
    */
-  claimCapability(...capabilities: Capability[]): Builder<State> {
+  claimCapability(capability: Capability): Builder<State>
+  claimCapability(capability: Capability, ...capabilities: Capability[]): Builder<State>
+  claimCapability(capability: Capability, ...capabilities: Capability[]): Builder<State> {
     return new Builder(this.state, {
       ...this.defaultable,
-      capabilities: [...this.defaultable.capabilities, ...capabilities]
+      capabilities: [...this.defaultable.capabilities, capability, ...capabilities]
     })
   }
 
@@ -102,14 +110,14 @@ export class Builder<State extends Partial<BuildableState>> {
     if (parsedRequirement == null) {
       throw new Error(`Can't add capability to UCAN: Semantics can't parse given capability: ${JSON.stringify(requiredCapability)}`)
     }
+
+    const expiration = this.state.expiration
     const hasInfoRequirements = (info: CapabilityInfo) => {
-      if (!isBuildableState(this.state)) {
-        throw new Error(`Can't delegate capabilities without having required paramenters set in the builder: issuer, audience and expiration.`)
-      }
-      if (info.expiresAt < this.state.expiration) return false
+      if (info.expiresAt < expiration) return false
       if (info.notBefore == null || this.defaultable.notBefore == null) return true
       return info.notBefore <= this.defaultable.notBefore
     }
+
     if (isProof(storeOrProof)) {
       return new Builder(this.state, {
         ...this.defaultable,
