@@ -40,9 +40,22 @@ export class Builder {
     this.proofs = []
   }
 
-  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Builder
-  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): Builder
-  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder {
+  /**
+   * Claim a capability 'by parenthood'.
+   */
+  claimCapability(capability: Capability): Builder {
+    this.capabilities.push(capability)
+    return this
+  }
+
+  withFact(...facts: Fact[]): Builder {
+    this.facts.push(...facts)
+    return this
+  }
+
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Builder
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): Builder
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder {
     function isProof(proof: Store | Chained): proof is Chained {
       // @ts-ignore
       const encodedFnc = proof.encoded

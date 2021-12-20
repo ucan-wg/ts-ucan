@@ -8,7 +8,7 @@ export interface IndexByAudience {
 
 export class Store {
 
-  index: IndexByAudience
+  private index: IndexByAudience
 
   constructor(index: IndexByAudience) {
     this.index = index
@@ -25,8 +25,15 @@ export class Store {
   add(ucan: Chained): void {
     const audience = ucan.audience()
     const byAudience = this.index[audience] ?? []
+    if (byAudience.find(storedUcan => storedUcan.encoded() === ucan.encoded()) != null) {
+      return
+    }
     byAudience.push(ucan)
     this.index[audience] = byAudience
+  }
+
+  getByAudience(audience: string): Chained[] {
+    return [...(this.index[audience] ?? [])]
   }
 
   findByAudience(audience: string, predicate: (ucan: Chained) => boolean): Chained | null {
