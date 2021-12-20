@@ -50,7 +50,7 @@ export class Builder<State extends Partial<BuildableState>> {
     this.defaultable = defaultable
   }
 
-  static create(): Builder<{}> {
+  static create(): Builder<Record<string, never>> {
     return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
   }
 
