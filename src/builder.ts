@@ -7,55 +7,91 @@ import { CapabilityInfo, CapabilitySemantics } from "./attenuation"
 import { Store } from "./store"
 
 
-export class Builder {
+export interface BuildableState {
+  issuer: Keypair
+  audience: string
+  expiration: number
+}
 
-  private issuer: Keypair
-  private audience: string
-  private expiration: number
-  private notBefore: number | undefined
+function isBuildableState(obj: unknown): obj is BuildableState {
+  return util.isRecord(obj)
+    && util.hasProp(obj, "issuer") && isKeypair(obj.issuer)
+    && util.hasProp(obj, "audience") && typeof obj.audience === "string"
+    && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
+}
 
-  private capabilities: Capability[]
-  private facts: Fact[]
-  private proofs: Chained[]
+interface DefaultableState {
+  capabilities: Capability[]
+  facts: Fact[]
+  proofs: Chained[]
+  addNonce: boolean
+  notBefore?: number
+}
 
-  constructor(options: BuilderOptionsLifetime)
-  constructor(options: BuilderOptionsExpiration)
-  constructor(options: unknown) {
-    if (!isBuilderOptions(options)) {
-      throw new Error("UCAN Builder: Constructor needs to be passed an issuer keypair, audience string and either lifetimeInSeconds or an expiration timestamp.")
+export class Builder<State extends Partial<BuildableState>> {
+
+  private state: State
+  private defaultable: DefaultableState
+
+  private constructor(state: State, defaultable: DefaultableState) {
+    this.state = state
+    this.defaultable = defaultable
+  }
+
+  static create(): Builder<{}> {
+    return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
+  }
+
+  issuedBy(issuer: Keypair): Builder<State & { issuer: Keypair }> {
+    return new Builder({ ...this.state, issuer }, this.defaultable)
+  }
+
+  toAudience(audience: string): Builder<State & { audience: string }> {
+    return new Builder({ ...this.state, audience }, this.defaultable)
+  }
+
+  withLifetimeInSeconds(seconds: number): Builder<State & { expiration: number }> {
+    return this.withExpiraton(Date.now() + seconds * 1000)
+  }
+
+  withExpiraton(expiration: number): Builder<State & { expiration: number }> {
+    if (this.defaultable.notBefore != null && expiration < this.defaultable.notBefore) {
+      throw new Error(`Can't set expiration to ${expiration} which is before 'notBefore': ${this.defaultable.notBefore}`)
     }
-    this.issuer = options.issuer
-    this.audience = options.audience
-    this.notBefore = options.notBefore
-    if (isBuilderOptionsExpiration(options)) {
-      this.expiration = options.expiration
-    } else if (isBuilderOptionsLifetime(options)) {
-      this.expiration = Date.now() + options.lifetimeInSeconds * 1000
-    } else {
-      throw new Error("UCAN Builder: Constructor needs to be passed either a 'lifetimeInSeconds' or 'expiration' number.")
-    }
+    return new Builder({ ...this.state, expiration }, this.defaultable)
+  }
 
-    this.capabilities = []
-    this.facts = []
-    this.proofs = []
+  withNotBefore(notBeforeTimestamp: number): Builder<State> {
+    if (util.hasProp(this.state, "expiration") && typeof this.state.expiration === "number" && this.state.expiration < notBeforeTimestamp) {
+      throw new Error(`Can't set 'notBefore' to ${notBeforeTimestamp} which is after expiration: ${this.state.expiration}`)
+    }
+    return new Builder(this.state, { ...this.defaultable, notBefore: notBeforeTimestamp })
+  }
+
+  withFact(...facts: Fact[]): Builder<State> {
+    return new Builder(this.state, {
+      ...this.defaultable,
+      facts: [...this.defaultable.facts, ...facts]
+    })
   }
 
   /**
-   * Claim a capability 'by parenthood'.
+   * Claim capabilities 'by parenthood'.
    */
-  claimCapability(capability: Capability): Builder {
-    this.capabilities.push(capability)
-    return this
+  claimCapability(...capabilities: Capability[]): Builder<State> {
+    return new Builder(this.state, {
+      ...this.defaultable,
+      capabilities: [...this.defaultable.capabilities, ...capabilities]
+    })
   }
 
-  withFact(...facts: Fact[]): Builder {
-    this.facts.push(...facts)
-    return this
-  }
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends BuildableState ? Builder<State> : never
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends BuildableState ? Builder<State> : never
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder<State> {
+    if (!isBuildableState(this.state)) {
+      throw new Error(`Can't delegate capabilities without having required paramenters set in the builder: issuer, audience and expiration.`)
+    }
 
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Builder
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): Builder
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder {
     function isProof(proof: Store | Chained): proof is Chained {
       // @ts-ignore
       const encodedFnc = proof.encoded
@@ -67,86 +103,66 @@ export class Builder {
       throw new Error(`Can't add capability to UCAN: Semantics can't parse given capability: ${JSON.stringify(requiredCapability)}`)
     }
     const hasInfoRequirements = (info: CapabilityInfo) => {
-      if (info.expiresAt < this.expiration) return false
-      if (info.notBefore == null || this.notBefore == null) return true
-      return info.notBefore <= this.notBefore
+      if (!isBuildableState(this.state)) {
+        throw new Error(`Can't delegate capabilities without having required paramenters set in the builder: issuer, audience and expiration.`)
+      }
+      if (info.expiresAt < this.state.expiration) return false
+      if (info.notBefore == null || this.defaultable.notBefore == null) return true
+      return info.notBefore <= this.defaultable.notBefore
     }
     if (isProof(storeOrProof)) {
-      this.capabilities.push(requiredCapability)
-      if (this.proofs.find(proof => proof.encoded() === storeOrProof.encoded()) == null) {
-        this.proofs.push(storeOrProof)
-      }
+      return new Builder(this.state, {
+        ...this.defaultable,
+        capabilities: [...this.defaultable.capabilities, requiredCapability],
+        proofs: this.defaultable.proofs.find(proof => proof.encoded() === storeOrProof.encoded()) == null
+          ? [...this.defaultable.proofs, storeOrProof]
+          : this.defaultable.proofs
+      })
     } else {
-      const result = storeOrProof.findWithCapability(this.audience, semantics, parsedRequirement, hasInfoRequirements)
+      const result = storeOrProof.findWithCapability(this.state.audience, semantics, parsedRequirement, hasInfoRequirements)
       if (result.success) {
-        this.capabilities.push(requiredCapability)
-        if (this.proofs.find(proof => proof.encoded() === result.ucan.encoded()) == null) {
-          this.proofs.push(result.ucan)
-        }
+        return new Builder(this.state, {
+          ...this.defaultable,
+          capabilities: [...this.defaultable.capabilities, requiredCapability],
+          proofs: this.defaultable.proofs.find(proof => proof.encoded() === result.ucan.encoded()) == null
+            ? [...this.defaultable.proofs, result.ucan]
+            : this.defaultable.proofs
+        })
       } else {
         throw new Error(`Can't add capability to UCAN: ${result.reason}`)
       }
     }
-    return this
   }
 
-  buildParts(options?: BuildOptions): UcanParts {
-    const addNonce = options?.addNonce ?? false
+  buildParts(): State extends BuildableState ? UcanParts : never
+  buildParts(): UcanParts {
+    if (!isBuildableState(this.state)) {
+      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and/or expiration.`)
+    }
     return token.buildParts({
-      keyType: this.issuer.keyType,
-      issuer: publicKeyBytesToDid(this.issuer.publicKey, this.issuer.keyType),
-      audience: this.audience,
+      keyType: this.state.issuer.keyType,
+      issuer: publicKeyBytesToDid(this.state.issuer.publicKey, this.state.issuer.keyType),
+      audience: this.state.audience,
 
-      expiration: this.expiration,
-      notBefore: this.notBefore,
-      addNonce,
+      expiration: this.state.expiration,
+      notBefore: this.defaultable.notBefore,
+      addNonce: this.defaultable.addNonce,
 
-      capabilities: this.capabilities,
-      facts: this.facts,
-      proofs: this.proofs.map(proof => proof.encoded()),
+      capabilities: this.defaultable.capabilities,
+      facts: this.defaultable.facts,
+      proofs: this.defaultable.proofs.map(proof => proof.encoded()),
     })
   }
 
-  async build(options?: BuildOptions): Promise<Chained> {
-    const parts = this.buildParts(options)
-    const signed = await token.sign(parts.header, parts.payload, this.issuer)
+  async build(): Promise<State extends BuildableState ? Chained : never>
+  async build(): Promise<Chained> {
+    if (!isBuildableState(this.state)) {
+      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and/or expiration.`)
+    }
+    const parts = this.buildParts()
+    const signed = await token.sign(parts.header, parts.payload, this.state.issuer)
     const encoded = token.encode(signed)
-    return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.proofs }})
+    return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs }})
   }
 
-}
-
-export interface BuilderOptions {
-  issuer: Keypair
-  audience: string
-  notBefore?: number
-}
-
-export interface BuilderOptionsLifetime extends BuilderOptions {
-  lifetimeInSeconds: number
-}
-
-export interface BuilderOptionsExpiration extends BuilderOptions {
-  expiration: number
-}
-
-export interface BuildOptions {
-  addNonce?: boolean
-}
-
-function isBuilderOptions(obj: unknown): obj is BuilderOptions {
-  return util.isRecord(obj)
-    && util.hasProp(obj, "issuer") && isKeypair(obj.issuer)
-    && util.hasProp(obj, "audience") && typeof obj.audience === "string"
-    && (!util.hasProp(obj, "notBefore") || typeof obj.notBefore === "number")
-}
-
-function isBuilderOptionsLifetime(obj: unknown): obj is BuilderOptionsLifetime {
-  return isBuilderOptions(obj)
-    && util.hasProp(obj, "lifetimeInSeconds") && typeof obj.lifetimeInSeconds === "number"
-}
-
-function isBuilderOptionsExpiration(obj: unknown): obj is BuilderOptionsExpiration {
-  return isBuilderOptions(obj)
-    && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
 }
