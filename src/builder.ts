@@ -3,7 +3,7 @@ import * as util from "./util"
 import { Keypair, isKeypair, Capability, Fact, UcanParts } from "./types"
 import { publicKeyBytesToDid } from "./did/transformers"
 import { Chained } from "./chained"
-import { CapabilityInfo, CapabilitySemantics } from "./attenuation"
+import { capabilities, CapabilityInfo, CapabilitySemantics } from "./attenuation"
 import { Store } from "./store"
 
 
@@ -40,6 +40,23 @@ function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCa
     && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
 }
 
+/**
+ * A builder API for UCANs.
+ * 
+ * Supports grabbing UCANs from a UCAN `Store` for proofs (see `delegateCapability`).
+ * 
+ * Example usage:
+ * 
+ * ```ts
+ * const ucan = await Builder.create()
+ *   .issuedBy(aliceKeypair)
+ *   .toAudience(bobDID)
+ *   .withLifetimeInSeconds(30)
+ *   .claimCapability({ email: "my@email.com", cap: "SEND" })
+ *   .delegateCapability(emailSemantics, { email: "my-friends@email.com", cap: "SEND" }, proof)
+ *   .build()
+ * ```
+ */
 export class Builder<State extends Partial<BuildableState>> {
 
   private state: State // portion of the state that's required to be set before building
@@ -50,22 +67,50 @@ export class Builder<State extends Partial<BuildableState>> {
     this.defaultable = defaultable
   }
 
+  /**
+   * Create an empty builder.
+   * Before finalising the builder, you need to at least call
+   * - `issuedBy`
+   * - `toAudience` and
+   * - `withLifetimeInSeconds` or `withExpiration`.
+   * To finalise the builder, call its `build` or `buildParts` method.
+   */
   static create(): Builder<Record<string, never>> {
     return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
   }
 
+  /**
+   * @param issuer The issuer as a DID string ("did:key:...").
+   * 
+   * The UCAN must be signed with the private key of the issuer to be valid.
+   */
   issuedBy(issuer: Keypair): Builder<State & { issuer: Keypair }> {
     return new Builder({ ...this.state, issuer }, this.defaultable)
   }
 
+  /**
+   * @param audience The audience as a DID string ("did:key:...").
+   * 
+   * This is the identity this UCAN transfers rights to.
+   * It could e.g. be the DID of a service you're posting this UCAN as a JWT to,
+   * or it could be the DID of something that'll use this UCAN as a proof to
+   * continue the UCAN chain as an issuer.
+   */
   toAudience(audience: string): Builder<State & { audience: string }> {
     return new Builder({ ...this.state, audience }, this.defaultable)
   }
 
+  /**
+   * @param seconds The number of seconds from the calltime of this function
+   *   to set the expiry timestamp to.
+   */
   withLifetimeInSeconds(seconds: number): Builder<State & { expiration: number }> {
     return this.withExpiraton(Date.now() + seconds * 1000)
   }
 
+  /**
+   * @param expiration The POSIX timestamp for when the UCAN should expire.
+   */
   withExpiraton(expiration: number): Builder<State & { expiration: number }> {
     if (this.defaultable.notBefore != null && expiration < this.defaultable.notBefore) {
       throw new Error(`Can't set expiration to ${expiration} which is before 'notBefore': ${this.defaultable.notBefore}`)
@@ -73,6 +118,9 @@ export class Builder<State extends Partial<BuildableState>> {
     return new Builder({ ...this.state, expiration }, this.defaultable)
   }
 
+  /**
+   * @param notBeforeTimestamp The POSIX timestamp of when the UCAN becomes active.
+   */
   withNotBefore(notBeforeTimestamp: number): Builder<State> {
     if (util.hasProp(this.state, "expiration") && typeof this.state.expiration === "number" && this.state.expiration < notBeforeTimestamp) {
       throw new Error(`Can't set 'notBefore' to ${notBeforeTimestamp} which is after expiration: ${this.state.expiration}`)
@@ -80,6 +128,10 @@ export class Builder<State extends Partial<BuildableState>> {
     return new Builder(this.state, { ...this.defaultable, notBefore: notBeforeTimestamp })
   }
 
+  /**
+   * @param fact Any fact or proof of knowledge in this UCAN as a record.
+   * @param facts Arbitrary more facts or proofs of knowledge.
+   */
   withFact(fact: Fact): Builder<State>
   withFact(fact: Fact, ...facts: Fact[]): Builder<State>
   withFact(fact: Fact, ...facts: Fact[]): Builder<State> {
@@ -89,6 +141,9 @@ export class Builder<State extends Partial<BuildableState>> {
     })
   }
 
+  /**
+   * Will ensure that the built UCAN includes a number used once.
+   */
   withNonce(): Builder<State> {
     return new Builder(this.state, { ...this.defaultable, addNonce: true })
   }
@@ -105,6 +160,20 @@ export class Builder<State extends Partial<BuildableState>> {
     })
   }
 
+  /**
+   * Delegate capabilities from a given proof to the audience of the UCAN you're building.
+   * 
+   * @param semantics The semantics for how delgation works for given capability.
+   * @param requiredCapability The capability you want to delegate.
+   * 
+   * Then, one of
+   * @param proof The proof chain that grants the issuer of this UCAN at least the capabilities you want to delegate, or
+   * @param store The UCAN store in which to try to find a UCAN granting you enough capabilities to delegate given capabilities.
+   * 
+   * @throws If given store can't provide a UCAN for delegating given capability
+   * @throws If given proof can't be used to delegate given capability
+   * @throws If the builder hasn't set an issuer and expiration yet
+   */
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends CapabilityLookupCapableState ? Builder<State> : never
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder<State> {
@@ -131,6 +200,7 @@ export class Builder<State extends Partial<BuildableState>> {
     }
 
     if (isProof(storeOrProof)) {
+      // TODO make sure the proof can delegate given capability
       return new Builder(this.state, {
         ...this.defaultable,
         capabilities: [...this.defaultable.capabilities, requiredCapability],
@@ -156,6 +226,9 @@ export class Builder<State extends Partial<BuildableState>> {
     }
   }
 
+  /**
+   * Build the UCAN header and body. This can be used if you want to sign the UCAN yourself afterwards.
+   */
   buildParts(): State extends BuildableState ? UcanParts : never
   buildParts(): UcanParts {
     if (!isBuildableState(this.state)) {
@@ -176,6 +249,11 @@ export class Builder<State extends Partial<BuildableState>> {
     })
   }
 
+  /**
+   * Finalize: Build and sign the UCAN.
+   * 
+   * @throws If the builder hasn't yet been set an issuer, audience and expiration.
+   */
   async build(): Promise<State extends BuildableState ? Chained : never>
   async build(): Promise<Chained> {
     if (!isBuildableState(this.state)) {
