@@ -1,6 +1,5 @@
 import { Builder } from "../src/builder"
 import { wnfsPublicSemantics } from "../src/capability/wnfs"
-import { emailCapabilities, emailSemantics } from "./emailCapabilities"
 import { alice, bob, mallory } from "./fixtures"
 
 

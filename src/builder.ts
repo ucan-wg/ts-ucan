@@ -28,10 +28,22 @@ interface DefaultableState {
   notBefore?: number
 }
 
+// the state neccessary for being able to lookup fitting capabilities in the UCAN store
+export interface CapabilityLookupCapableState {
+  issuer: Keypair
+  expiration: number
+}
+
+function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCapableState {
+  return util.isRecord(obj)
+    && util.hasProp(obj, "issuer") && isKeypair(obj.issuer)
+    && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
+}
+
 export class Builder<State extends Partial<BuildableState>> {
 
-  private state: State
-  private defaultable: DefaultableState
+  private state: State // portion of the state that's required to be set before building
+  private defaultable: DefaultableState // portion of the state that has sensible defaults
 
   private constructor(state: State, defaultable: DefaultableState) {
     this.state = state
@@ -93,11 +105,11 @@ export class Builder<State extends Partial<BuildableState>> {
     })
   }
 
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends BuildableState ? Builder<State> : never
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends BuildableState ? Builder<State> : never
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
+  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends CapabilityLookupCapableState ? Builder<State> : never
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder<State> {
-    if (!isBuildableState(this.state)) {
-      throw new Error(`Can't delegate capabilities without having required paramenters set in the builder: issuer, audience and expiration.`)
+    if (!isCapabilityLookupCapableState(this.state)) {
+      throw new Error(`Can't delegate capabilities without having these paramenters set in the builder: issuer and expiration.`)
     }
 
     function isProof(proof: Store | Chained): proof is Chained {
@@ -127,7 +139,9 @@ export class Builder<State extends Partial<BuildableState>> {
           : this.defaultable.proofs
       })
     } else {
-      const result = storeOrProof.findWithCapability(this.state.audience, semantics, parsedRequirement, hasInfoRequirements)
+      const issuer = publicKeyBytesToDid(this.state.issuer.publicKey, this.state.issuer.keyType)
+      // we look up a proof that has our issuer as an audience
+      const result = storeOrProof.findWithCapability(issuer, semantics, parsedRequirement, hasInfoRequirements)
       if (result.success) {
         return new Builder(this.state, {
           ...this.defaultable,
@@ -170,7 +184,7 @@ export class Builder<State extends Partial<BuildableState>> {
     const parts = this.buildParts()
     const signed = await token.sign(parts.header, parts.payload, this.state.issuer)
     const encoded = token.encode(signed)
-    return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs }})
+    return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs } })
   }
 
 }
