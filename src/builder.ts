@@ -3,7 +3,7 @@ import * as util from "./util"
 import { Keypair, isKeypair, Capability, Fact, UcanParts } from "./types"
 import { publicKeyBytesToDid } from "./did/transformers"
 import { Chained } from "./chained"
-import { capabilities, CapabilityInfo, CapabilitySemantics } from "./attenuation"
+import { canDelegate, capabilities, CapabilityInfo, CapabilitySemantics } from "./attenuation"
 import { Store } from "./store"
 
 
@@ -200,7 +200,9 @@ export class Builder<State extends Partial<BuildableState>> {
     }
 
     if (isProof(storeOrProof)) {
-      // TODO make sure the proof can delegate given capability
+      if (!canDelegate(semantics, parsedRequirement, storeOrProof)) {
+        throw new Error(`Can't add capability to UCAN: Given proof doesn't give required rights to delegate.`)
+      }
       return new Builder(this.state, {
         ...this.defaultable,
         capabilities: [...this.defaultable.capabilities, requiredCapability],
