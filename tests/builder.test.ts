@@ -1,5 +1,6 @@
 import { Builder } from "../src/builder"
 import { wnfsPublicSemantics } from "../src/capability/wnfs"
+import { emailSemantics } from "./emailCapabilities"
 import { alice, bob, mallory } from "./fixtures"
 
 
@@ -85,6 +86,24 @@ describe("Builder", () => {
       Builder.create()
         .issuedBy(alice)
         .toAudience(bob.did())
+        .buildParts()
+    }).toThrow()
+  })
+
+  it("throws when trying to delegate unproven capabilities", async () => {
+    const ucan = await Builder.create()
+      .issuedBy(alice)
+      .toAudience(bob.did())
+      .withLifetimeInSeconds(30)
+      .claimCapability({ email: "alice@email.com", cap: "SEND" })
+      .build()
+
+    expect(() => {
+      Builder.create()
+        .issuedBy(bob)
+        .toAudience(mallory.did())
+        .withLifetimeInSeconds(30)
+        .delegateCapability(emailSemantics, { email: "bob@email.com", cap: "SEND" }, ucan)
         .buildParts()
     }).toThrow()
   })
