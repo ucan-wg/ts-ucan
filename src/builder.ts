@@ -40,6 +40,43 @@ export class Builder {
     this.proofs = []
   }
 
+  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Builder
+  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): Builder
+  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder {
+    function isProof(proof: Store | Chained): proof is Chained {
+      // @ts-ignore
+      const encodedFnc = proof.encoded
+      return typeof encodedFnc === "function"
+    }
+
+    const parsedRequirement = semantics.tryParsing(requiredCapability)
+    if (parsedRequirement == null) {
+      throw new Error(`Can't add capability to UCAN: Semantics can't parse given capability: ${JSON.stringify(requiredCapability)}`)
+    }
+    const hasInfoRequirements = (info: CapabilityInfo) => {
+      if (info.expiresAt < this.expiration) return false
+      if (info.notBefore == null || this.notBefore == null) return true
+      return info.notBefore <= this.notBefore
+    }
+    if (isProof(storeOrProof)) {
+      this.capabilities.push(requiredCapability)
+      if (this.proofs.find(proof => proof.encoded() === storeOrProof.encoded()) == null) {
+        this.proofs.push(storeOrProof)
+      }
+    } else {
+      const result = storeOrProof.findWithCapability(this.audience, semantics, parsedRequirement, hasInfoRequirements)
+      if (result.success) {
+        this.capabilities.push(requiredCapability)
+        if (this.proofs.find(proof => proof.encoded() === result.ucan.encoded()) == null) {
+          this.proofs.push(result.ucan)
+        }
+      } else {
+        throw new Error(`Can't add capability to UCAN: ${result.reason}`)
+      }
+    }
+    return this
+  }
+
   buildParts(options?: BuildOptions): UcanParts {
     const addNonce = options?.addNonce ?? false
     return token.buildParts({
@@ -55,28 +92,6 @@ export class Builder {
       facts: this.facts,
       proofs: this.proofs.map(proof => proof.encoded()),
     })
-  }
-
-  withCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Builder {
-    const parsedRequirement = semantics.tryParsing(requiredCapability)
-    if (parsedRequirement == null) {
-      throw new Error(`Can't add capability to UCAN: Semantics can't parse given capability: ${JSON.stringify(requiredCapability)}`)
-    }
-    const hasInfoRequirements = (info: CapabilityInfo) => {
-      if (info.expiresAt < this.expiration) return false
-      if (info.notBefore == null || this.notBefore == null) return true
-      return info.notBefore <= this.notBefore
-    }
-    const result = store.findWithCapability(this.audience, semantics, parsedRequirement, hasInfoRequirements)
-    if (result.success) {
-      this.capabilities.push(requiredCapability)
-      if (this.proofs.find(proof => proof === result.ucan) == null) {
-        this.proofs.push(result.ucan)
-      }
-    } else {
-      throw new Error(`Can't add capability to UCAN: ${result.reason}`)
-    }
-    return this
   }
 
   async build(options?: BuildOptions): Promise<Chained> {
