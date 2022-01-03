@@ -1,7 +1,7 @@
 import * as uint8arrays from "uint8arrays"
 import * as util from "./util"
 import * as did from "./did"
-import { verifySignature } from "./did/validation"
+import { verifySignatureUtf8 } from "./did/validation"
 import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, UcanParts, isUcanHeader, isUcanPayload } from "./types"
 
 /**
@@ -214,9 +214,7 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   }
 
   if (checkSignature) {
-    const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
-    const sig = uint8arrays.fromString(signature, "base64url")
-    if (!await verifySignature(data, sig, payload.iss)) {
+    if (!await verifySignatureUtf8(`${encodedHeader}.${encodedPayload}`, signature, payload.iss)) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Signature invalid.`)
     }
   }
