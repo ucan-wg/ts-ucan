@@ -32,7 +32,7 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
  * Verify the signature of some data (string encoded as utf8), given a DID.
  */
 export async function verifySignatureUtf8(data: string, signature: string, did: string): Promise<boolean> {
-  const dataBytes = uint8arrays.fromString(data)
-  const sigBytes = uint8arrays.fromString(signature)
+  const dataBytes = uint8arrays.fromString(data, "utf8")
+  const sigBytes = uint8arrays.fromString(signature, "base64url")
   return await verifySignature(dataBytes, sigBytes, did)
 }
