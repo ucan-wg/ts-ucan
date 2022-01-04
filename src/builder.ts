@@ -1,9 +1,9 @@
 import * as token from "./token"
 import * as util from "./util"
-import { Keypair, isKeypair, Capability, Fact, UcanParts } from "./types"
+import { Keypair, isKeypair, Capability, isCapability, Fact, UcanParts } from "./types"
 import { publicKeyBytesToDid } from "./did/transformers"
 import { Chained } from "./chained"
-import { canDelegate, capabilities, CapabilityInfo, CapabilitySemantics } from "./attenuation"
+import { canDelegate, CapabilityInfo, CapabilitySemantics } from "./attenuation"
 import { Store } from "./store"
 
 
@@ -85,6 +85,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * The UCAN must be signed with the private key of the issuer to be valid.
    */
   issuedBy(issuer: Keypair): Builder<State & { issuer: Keypair }> {
+    if (!isKeypair(issuer)) {
+      throw new TypeError(`Expected a Keypair, but got ${issuer}`)
+    }
     return new Builder({ ...this.state, issuer }, this.defaultable)
   }
 
@@ -97,6 +100,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * continue the UCAN chain as an issuer.
    */
   toAudience(audience: string): Builder<State & { audience: string }> {
+    if (typeof audience !== "string") {
+      throw new TypeError(`Expected audience DID as string, but got ${audience}`)
+    }
     return new Builder({ ...this.state, audience }, this.defaultable)
   }
 
@@ -105,6 +111,12 @@ export class Builder<State extends Partial<BuildableState>> {
    *   to set the expiry timestamp to.
    */
   withLifetimeInSeconds(seconds: number): Builder<State & { expiration: number }> {
+    if (typeof seconds !== "number") {
+      throw new TypeError(`Expected seconds as number, but got ${seconds}`)
+    }
+    if (!isFinite(seconds) || seconds <= 0) {
+      throw new TypeError(`Expected seconds to be a positive number, but got ${seconds}`)
+    }
     return this.withExpiraton(Date.now() + seconds * 1000)
   }
 
@@ -112,6 +124,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * @param expiration The POSIX timestamp for when the UCAN should expire.
    */
   withExpiraton(expiration: number): Builder<State & { expiration: number }> {
+    if (typeof expiration !== "number" || !isFinite(expiration)) {
+      throw new TypeError(`Expected expiration as number, but got ${expiration}`)
+    }
     if (this.defaultable.notBefore != null && expiration < this.defaultable.notBefore) {
       throw new Error(`Can't set expiration to ${expiration} which is before 'notBefore': ${this.defaultable.notBefore}`)
     }
@@ -122,6 +137,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * @param notBeforeTimestamp The POSIX timestamp of when the UCAN becomes active.
    */
   withNotBefore(notBeforeTimestamp: number): Builder<State> {
+    if (typeof notBeforeTimestamp !== "number" || !isFinite(notBeforeTimestamp)) {
+      throw new TypeError(`Expected notBeforeTimestamp as number, but got ${notBeforeTimestamp}`)
+    }
     if (util.hasProp(this.state, "expiration") && typeof this.state.expiration === "number" && this.state.expiration < notBeforeTimestamp) {
       throw new Error(`Can't set 'notBefore' to ${notBeforeTimestamp} which is after expiration: ${this.state.expiration}`)
     }
@@ -135,6 +153,9 @@ export class Builder<State extends Partial<BuildableState>> {
   withFact(fact: Fact): Builder<State>
   withFact(fact: Fact, ...facts: Fact[]): Builder<State>
   withFact(fact: Fact, ...facts: Fact[]): Builder<State> {
+    if (!util.isRecord(fact) || facts.some(fct => !util.isRecord(fct))) {
+      throw new TypeError(`Expected fact(s) to be a record, but got ${fact}`)
+    }
     return new Builder(this.state, {
       ...this.defaultable,
       facts: [...this.defaultable.facts, fact, ...facts]
@@ -154,6 +175,9 @@ export class Builder<State extends Partial<BuildableState>> {
   claimCapability(capability: Capability): Builder<State>
   claimCapability(capability: Capability, ...capabilities: Capability[]): Builder<State>
   claimCapability(capability: Capability, ...capabilities: Capability[]): Builder<State> {
+    if (!isCapability(capability)) {
+      throw new TypeError(`Expected capability, but got ${JSON.stringify(capability, null, " ")}`)
+    }
     return new Builder(this.state, {
       ...this.defaultable,
       capabilities: [...this.defaultable.capabilities, capability, ...capabilities]
@@ -177,6 +201,9 @@ export class Builder<State extends Partial<BuildableState>> {
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends CapabilityLookupCapableState ? Builder<State> : never
   delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder<State> {
+    if (!isCapability(requiredCapability)) {
+      throw new TypeError(`Expected 'requiredCapability' as a second argument, but got ${requiredCapability}`)
+    }
     if (!isCapabilityLookupCapableState(this.state)) {
       throw new Error(`Can't delegate capabilities without having these paramenters set in the builder: issuer and expiration.`)
     }
@@ -234,7 +261,7 @@ export class Builder<State extends Partial<BuildableState>> {
   buildParts(): State extends BuildableState ? UcanParts : never
   buildParts(): UcanParts {
     if (!isBuildableState(this.state)) {
-      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and/or expiration.`)
+      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
     return token.buildParts({
       keyType: this.state.issuer.keyType,
@@ -259,7 +286,7 @@ export class Builder<State extends Partial<BuildableState>> {
   async build(): Promise<State extends BuildableState ? Chained : never>
   async build(): Promise<Chained> {
     if (!isBuildableState(this.state)) {
-      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and/or expiration.`)
+      throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
     const parts = this.buildParts()
     const signed = await token.sign(parts.header, parts.payload, this.state.issuer)
