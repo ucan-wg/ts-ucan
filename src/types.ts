@@ -50,6 +50,11 @@ export type UcanPayload<Prf = string> = {
   prf: Array<Prf>
 }
 
+export interface UcanParts<Prf = string> {
+  header: UcanHeader
+  payload: UcanPayload<Prf>
+}
+
 export type Ucan<Prf = string> = {
   header: UcanHeader
   payload: UcanPayload<Prf>
@@ -84,4 +89,11 @@ export function isCapability(obj: unknown): obj is Capability {
 
 export function isAvailableCryptoKeyPair(keypair: CryptoKeyPair): keypair is AvailableCryptoKeyPair {
   return keypair.publicKey != null && keypair.privateKey != null
+}
+
+export function isKeypair(obj: unknown): obj is Keypair {
+  return util.isRecord(obj)
+    && util.hasProp(obj, "publicKey") && obj.publicKey instanceof Uint8Array
+    && util.hasProp(obj, "keyType") && typeof obj.keyType === "string"
+    && util.hasProp(obj, "sign") && typeof obj.sign === "function"
 }

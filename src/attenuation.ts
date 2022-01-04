@@ -8,7 +8,7 @@ export interface CapabilitySemantics<A> {
   /**
    * Try to parse a capability into a representation used for
    * delegation & returning in the `capabilities` call.
-   * 
+   *
    * If the capability doesn't seem to match the format expected
    * for the capabilities with the semantics currently defined,
    * return `null`.
@@ -49,10 +49,30 @@ export interface CapabilityEscalation<A> {
   capability: A // the capability that escalated rights
 }
 
-function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
+export function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
   return util.isRecord(obj)
     && util.hasProp(obj, "escalation") && typeof obj.escalation === "string"
     && util.hasProp(obj, "capability")
+}
+
+export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A, ucan: Chained): boolean {
+  for (const cap of capabilities(ucan, semantics)) {
+    if (isCapabilityEscalation(cap)) {
+      continue
+    }
+
+    const delegated = semantics.tryDelegating(cap.capability, capability)
+
+    if (isCapabilityEscalation(delegated)) {
+      continue
+    }
+
+    if (delegated != null) {
+      return true
+    }
+  }
+
+  return false
 }
 
 
