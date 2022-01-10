@@ -16,6 +16,12 @@ export function publicKeyBytesToDid(
     throw new Error(`Key type '${type}' not supported`)
   }
 
+  // if (type === "rsa") {
+  //   if (bytesStartWith(publicKeyBytes, SPKI_HEADER)) {
+  //     publicKeyBytes = publicKeyBytes.slice(SPKI_HEADER.length)
+  //   }
+  // }
+
   const prefixedBytes = uint8arrays.concat([prefix, publicKeyBytes])
 
   // Encode prefixed
@@ -36,7 +42,9 @@ export function publicKeyToDid(
 
 
 /**
- * Convert a DID (did:key) to the public key in bytes
+ * Convert a DID (did:key) to the public key into bytes in SubjectPublicKeyInfo (spki) format.
+ * 
+ * For consumption e.g. in the WebCrypto API.
  */
 export function didToPublicKeyBytes(did: string): {
   publicKey: Uint8Array
@@ -48,8 +56,17 @@ export function didToPublicKeyBytes(did: string): {
 
   const didWithoutPrefix = did.slice(BASE58_DID_PREFIX.length)
   const magicBytes = uint8arrays.fromString(didWithoutPrefix, "base58btc")
-  const { keyBytes, type } = parseMagicBytes(magicBytes)
+  let { keyBytes, type } = parseMagicBytes(magicBytes)
 
+  // if (type === "rsa" && !bytesStartWith(keyBytes, SPKI_HEADER)) {
+  //   // Generally never expect the SPKI_HEADER to already be in the DID.
+  //   // As per the multicodec specification, that shouldn't be the case -
+  //   // it should always only be an ASN.1 DER RSAPublicKey encoded bytestring.
+  //   // But in previous versions we've used an unofficial encoding that
+  //   // uses SubjectPublicKeyInfo directly.
+  //   keyBytes = uint8arrays.concat([SPKI_HEADER, keyBytes])
+  // }
+        
   return {
     publicKey: keyBytes,
     type
@@ -68,4 +85,8 @@ export function didToPublicKey(did: string, encoding: Encodings = "base64pad"): 
     publicKey: uint8arrays.toString(publicKey, encoding),
     type
   }
+}
+
+function bytesStartWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
+  return uint8arrays.equals(prefix, bytes.subarray(0, prefix.length))
 }

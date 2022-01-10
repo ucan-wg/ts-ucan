@@ -2,10 +2,16 @@ import * as uint8arrays from "uint8arrays"
 import { KeyType } from "../types"
 
 
+/** https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L94 */
 export const EDWARDS_DID_PREFIX = new Uint8Array([ 0xed, 0x01 ])
+/** https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L91 */
 export const BLS_DID_PREFIX = new Uint8Array([ 0xea, 0x01 ])
-export const RSA_DID_PREFIX = new Uint8Array([ 0x00, 0xf5, 0x02 ])
-export const BASE58_DID_PREFIX = "did:key:z"
+/** https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L146 */
+export const RSA_DID_PREFIX = new Uint8Array([ 0x12, 0x05 ])
+/** Old RSA DID prefix, used pre-standardisation */
+export const RSA_DID_PREFIX_OLD = new Uint8Array([ 0x00, 0xf5, 0x02 ])
+
+export const BASE58_DID_PREFIX = "did:key:z" // z is the multibase prefix for base58btc byte encoding
 
 /**
  * Magic bytes.
@@ -31,6 +37,13 @@ export const parseMagicBytes = (prefixedKey: Uint8Array): {
   if (hasPrefix(prefixedKey, RSA_DID_PREFIX)) {
     return {
       keyBytes: prefixedKey.slice(RSA_DID_PREFIX.byteLength),
+      type: "rsa"
+    }
+
+  // RSA OLD
+  } else if (hasPrefix(prefixedKey, RSA_DID_PREFIX_OLD)) {
+    return {
+      keyBytes: prefixedKey.slice(RSA_DID_PREFIX_OLD.byteLength),
       type: "rsa"
     }
 
