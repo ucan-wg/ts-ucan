@@ -209,8 +209,7 @@ export class Builder<State extends Partial<BuildableState>> {
     }
 
     function isProof(proof: Store | Chained): proof is Chained {
-      // @ts-ignore
-      const encodedFnc = proof.encoded
+      const encodedFnc = (proof as unknown as any).encoded
       return typeof encodedFnc === "function"
     }
 

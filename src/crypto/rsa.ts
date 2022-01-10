@@ -104,7 +104,7 @@ export const convertSubjectPublicKeyInfoToRSAPublicKey = (subjectPublicKeyInfo: 
 }
 
 // ㊙️
-// but exposed for testing :/
+// but some exposed for testing :/
 
 export function asn1DERLengthEncode(length: number): Uint8Array {
   if (length < 0 || !isFinite(length)) {

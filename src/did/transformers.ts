@@ -1,6 +1,7 @@
 import * as uint8arrays from "uint8arrays"
 
-import { BASE58_DID_PREFIX, magicBytes, parseMagicBytes } from "./prefix"
+import * as rsa from "../crypto/rsa"
+import { BASE58_DID_PREFIX, RSA_DID_PREFIX_OLD, magicBytes, parseMagicBytes, hasPrefix } from "./prefix"
 import { KeyType, Encodings } from "../types"
 
 /**
@@ -16,11 +17,13 @@ export function publicKeyBytesToDid(
     throw new Error(`Key type '${type}' not supported`)
   }
 
-  // if (type === "rsa") {
-  //   if (bytesStartWith(publicKeyBytes, SPKI_HEADER)) {
-  //     publicKeyBytes = publicKeyBytes.slice(SPKI_HEADER.length)
-  //   }
-  // }
+  if (type === "rsa") {
+    // See also the comment in didToPublicKeyBytes
+    // In this library, we're assuming a single byte encoding for all types of keys.
+    // For RSA that is "SubjectPublicKeyInfo", because that's what the WebCrypto API understands.
+    // But DIDs assume that all public keys are encoded as "RSAPublicKey".
+    publicKeyBytes = rsa.convertSubjectPublicKeyInfoToRSAPublicKey(publicKeyBytes)
+  }
 
   const prefixedBytes = uint8arrays.concat([prefix, publicKeyBytes])
 
@@ -58,15 +61,16 @@ export function didToPublicKeyBytes(did: string): {
   const magicBytes = uint8arrays.fromString(didWithoutPrefix, "base58btc")
   let { keyBytes, type } = parseMagicBytes(magicBytes)
 
-  // if (type === "rsa" && !bytesStartWith(keyBytes, SPKI_HEADER)) {
-  //   // Generally never expect the SPKI_HEADER to already be in the DID.
-  //   // As per the multicodec specification, that shouldn't be the case -
-  //   // it should always only be an ASN.1 DER RSAPublicKey encoded bytestring.
-  //   // But in previous versions we've used an unofficial encoding that
-  //   // uses SubjectPublicKeyInfo directly.
-  //   keyBytes = uint8arrays.concat([SPKI_HEADER, keyBytes])
-  // }
-        
+  if (type === "rsa" && !hasPrefix(magicBytes, RSA_DID_PREFIX_OLD)) {
+    // DID RSA keys are ASN.1 DER encoded "RSAPublicKeys" (PKCS #1).
+    // But the WebCrypto API mostly works with "SubjectPublicKeyInfo" (SPKI),
+    // which wraps RSAPublicKey with some metadata.
+    // In an unofficial RSA multiformat we were using, we used SPKI,
+    // so we have to be careful not to transform *every* RSA DID to SPKI, but
+    // only newer DIDs.
+    keyBytes = rsa.convertRSAPublicKeyToSubjectPublicKeyInfo(keyBytes)
+  }
+
   return {
     publicKey: keyBytes,
     type
