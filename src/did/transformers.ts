@@ -59,21 +59,21 @@ export function didToPublicKeyBytes(did: string): {
 
   const didWithoutPrefix = did.slice(BASE58_DID_PREFIX.length)
   const magicBytes = uint8arrays.fromString(didWithoutPrefix, "base58btc")
-  let { keyBytes, type } = parseMagicBytes(magicBytes)
+  const parsed = parseMagicBytes(magicBytes)
 
-  if (type === "rsa" && !hasPrefix(magicBytes, RSA_DID_PREFIX_OLD)) {
+  if (parsed.type === "rsa" && !hasPrefix(magicBytes, RSA_DID_PREFIX_OLD)) {
     // DID RSA keys are ASN.1 DER encoded "RSAPublicKeys" (PKCS #1).
     // But the WebCrypto API mostly works with "SubjectPublicKeyInfo" (SPKI),
     // which wraps RSAPublicKey with some metadata.
     // In an unofficial RSA multiformat we were using, we used SPKI,
     // so we have to be careful not to transform *every* RSA DID to SPKI, but
     // only newer DIDs.
-    keyBytes = rsa.convertRSAPublicKeyToSubjectPublicKeyInfo(keyBytes)
+    parsed.keyBytes = rsa.convertRSAPublicKeyToSubjectPublicKeyInfo(parsed.keyBytes)
   }
 
   return {
-    publicKey: keyBytes,
-    type
+    publicKey: parsed.keyBytes,
+    type: parsed.type,
   }
 }
 
@@ -89,8 +89,4 @@ export function didToPublicKey(did: string, encoding: Encodings = "base64pad"): 
     publicKey: uint8arrays.toString(publicKey, encoding),
     type
   }
-}
-
-function bytesStartWith(bytes: Uint8Array, prefix: Uint8Array): boolean {
-  return uint8arrays.equals(prefix, bytes.subarray(0, prefix.length))
 }
