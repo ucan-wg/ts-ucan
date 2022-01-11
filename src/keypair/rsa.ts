@@ -1,3 +1,6 @@
+import { webcrypto } from "one-webcrypto"
+import * as uint8arrays from "uint8arrays"
+
 import * as rsa  from "../crypto/rsa"
 import BaseKeypair from "./base"
 import { Encodings, AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types"
@@ -32,7 +35,8 @@ export class RsaKeypair extends BaseKeypair {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    throw new Error("Exporting not enabled for RSA yet")
+    const arrayBuffer = await webcrypto.subtle.exportKey("pkcs8", this.keypair.privateKey)
+    return uint8arrays.toString(new Uint8Array(arrayBuffer), format)
   }
 
 }

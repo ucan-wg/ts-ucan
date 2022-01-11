@@ -1,8 +1,9 @@
 import * as uint8arrays from "uint8arrays"
 import * as util from "./util"
 import * as did from "./did"
+import { handleCompatibility } from "./compatibility"
 import { verifySignatureUtf8 } from "./did/validation"
-import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, UcanParts, isUcanHeader, isUcanPayload } from "./types"
+import { Keypair, KeyType, Capability, Fact, Ucan, UcanHeader, UcanPayload, UcanParts } from "./types"
 
 /**
  * Create a UCAN, User Controlled Authorization Networks, JWT.
@@ -203,15 +204,10 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
     throw new Error(`Can't parse UCAN: ${encodedUcan}: Expected JWT format: 3 dot-separated base64url-encoded values.`)
   }
 
-  const header = parseHeader(encodedHeader)
-  const payload = parsePayload(encodedPayload)
+  const headerDecoded = parseHeader(encodedHeader)
+  const payloadDecoded = parsePayload(encodedPayload)
 
-  if (!isUcanHeader(header)) {
-    throw new Error(`Can't parse UCAN header: ${encodedHeader}: Invalid format.`)
-  }
-  if (!isUcanPayload(payload)) {
-    throw new Error(`Can't parse UCAN payload. ${encodedPayload}: Invalid format.`)
-  }
+  const { header, payload } = handleCompatibility(headerDecoded, payloadDecoded)
 
   if (checkSignature) {
     if (!await verifySignatureUtf8(`${encodedHeader}.${encodedPayload}`, signature, payload.iss)) {

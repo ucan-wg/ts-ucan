@@ -14,10 +14,10 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
     switch (type) {
 
       case "ed25519":
-        return await nacl.sign.detached.verify(data, signature, publicKey)
+        return nacl.sign.detached.verify(data, signature, publicKey)
 
-      case "rsa": 
-      return await rsa.verify(data, signature, publicKey)
+      case "rsa":
+        return await rsa.verify(data, signature, publicKey)
 
       default: return false
     }
