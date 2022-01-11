@@ -71,13 +71,37 @@ describe("token.validate", () => {
 })
 
 describe("verifySignatureUtf8", () => {
-  
+
   it("works with an example", async () => {
     const [header, payload, signature] = token.encode(await token.build({
       issuer: alice,
       audience: bob.did(),
     })).split(".")
     expect(await verifySignatureUtf8(`${header}.${payload}`, signature, alice.did())).toEqual(true)
+  })
+
+})
+
+describe("token.buildParts", () => {
+
+  it("can build tokens without nbf", () => {
+    const ucan = token.buildParts({
+      keyType: alice.keyType,
+      issuer: alice.did(),
+      audience: bob.did(),
+    })
+    expect(ucan.payload.nbf).not.toBeDefined()
+  })
+
+  it("builds tokens that expire in the future", () => {
+    const ucan = token.buildParts({
+      keyType: alice.keyType,
+      issuer: alice.did(),
+      audience: bob.did(),
+
+      lifetimeInSeconds: 30,
+    })
+    expect(ucan.payload.exp).toBeGreaterThan(Date.now() / 1000)
   })
 
 })
