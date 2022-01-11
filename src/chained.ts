@@ -130,14 +130,14 @@ export class Chained {
   }
 
   /**
-   * @returns `exp`: The POSIX timestamp for when the UCAN expires.
+   * @returns `exp`: The UTCTime timestamp (in seconds) for when the UCAN expires.
    */
   expiresAt(): number {
     return this._decoded.payload.exp
   }
 
   /**
-   * @returns `nbf`: The POSIX timestamp of when the UCAN becomes active.
+   * @returns `nbf`: The UTCTime timestamp (in seconds) of when the UCAN becomes active.
    * If `null`, then it's only bound by `.expiresAt()`.
    */
   notBefore(): number | null {

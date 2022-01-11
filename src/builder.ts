@@ -117,11 +117,11 @@ export class Builder<State extends Partial<BuildableState>> {
     if (!isFinite(seconds) || seconds <= 0) {
       throw new TypeError(`Expected seconds to be a positive number, but got ${seconds}`)
     }
-    return this.withExpiraton(Date.now() + seconds * 1000)
+    return this.withExpiraton(Math.floor(Date.now() / 1000) + seconds)
   }
 
   /**
-   * @param expiration The POSIX timestamp for when the UCAN should expire.
+   * @param expiration The UTCTime timestamp (in seconds) for when the UCAN should expire.
    */
   withExpiraton(expiration: number): Builder<State & { expiration: number }> {
     if (typeof expiration !== "number" || !isFinite(expiration)) {
@@ -134,7 +134,7 @@ export class Builder<State extends Partial<BuildableState>> {
   }
 
   /**
-   * @param notBeforeTimestamp The POSIX timestamp of when the UCAN becomes active.
+   * @param notBeforeTimestamp The UTCTime timestamp (in seconds) of when the UCAN becomes active.
    */
   withNotBefore(notBeforeTimestamp: number): Builder<State> {
     if (typeof notBeforeTimestamp !== "number" || !isFinite(notBeforeTimestamp)) {
