@@ -98,7 +98,6 @@ export function buildParts(params: {
   // Timestamps
   const currentTimeInSeconds = Math.floor(Date.now() / 1000)
   const exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
-  const nbf = notBefore || currentTimeInSeconds - 60
 
   const header = {
     alg: jwtAlgorithm(keyType),
@@ -112,7 +111,7 @@ export function buildParts(params: {
     exp,
     fct: facts,
     iss: issuer,
-    nbf,
+    nbf: notBefore,
     prf: proofs,
   } as UcanPayload
 

@@ -11,8 +11,8 @@ describe("Builder", () => {
     const fact2 = { preimage: "abc", hash: "sth" }
     const cap1 = { email: "alice@email.com", cap: "SEND" }
     const cap2 = { wnfs: "alice.fission.name/public/", cap: "SUPER_USER" }
-    const expiration = Date.now() + 30 * 1000
-    const notBefore = Date.now() - 30 * 1000
+    const expiration = Math.floor(Date.now() / 1000) + 30
+    const notBefore = Math.floor(Date.now() / 1000) - 30
 
     const ucan = await Builder.create()
       .issuedBy(alice)
@@ -40,7 +40,7 @@ describe("Builder", () => {
       .withLifetimeInSeconds(300)
       .buildParts()
 
-    expect(parts.payload.exp).toBeGreaterThan(Date.now() + 290 * 1000)
+    expect(parts.payload.exp).toBeGreaterThan(Date.now() / 1000 + 290)
   })
 
   it("prevents duplicate proofs", async () => {
