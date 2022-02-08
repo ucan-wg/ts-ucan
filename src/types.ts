@@ -1,6 +1,7 @@
 import { SupportedEncodings } from "uint8arrays/util/bases"
 import * as util from "./util"
 
+
 export type Encodings = SupportedEncodings
 
 export interface Keypair {
@@ -62,7 +63,9 @@ export type Ucan<Prf = string> = {
 }
 
 
-// Type checks
+
+// TYPE CHECKS
+
 
 export function isUcanHeader(obj: unknown): obj is UcanHeader {
   return util.isRecord(obj)
