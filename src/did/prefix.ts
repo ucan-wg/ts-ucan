@@ -20,6 +20,7 @@ export const RSA_DID_PREFIX_OLD = new Uint8Array([ 0x00, 0xf5, 0x02 ])
 
 export const BASE58_DID_PREFIX = "did:key:z" // z is the multibase prefix for base58btc byte encoding
 
+
 /**
  * Magic bytes.
  */

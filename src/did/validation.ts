@@ -1,6 +1,7 @@
-import * as rsa from "../crypto/rsa"
-import nacl from "tweetnacl"
 import * as uint8arrays from "uint8arrays"
+import nacl from "tweetnacl"
+
+import * as rsa from "../crypto/rsa"
 import { didToPublicKeyBytes } from "./transformers"
 
 
