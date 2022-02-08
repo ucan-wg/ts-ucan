@@ -3,6 +3,38 @@ import { verifySignatureUtf8 } from "../src/did"
 import { alice, bob } from "./fixtures"
 
 
+// COMPOSING
+
+
+describe("token.buildParts", () => {
+
+  it("can build tokens without nbf", () => {
+    const ucan = token.buildParts({
+      keyType: alice.keyType,
+      issuer: alice.did(),
+      audience: bob.did(),
+    })
+    expect(ucan.payload.nbf).not.toBeDefined()
+  })
+
+  it("builds tokens that expire in the future", () => {
+    const ucan = token.buildParts({
+      keyType: alice.keyType,
+      issuer: alice.did(),
+      audience: bob.did(),
+
+      lifetimeInSeconds: 30,
+    })
+    expect(ucan.payload.exp).toBeGreaterThan(Date.now() / 1000)
+  })
+
+})
+
+
+
+// VALIDATION
+
+
 describe("token.validate", () => {
   async function makeUcan() {
     return await token.build({
@@ -43,6 +75,18 @@ describe("token.validate", () => {
     await expect(() => token.validate(badUcan)).rejects.toBeDefined()
   })
 
+  it("throws with a bad issuer", async () => {
+    const ucan = await makeUcan()
+    const badUcan = token.encode({
+      ...ucan,
+      header: {
+        ...ucan.header,
+        alg: "RS256"
+      }
+    })
+    await expect(() => token.validate(badUcan)).rejects.toBeDefined()
+  })
+
   it("identifies a ucan that is not active yet", async () => {
     const ucan = await makeUcan()
     const badUcan = {
@@ -78,30 +122,6 @@ describe("verifySignatureUtf8", () => {
       audience: bob.did(),
     })).split(".")
     expect(await verifySignatureUtf8(`${header}.${payload}`, signature, alice.did())).toEqual(true)
-  })
-
-})
-
-describe("token.buildParts", () => {
-
-  it("can build tokens without nbf", () => {
-    const ucan = token.buildParts({
-      keyType: alice.keyType,
-      issuer: alice.did(),
-      audience: bob.did(),
-    })
-    expect(ucan.payload.nbf).not.toBeDefined()
-  })
-
-  it("builds tokens that expire in the future", () => {
-    const ucan = token.buildParts({
-      keyType: alice.keyType,
-      issuer: alice.did(),
-      audience: bob.did(),
-
-      lifetimeInSeconds: 30,
-    })
-    expect(ucan.payload.exp).toBeGreaterThan(Date.now() / 1000)
   })
 
 })

@@ -252,9 +252,10 @@ export function parsePayload(encodedUcanPayload: string): unknown {
  * Validation options
  */
 export interface ValidateOptions {
-  checkSignature?: boolean
+  checkIssuer?: boolean
   checkIsExpired?: boolean
   checkIsTooEarly?: boolean
+  checkSignature?: boolean
 }
 
 /**
@@ -269,9 +270,10 @@ export interface ValidateOptions {
  * @throws Error if the UCAN is invalid
  */
 export async function validate(encodedUcan: string, options?: ValidateOptions): Promise<Ucan> {
-  const checkSignature = options?.checkSignature ?? true
+  const checkIssuer = options?.checkIssuer ?? true
   const checkIsExpired = options?.checkIsExpired ?? true
   const checkIsTooEarly = options?.checkIsTooEarly ?? true
+  const checkSignature = options?.checkSignature ?? true
 
   const [ encodedHeader, encodedPayload, signature ] = encodedUcan.split(".")
   if (encodedHeader == null || encodedPayload == null || signature == null) {
@@ -282,6 +284,13 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   const payloadDecoded = parsePayload(encodedPayload)
 
   const { header, payload } = handleCompatibility(headerDecoded, payloadDecoded)
+
+  if (checkIssuer) {
+    const issuerKeyType = did.didToPublicKey(payload.iss).type
+    if (jwtAlgorithm(issuerKeyType) !== header.alg) {
+      throw new Error(`Invalid UCAN: ${encodedUcan}: Issuer key type does not match UCAN's \`alg\` property.`)
+    }
+  }
 
   if (checkSignature) {
     if (!await verifySignatureUtf8(`${encodedHeader}.${encodedPayload}`, signature, payload.iss)) {
