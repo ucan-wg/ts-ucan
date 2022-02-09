@@ -28,6 +28,16 @@ describe("token.buildParts", () => {
     expect(ucan.payload.exp).toBeGreaterThan(Date.now() / 1000)
   })
 
+  it("throws when building tokens with an invalid key type", () => {
+    expect(
+      () => token.buildParts({
+        keyType: "rsa",
+        issuer: alice.did(),
+        audience: bob.did(),
+      })
+    ).toThrow()
+  })
+
 })
 
 

@@ -125,6 +125,12 @@ export function buildParts(params: {
     payload.nnc = util.generateNonce()
   }
 
+  // Issuer key type must match UCAN algorithm
+  if (did.didToPublicKey(payload.iss).type !== keyType) {
+    throw new Error("The issuer's key type must match the given key type.")
+  }
+
+  // 📦
   return { header, payload }
 }
 
