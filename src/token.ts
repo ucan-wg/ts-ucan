@@ -229,7 +229,7 @@ export function parseHeader(encodedUcanHeader: string): unknown {
 /**
  * Parse an encoded UCAN payload.
  *
- * @param encodedUcanHeader The encoded UCAN payload.
+ * @param encodedUcanPayload The encoded UCAN payload.
  */
 export function parsePayload(encodedUcanPayload: string): unknown {
   let decodedUcanPayload: string
