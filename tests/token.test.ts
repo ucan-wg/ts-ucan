@@ -6,36 +6,39 @@ import { alice, bob } from "./fixtures"
 // COMPOSING
 
 
-describe("token.buildParts", () => {
+describe("token.build", () => {
 
-  it("can build tokens without nbf", () => {
-    const ucan = token.buildParts({
-      keyType: alice.keyType,
+  it("can build payloads without nbf", () => {
+    const payload = token.buildPayload({
       issuer: alice.did(),
       audience: bob.did(),
     })
-    expect(ucan.payload.nbf).not.toBeDefined()
+    expect(payload.nbf).not.toBeDefined()
   })
 
-  it("builds tokens that expire in the future", () => {
-    const ucan = token.buildParts({
-      keyType: alice.keyType,
+  it("builds payloads that expire in the future", () => {
+    const payload = token.buildPayload({
       issuer: alice.did(),
       audience: bob.did(),
 
       lifetimeInSeconds: 30,
     })
-    expect(ucan.payload.exp).toBeGreaterThan(Date.now() / 1000)
+    expect(payload.exp).toBeGreaterThan(Date.now() / 1000)
   })
 
-  it("throws when building tokens with an invalid key type", () => {
-    expect(
-      () => token.buildParts({
-        keyType: "rsa",
+  it("throws when enclosing tokens with an invalid key type", async () => {
+    await expect(() => {
+      const payload = token.buildPayload({
         issuer: alice.did(),
         audience: bob.did(),
       })
-    ).toThrow()
+
+      return token.enclose(
+        payload,
+        "rsa",
+        data => alice.sign(data)
+      )
+    }).rejects.toBeDefined()
   })
 
 })

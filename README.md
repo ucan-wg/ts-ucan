@@ -1,4 +1,4 @@
-# ts-ucan 
+# ts-ucan
 [![NPM](https://img.shields.io/npm/v/ucans)](https://www.npmjs.com/package/ucans)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fission-suite/blob/master/LICENSE)
 [![Discussions](https://img.shields.io/github/discussions/ucan-wg/ts-ucan)](https://github.com/ucan-wg/ts-ucan/discussions)
@@ -10,7 +10,7 @@ At a high level, UCANs (“User Controlled Authorization Network”) are an auth
 No all-powerful authorization server or server of any kind is required for UCANs. Instead, everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. Because UCANs are self-contained, they are easy to consume permissionlessly, and they work well offline and in distributed systems.
 
 
-UCANs work 
+UCANs work
 - Server -> Server
 - Client -> Server
 - Peer-to-peer
@@ -120,8 +120,8 @@ const u = await ucan.build({
 const token = ucan.encode(u) // base64 jwt-formatted auth token
 
 // You can also use your own signing function if you're bringing your own key management solution
-const { header, payload } = await ucan.buildParts(...)
-const u = await ucan.addSignature(header, payload, signingFn)
+const { header, payload } = await ucan.buildPayload(...)
+const u = await ucan.enclose(payload, keyType, signingFn)
 ```
 
 ## Sponsors
