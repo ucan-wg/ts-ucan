@@ -149,7 +149,7 @@ export async function enclose(
 }
 
 /**
- * `enclose` with a `KeyPair`.
+ * `enclose` with a `Keypair`.
  */
 export async function encloseWithKeypair(
   payload: UcanPayload,
