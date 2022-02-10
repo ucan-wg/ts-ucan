@@ -73,7 +73,7 @@ export class Builder<State extends Partial<BuildableState>> {
    * - `issuedBy`
    * - `toAudience` and
    * - `withLifetimeInSeconds` or `withExpiration`.
-   * To finalise the builder, call its `build` or `buildParts` method.
+   * To finalise the builder, call its `build` or `buildPayload` method.
    */
   static create(): Builder<Record<string, never>> {
     return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
