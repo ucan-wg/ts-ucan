@@ -342,9 +342,9 @@ export const isTooEarly = (ucan: Ucan): boolean => {
  */
 function jwtAlgorithm(keyType: KeyType): string {
   switch (keyType) {
-    case "bls12-381": throw new Error("Not implemented yet")
+    case "bls12-381": throw new Error(`Unknown KeyType "${keyType}"`)
     case "ed25519": return "EdDSA"
     case "rsa": return "RS256"
-    default: throw new Error("Not a KeyType")
+    default: throw new Error(`Unknown KeyType "${keyType}"`)
   }
 }
