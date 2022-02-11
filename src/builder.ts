@@ -1,10 +1,10 @@
 import * as token from "./token"
 import * as util from "./util"
-import { Keypair, isKeypair, Capability, isCapability, Fact, UcanParts } from "./types"
-import { publicKeyBytesToDid } from "./did/transformers"
+import { Capability, Keypair, Fact, UcanPayload, isKeypair, isCapability } from "./types"
+import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation"
 import { Chained } from "./chained"
-import { canDelegate, CapabilityInfo, CapabilitySemantics } from "./attenuation"
 import { Store } from "./store"
+import { publicKeyBytesToDid } from "./did/transformers"
 
 
 export interface BuildableState {
@@ -42,11 +42,11 @@ function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCa
 
 /**
  * A builder API for UCANs.
- * 
+ *
  * Supports grabbing UCANs from a UCAN `Store` for proofs (see `delegateCapability`).
- * 
+ *
  * Example usage:
- * 
+ *
  * ```ts
  * const ucan = await Builder.create()
  *   .issuedBy(aliceKeypair)
@@ -73,7 +73,7 @@ export class Builder<State extends Partial<BuildableState>> {
    * - `issuedBy`
    * - `toAudience` and
    * - `withLifetimeInSeconds` or `withExpiration`.
-   * To finalise the builder, call its `build` or `buildParts` method.
+   * To finalise the builder, call its `build` or `buildPayload` method.
    */
   static create(): Builder<Record<string, never>> {
     return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
@@ -81,7 +81,7 @@ export class Builder<State extends Partial<BuildableState>> {
 
   /**
    * @param issuer The issuer as a DID string ("did:key:...").
-   * 
+   *
    * The UCAN must be signed with the private key of the issuer to be valid.
    */
   issuedBy(issuer: Keypair): Builder<State & { issuer: Keypair }> {
@@ -93,7 +93,7 @@ export class Builder<State extends Partial<BuildableState>> {
 
   /**
    * @param audience The audience as a DID string ("did:key:...").
-   * 
+   *
    * This is the identity this UCAN transfers rights to.
    * It could e.g. be the DID of a service you're posting this UCAN as a JWT to,
    * or it could be the DID of something that'll use this UCAN as a proof to
@@ -186,14 +186,14 @@ export class Builder<State extends Partial<BuildableState>> {
 
   /**
    * Delegate capabilities from a given proof to the audience of the UCAN you're building.
-   * 
+   *
    * @param semantics The semantics for how delgation works for given capability.
    * @param requiredCapability The capability you want to delegate.
-   * 
+   *
    * Then, one of
    * @param proof The proof chain that grants the issuer of this UCAN at least the capabilities you want to delegate, or
    * @param store The UCAN store in which to try to find a UCAN granting you enough capabilities to delegate given capabilities.
-   * 
+   *
    * @throws If given store can't provide a UCAN for delegating given capability
    * @throws If given proof can't be used to delegate given capability
    * @throws If the builder hasn't set an issuer and expiration yet
@@ -255,15 +255,14 @@ export class Builder<State extends Partial<BuildableState>> {
   }
 
   /**
-   * Build the UCAN header and body. This can be used if you want to sign the UCAN yourself afterwards.
+   * Build the UCAN body. This can be used if you want to sign the UCAN yourself afterwards.
    */
-  buildParts(): State extends BuildableState ? UcanParts : never
-  buildParts(): UcanParts {
+  buildPayload(): State extends BuildableState ? UcanPayload : never
+  buildPayload(): UcanPayload {
     if (!isBuildableState(this.state)) {
       throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
-    return token.buildParts({
-      keyType: this.state.issuer.keyType,
+    return token.buildPayload({
       issuer: publicKeyBytesToDid(this.state.issuer.publicKey, this.state.issuer.keyType),
       audience: this.state.audience,
 
@@ -279,7 +278,7 @@ export class Builder<State extends Partial<BuildableState>> {
 
   /**
    * Finalize: Build and sign the UCAN.
-   * 
+   *
    * @throws If the builder hasn't yet been set an issuer, audience and expiration.
    */
   async build(): Promise<State extends BuildableState ? Chained : never>
@@ -287,8 +286,8 @@ export class Builder<State extends Partial<BuildableState>> {
     if (!isBuildableState(this.state)) {
       throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
-    const parts = this.buildParts()
-    const signed = await token.sign(parts.header, parts.payload, this.state.issuer)
+    const payload = this.buildPayload()
+    const signed = await token.signWithKeypair(payload, this.state.issuer)
     const encoded = token.encode(signed)
     return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs } })
   }

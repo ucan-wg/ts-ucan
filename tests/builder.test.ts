@@ -34,13 +34,13 @@ describe("Builder", () => {
   })
 
   it("builds with lifetimeInSeconds", async () => {
-    const parts = Builder.create()
+    const payload = Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(300)
-      .buildParts()
+      .buildPayload()
 
-    expect(parts.payload.exp).toBeGreaterThan(Date.now() / 1000 + 290)
+    expect(payload.exp).toBeGreaterThan(Date.now() / 1000 + 290)
   })
 
   it("prevents duplicate proofs", async () => {
@@ -51,42 +51,42 @@ describe("Builder", () => {
       .claimCapability({ wnfs: "alice.fission.name/public/", cap: "SUPER_USER" })
       .build()
 
-    const parts = Builder.create()
+    const payload = Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
       .delegateCapability(wnfsPublicSemantics, { wnfs: "alice.fission.name/public/Apps", cap: "CREATE" }, ucan)
       .delegateCapability(wnfsPublicSemantics, { wnfs: "alice.fission.name/public/Documents", cap: "OVERWRITE" }, ucan)
-      .buildParts()
+      .buildPayload()
 
-    expect(parts.payload.prf).toEqual([ucan.encoded()])
+    expect(payload.prf).toEqual([ucan.encoded()])
   })
 
   it("throws when it's not ready to be built", () => {
     expect(() => {
       Builder.create()
-        .buildParts()
+        .buildPayload()
     }).toThrow()
     // issuer missing
     expect(() => {
       Builder.create()
         .toAudience(bob.did())
         .withLifetimeInSeconds(1)
-        .buildParts()
+        .buildPayload()
     }).toThrow()
     // audience missing
     expect(() => {
       Builder.create()
         .issuedBy(alice)
         .withLifetimeInSeconds(1)
-        .buildParts()
+        .buildPayload()
     }).toThrow()
     // expiration missing
     expect(() => {
       Builder.create()
         .issuedBy(alice)
         .toAudience(bob.did())
-        .buildParts()
+        .buildPayload()
     }).toThrow()
   })
 
@@ -104,7 +104,7 @@ describe("Builder", () => {
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)
         .delegateCapability(emailSemantics, { email: "bob@email.com", cap: "SEND" }, ucan)
-        .buildParts()
+        .buildPayload()
     }).toThrow()
   })
 

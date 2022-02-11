@@ -4,7 +4,15 @@ import * as util from "./util"
 import { handleCompatibility } from "./compatibility"
 import { verifySignatureUtf8 } from "./did/validation"
 import { Capability, Fact, Keypair, KeyType } from "./types"
-import { Ucan, UcanHeader, UcanPayload, UcanParts } from "./types"
+import { Ucan, UcanHeader, UcanPayload } from "./types"
+
+
+// CONSTANTS
+
+
+const TYPE = "JWT"
+const VERSION = "0.7.0"
+
 
 
 // COMPOSING
@@ -48,26 +56,18 @@ export async function build(params: {
   facts?: Array<Fact>
   proofs?: Array<string>
   addNonce?: boolean
-
-  // in the weeds
-  ucanVersion?: string
 }): Promise<Ucan> {
   const keypair = params.issuer
   const didStr = did.publicKeyBytesToDid(keypair.publicKey, keypair.keyType)
-  const { header, payload } = buildParts({
-    ...params,
-    issuer: didStr,
-    keyType: keypair.keyType
-  })
-  return sign(header, payload, keypair)
+  const payload = buildPayload({ ...params, issuer: didStr })
+  return signWithKeypair(payload, keypair)
 }
 
 /**
- * Create an unsigned UCAN, User Controlled Authorization Networks, JWT.
+ * Construct the payload for a UCAN.
  */
-export function buildParts(params: {
+export function buildPayload(params: {
   // from/to
-  keyType: KeyType
   issuer: string
   audience: string
 
@@ -83,12 +83,8 @@ export function buildParts(params: {
   facts?: Array<Fact>
   proofs?: Array<string>
   addNonce?: boolean
-
-  // in the weeds
-  ucanVersion?: string
-}): UcanParts {
+}): UcanPayload {
   const {
-    keyType,
     issuer,
     audience,
     capabilities = [],
@@ -97,32 +93,38 @@ export function buildParts(params: {
     notBefore,
     facts,
     proofs = [],
-    addNonce = false,
-    ucanVersion = "0.7.0"
+    addNonce = false
   } = params
 
   // Timestamps
   const currentTimeInSeconds = Math.floor(Date.now() / 1000)
   const exp = expiration || (currentTimeInSeconds + lifetimeInSeconds)
 
-  const header = {
-    alg: jwtAlgorithm(keyType),
-    typ: "JWT",
-    ucv: ucanVersion,
-  } as UcanHeader
-
-  const payload = {
+  // 📦
+  return {
     aud: audience,
     att: capabilities,
     exp,
     fct: facts,
     iss: issuer,
     nbf: notBefore,
+    nnc: addNonce ? util.generateNonce() : undefined,
     prf: proofs,
-  } as UcanPayload
+  }
+}
 
-  if (addNonce) {
-    payload.nnc = util.generateNonce()
+/**
+ * Encloses a UCAN payload as to form a finalised UCAN.
+ */
+export async function sign(
+  payload: UcanPayload,
+  keyType: KeyType,
+  signFn: (data: Uint8Array) => Promise<Uint8Array>
+): Promise<Ucan> {
+  const header: UcanHeader = {
+    alg: jwtAlgorithm(keyType),
+    typ: TYPE,
+    ucv: VERSION,
   }
 
   // Issuer key type must match UCAN algorithm
@@ -130,40 +132,34 @@ export function buildParts(params: {
     throw new Error("The issuer's key type must match the given key type.")
   }
 
-  // 📦
-  return { header, payload }
-}
-
-/**
- * Add a signature to a UCAN based on the given key pair.
- */
-export async function sign(
-  header: UcanHeader,
-  payload: UcanPayload,
-  keypair: Keypair
-): Promise<Ucan> {
-  return addSignature(header, payload, (data) => keypair.sign(data))
-}
-
-/**
- * Add a signature to a UCAN based based on the given signature function.
- */
-export async function addSignature(
-  header: UcanHeader,
-  payload: UcanPayload,
-  signFn: (data: Uint8Array) => Promise<Uint8Array>
-): Promise<Ucan> {
+  // Encode parts
   const encodedHeader = encodeHeader(header)
   const encodedPayload = encodePayload(payload)
 
+  // Sign
   const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
   const sig = await signFn(toSign)
 
+  // 📦
   return {
     header,
     payload,
     signature: uint8arrays.toString(sig, "base64url")
   }
+}
+
+/**
+ * `sign` with a `Keypair`.
+ */
+export async function signWithKeypair(
+  payload: UcanPayload,
+  keypair: Keypair
+): Promise<Ucan> {
+  return sign(
+    payload,
+    keypair.keyType,
+    data => keypair.sign(data)
+  )
 }
 
 
@@ -344,10 +340,11 @@ export const isTooEarly = (ucan: Ucan): boolean => {
 /**
  * JWT algorithm to be used in a JWT header.
  */
-function jwtAlgorithm(keyType: KeyType): string | null {
+function jwtAlgorithm(keyType: KeyType): string {
   switch (keyType) {
+    case "bls12-381": throw new Error(`Unknown KeyType "${keyType}"`)
     case "ed25519": return "EdDSA"
     case "rsa": return "RS256"
-    default: return null
+    default: throw new Error(`Unknown KeyType "${keyType}"`)
   }
 }
