@@ -120,8 +120,8 @@ const u = await ucan.build({
 const token = ucan.encode(u) // base64 jwt-formatted auth token
 
 // You can also use your own signing function if you're bringing your own key management solution
-const { header, payload } = await ucan.buildPayload(...)
-const u = await ucan.enclose(payload, keyType, signingFn)
+const payload = await ucan.buildPayload(...)
+const u = await ucan.sign(payload, keyType, signingFn)
 ```
 
 ## Sponsors

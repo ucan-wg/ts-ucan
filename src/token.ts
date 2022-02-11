@@ -60,7 +60,7 @@ export async function build(params: {
   const keypair = params.issuer
   const didStr = did.publicKeyBytesToDid(keypair.publicKey, keypair.keyType)
   const payload = buildPayload({ ...params, issuer: didStr })
-  return encloseWithKeypair(payload, keypair)
+  return signWithKeypair(payload, keypair)
 }
 
 /**
@@ -116,7 +116,7 @@ export function buildPayload(params: {
 /**
  * Encloses a UCAN payload as to form a finalised UCAN.
  */
-export async function enclose(
+export async function sign(
   payload: UcanPayload,
   keyType: KeyType,
   signFn: (data: Uint8Array) => Promise<Uint8Array>
@@ -149,13 +149,13 @@ export async function enclose(
 }
 
 /**
- * `enclose` with a `Keypair`.
+ * `sign` with a `Keypair`.
  */
-export async function encloseWithKeypair(
+export async function signWithKeypair(
   payload: UcanPayload,
   keypair: Keypair
 ): Promise<Ucan> {
-  return enclose(
+  return sign(
     payload,
     keypair.keyType,
     data => keypair.sign(data)

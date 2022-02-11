@@ -287,7 +287,7 @@ export class Builder<State extends Partial<BuildableState>> {
       throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
     const payload = this.buildPayload()
-    const signed = await token.encloseWithKeypair(payload, this.state.issuer)
+    const signed = await token.signWithKeypair(payload, this.state.issuer)
     const encoded = token.encode(signed)
     return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs } })
   }

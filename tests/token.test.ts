@@ -33,7 +33,7 @@ describe("token.build", () => {
         audience: bob.did(),
       })
 
-      return token.enclose(
+      return token.sign(
         payload,
         "rsa",
         data => alice.sign(data)
