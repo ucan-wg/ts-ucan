@@ -1,7 +1,7 @@
 import { Store } from "../src/store"
 import { Builder } from "../src/builder"
 import { alice, bob, mallory } from "./fixtures"
-import { wnfsPublicSemantics } from "../src/capability/wnfs"
+import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 
 
 describe("Store.add", () => {
@@ -47,7 +47,7 @@ describe("Store.add", () => {
     const store = await Store.fromTokens([])
     store.add(ucan)
     store.add(ucan)
-    expect(store.getByAudience(ucan.audience())).toEqual([ucan])
+    expect(store.getByAudience(ucan.audience())).toEqual([ ucan ])
   })
 
 })
@@ -67,7 +67,7 @@ describe("Store.findByAudience", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ucanBob, ucanAlice].map(ucan => ucan.encoded()))
+    const store = await Store.fromTokens([ ucanBob, ucanAlice ].map(ucan => ucan.encoded()))
     expect(store.findByAudience(mallory.did(), () => true)).toEqual(null)
     expect(store.findByAudience(bob.did(), () => true)?.encoded()).toEqual(ucanBob.encoded())
     expect(store.findByAudience(alice.did(), () => true)?.encoded()).toEqual(ucanAlice.encoded())
@@ -82,15 +82,15 @@ describe("Store.findWithCapability", () => {
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
-      .claimCapability({ wnfs: "alice.fission.name/public/", cap: "SUPER_USER" })
+      .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
-    const store = await Store.fromTokens([ucan.encoded()])
+    const store = await Store.fromTokens([ ucan.encoded() ])
 
     const result = store.findWithCapability(bob.did(), wnfsPublicSemantics, {
       user: "alice.fission.name",
-      publicPath: ["Apps"],
-      cap: "OVERWRITE",
+      publicPath: [ "Apps" ],
+      ability: "OVERWRITE",
     }, () => true)
 
     if (!result.success) {
@@ -106,7 +106,7 @@ describe("Store.findWithCapability", () => {
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
-      .claimCapability({ wnfs: "alice.fission.name/public/", cap: "SUPER_USER" })
+      .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
     const ucanAlice = await Builder.create()
@@ -115,12 +115,12 @@ describe("Store.findWithCapability", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ucanAlice.encoded(), ucanBob.encoded()])
+    const store = await Store.fromTokens([ ucanAlice.encoded(), ucanBob.encoded() ])
 
     const result = store.findWithCapability(alice.did(), wnfsPublicSemantics, {
       user: "alice.fission.name",
-      publicPath: ["Apps"],
-      cap: "OVERWRITE",
+      publicPath: [ "Apps" ],
+      ability: "OVERWRITE",
     }, () => true)
 
     expect(result.success).toEqual(false)

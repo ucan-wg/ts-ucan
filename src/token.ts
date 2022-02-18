@@ -1,17 +1,21 @@
 import * as did from "./did"
 import * as uint8arrays from "uint8arrays"
+
 import * as util from "./util"
 import { handleCompatibility } from "./compatibility"
+import { isUcanHeader, isUcanPayload } from "./types"
 import { verifySignatureUtf8 } from "./did/validation"
-import { Capability, Fact, Keypair, KeyType } from "./types"
-import { Ucan, UcanHeader, UcanPayload } from "./types"
+import { Capability, isEncodedCapability } from "./capability"
+import { Fact, Keypair, KeyType } from "./types"
+import { Ucan, UcanHeader, UcanPayload, UcanParts } from "./types"
+import { capability, isCapability } from "."
 
 
 // CONSTANTS
 
 
 const TYPE = "JWT"
-const VERSION = "0.7.0"
+const VERSION = "0.8.1"
 
 
 
@@ -29,6 +33,7 @@ const VERSION = "0.7.0"
  *
  * ### Payload
  *
+ * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  * `aud`, Audience, the ID of who it's intended for.
  * `exp`, Expiry, unix timestamp of when the jwt is no longer valid.
  * `fct`, Facts, an array of extra facts or information to attach to the jwt.
@@ -36,7 +41,6 @@ const VERSION = "0.7.0"
  * `nbf`, Not Before, unix timestamp of when the jwt becomes valid.
  * `nnc`, Nonce, a randomly generated string, used to ensure the uniqueness of the jwt.
  * `prf`, Proofs, nested tokens with equal or greater privileges.
- * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  *
  */
 export async function build(params: {
@@ -95,6 +99,10 @@ export function buildPayload(params: {
     proofs = [],
     addNonce = false
   } = params
+
+  // Validate
+  if (!issuer.startsWith("did:")) throw new Error("The issuer must be a DID")
+  if (!audience.startsWith("did:")) throw new Error("The audience must be a DID")
 
   // Timestamps
   const currentTimeInSeconds = Math.floor(Date.now() / 1000)
@@ -177,16 +185,17 @@ export function encode(ucan: Ucan): string {
   const encodedPayload = encodePayload(ucan.payload)
 
   return encodedHeader + "." +
-         encodedPayload + "." +
-         ucan.signature
+    encodedPayload + "." +
+    ucan.signature
 }
 
 /**
  * Encode the header of a UCAN.
  *
  * @param header The UcanHeader to encode
+ * @returns The header of a UCAN encoded as url-safe base64 JSON
  */
- export function encodeHeader(header: UcanHeader): string {
+export function encodeHeader(header: UcanHeader): string {
   return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(header), "utf8"), "base64url")
 }
 
@@ -200,48 +209,69 @@ export function encodePayload(payload: UcanPayload): string {
 }
 
 /**
- * Parse an encoded UCAN header.
+ * Parse an encoded UCAN.
  *
- * @param encodedUcanHeader The encoded UCAN header.
+ * @param encodedUcan The encoded UCAN.
  */
-export function parseHeader(encodedUcanHeader: string): unknown {
-  let decodedUcanHeader: string
+export function parse(encodedUcan: string): UcanParts {
+  const [ encodedHeader, encodedPayload, signature ] = encodedUcan.split(".")
+
+  if (encodedHeader == null || encodedPayload == null || signature == null) {
+    throw new Error(`Can't parse UCAN: ${encodedUcan}: Expected JWT format: 3 dot-separated base64url-encoded values.`)
+  }
+
+  // Header
+  let headerJson: string
+  let headerObject: unknown
+
   try {
-    decodedUcanHeader = uint8arrays.toString(
-      uint8arrays.fromString(encodedUcanHeader, "base64url"),
+    headerJson = uint8arrays.toString(
+      uint8arrays.fromString(encodedHeader, "base64url"),
       "utf8"
     )
   } catch {
-    throw new Error(`Can't parse UCAN header: ${encodedUcanHeader}: Can't parse as base64url.`)
+    throw new Error(`Can't parse UCAN header: ${encodedHeader}: Can't parse as base64url.`)
   }
 
   try {
-    return JSON.parse(decodedUcanHeader)
+    headerObject = JSON.parse(headerJson)
   } catch {
-    throw new Error(`Can't parse UCAN header: ${encodedUcanHeader}: Can't parse base64url encoded JSON inside.`)
+    throw new Error(`Can't parse UCAN header: ${encodedHeader}: Can't parse encoded JSON inside.`)
   }
-}
 
-/**
- * Parse an encoded UCAN payload.
- *
- * @param encodedUcanPayload The encoded UCAN payload.
- */
-export function parsePayload(encodedUcanPayload: string): unknown {
-  let decodedUcanPayload: string
+  // Payload
+  let payloadJson: string
+  let payloadObject: unknown
+
   try {
-    decodedUcanPayload = uint8arrays.toString(
-      uint8arrays.fromString(encodedUcanPayload, "base64url"),
+    payloadJson = uint8arrays.toString(
+      uint8arrays.fromString(encodedPayload, "base64url"),
       "utf8"
     )
   } catch {
-    throw new Error(`Can't parse UCAN payload: ${encodedUcanPayload}: Can't parse as base64url.`)
+    throw new Error(`Can't parse UCAN payload: ${encodedPayload}: Can't parse as base64url.`)
   }
 
   try {
-    return JSON.parse(decodedUcanPayload)
+    payloadObject = JSON.parse(payloadJson)
   } catch {
-    throw new Error(`Can't parse UCAN payload: ${encodedUcanPayload}: Can't parse base64url encoded JSON inside.`)
+    throw new Error(`Can't parse UCAN payload: ${encodedPayload}: Can't parse encoded JSON inside.`)
+  }
+
+  // Compatibility layer
+  const { header, payload } = handleCompatibility(headerObject, payloadObject)
+
+  // Ensure proper types/structure
+  const parsedAttenuations = payload.att.reduce((acc: Capability[], cap: unknown): Capability[] => {
+    return isEncodedCapability(cap)
+      ? [ ...acc, capability.parse(cap) ]
+      : isCapability(cap) ? [ ...acc, cap ] : acc
+  }, [])
+
+  // Fin
+  return {
+    header: header,
+    payload: { ...payload, att: parsedAttenuations }
   }
 }
 
@@ -277,15 +307,8 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   const checkIsTooEarly = options?.checkIsTooEarly ?? true
   const checkSignature = options?.checkSignature ?? true
 
+  const { header, payload } = parse(encodedUcan)
   const [ encodedHeader, encodedPayload, signature ] = encodedUcan.split(".")
-  if (encodedHeader == null || encodedPayload == null || signature == null) {
-    throw new Error(`Can't parse UCAN: ${encodedUcan}: Expected JWT format: 3 dot-separated base64url-encoded values.`)
-  }
-
-  const headerDecoded = parseHeader(encodedHeader)
-  const payloadDecoded = parsePayload(encodedPayload)
-
-  const { header, payload } = handleCompatibility(headerDecoded, payloadDecoded)
 
   if (checkIssuer) {
     const issuerKeyType = did.didToPublicKey(payload.iss).type
