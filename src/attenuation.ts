@@ -55,6 +55,29 @@ export function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscala
     && util.hasProp(obj, "capability")
 }
 
+export function hasCapability<Cap>(semantics: CapabilitySemantics<Cap>, capability: CapabilityWithInfo<Cap>, ucan: Chained): CapabilityWithInfo<Cap> | false {
+  for (const cap of capabilities(ucan, semantics)) {
+    if (isCapabilityEscalation(cap)) {
+      continue
+    }
+
+    const delegatedCapability = semantics.tryDelegating(cap.capability, capability.capability)
+
+    if (isCapabilityEscalation(delegatedCapability)) {
+      continue
+    }
+
+    if (delegatedCapability != null) {
+      return {
+        info: delegateCapabilityInfo(capability.info, cap.info),
+        capability: delegatedCapability,
+      }
+    }
+  }
+
+  return false
+}
+
 export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A, ucan: Chained): boolean {
   for (const cap of capabilities(ucan, semantics)) {
     if (isCapabilityEscalation(cap)) {
