@@ -17,7 +17,7 @@ describe("Builder", () => {
     const ucan = await Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
-      .withExpiraton(expiration)
+      .withExpiration(expiration)
       .withNotBefore(notBefore)
       .withFact(fact1, fact2)
       .withNonce()
