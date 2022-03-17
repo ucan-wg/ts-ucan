@@ -213,21 +213,39 @@ describe("attenuation.emailCapabilities", () => {
 describe('hasCapability', () => {
 
   it('gets a capability', async () => {
+    // let's do semantics based on the idea "you can delegate something if it's the same capability"
     const testSemantics = {
       tryParsing(cap: Capability): Capability | null {
         console.log('cap', cap)
-        return null
+        return cap
       },
 
       tryDelegating(parentCap: Capability, childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
         console.log('parent cap', parentCap)
         console.log('child cap', childCap)
-        return null
+        
+        return JSON.stringify(parentCap) === JSON.stringify(childCap) // a shitty version of deep-equal :P
       }
     }
+    
+    const nowInSeconds = Math.floor(Date.now() / 1000) // unix timestamp in seconds
 
-
-    const cap = hasCapability(testSemantics, emailCaps[0], await Chained.fromToken(token.encode(ucan)))
+    const capabilityWithInfo = {
+      // you can technically choose your own format for capabilities
+      // I just went for this random thing for now.
+      capability: {
+        test: "access to alice's stuff",
+        cap: "OVERWRITE",
+      },
+      // we need to provide some information about who we think originally created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        notBefore: nowInSeconds,
+        expiration: nowInSeconds,
+      },
+    }
+    const cap = hasCapability(testSemantics, capabilityWithInfo, await Chained.fromToken(token.encode(ucan)))
     console.log('gotten cap', cap)
   })
 
