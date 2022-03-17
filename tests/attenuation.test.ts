@@ -9,7 +9,7 @@ import { hasCapability, CapabilityEscalation, CapabilityWithInfo } from '../src/
 import { Capability, Ucan } from "../src/types"
 
 var ucan:Ucan
-var emailCaps:CapabilityWithInfo<Capability>[]
+var emailCaps:(CapabilityWithInfo<EmailCapability> | CapabilityEscalation<EmailCapability>)[]
 
 describe("attenuation.emailCapabilities", () => {
 
@@ -227,7 +227,7 @@ describe('hasCapability', () => {
     }
 
 
-    const cap = hasCapability(testSemantics, emailCaps[0], await Chained.fromToken(ucan))
+    const cap = hasCapability(testSemantics, emailCaps[0], await Chained.fromToken(token.encode(ucan)))
     console.log('gotten cap', cap)
   })
 
