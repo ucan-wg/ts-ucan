@@ -2,9 +2,14 @@ import { Chained } from "../src/chained"
 import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
-import { emailCapabilities } from "./emailCapabilities"
+import { emailCapabilities, EmailCapability } from "./emailCapabilities"
 import { maxNbf } from "./utils"
 
+import { hasCapability, CapabilityEscalation, CapabilityWithInfo } from '../src/attenuation'
+import { Capability, Ucan } from "../src/types"
+
+var ucan:Ucan
+var emailCaps:CapabilityWithInfo<Capability>[]
 
 describe("attenuation.emailCapabilities", () => {
 
@@ -21,7 +26,7 @@ describe("attenuation.emailCapabilities", () => {
       }]
     })
 
-    const ucan = await token.build({
+    ucan = await token.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [{
@@ -31,7 +36,7 @@ describe("attenuation.emailCapabilities", () => {
       proofs: [token.encode(leafUcan)]
     })
 
-    const emailCaps = Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))
+    emailCaps = Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))
     expect(emailCaps).toEqual([{
       info: {
         originator: alice.did(),
@@ -200,6 +205,30 @@ describe("attenuation.emailCapabilities", () => {
         }
       }
     ])
+  })
+
+})
+
+
+describe('hasCapability', () => {
+
+  it('gets a capability', async () => {
+    const testSemantics = {
+      tryParsing(cap: Capability): Capability | null {
+        console.log('cap', cap)
+        return null
+      },
+
+      tryDelegating(parentCap: Capability, childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
+        console.log('parent cap', parentCap)
+        console.log('child cap', childCap)
+        return null
+      }
+    }
+
+
+    const cap = hasCapability(testSemantics, emailCaps[0], await Chained.fromToken(ucan))
+    console.log('gotten cap', cap)
   })
 
 })
