@@ -210,43 +210,86 @@ describe("attenuation.emailCapabilities", () => {
 })
 
 
+// let's do semantics based on the idea "you can delegate something if it's
+// the same capability"
+const testSemantics = {
+  // ??? what is `tryParsing` used for?
+  tryParsing(cap: Capability): Capability | null {
+    return cap
+  },
+
+  // here you decide whether the given `childCap` is allowed to be created
+  // by the given `parentCap`
+  tryDelegating(parentCap: Capability, childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
+    // a shitty version of deep-equal :P
+    return JSON.stringify(parentCap) === JSON.stringify(childCap) ?
+      childCap :
+      null
+  }
+}
+
 describe('hasCapability', () => {
 
   it('gets a capability', async () => {
-    // let's do semantics based on the idea "you can delegate something if it's the same capability"
-    const testSemantics = {
-      tryParsing(cap: Capability): Capability | null {
-        console.log('cap', cap)
-        return cap
-      },
+    const nowInSeconds = Math.floor(Date.now() / 1000) // unix timestamp in seconds
 
-      tryDelegating(parentCap: Capability, childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
-        console.log('parent cap', parentCap)
-        console.log('child cap', childCap)
-        
-        return JSON.stringify(parentCap) === JSON.stringify(childCap) // a shitty version of deep-equal :P
+    const capabilityWithInfo = {
+      // you can technically choose your own format for capabilities
+      capability: {
+        email: 'alice@email.com',
+        cap: 'SEND'
+      },
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        originator: alice.did(),
+        notBefore: nowInSeconds,
+        // expiration: nowInSeconds,
+        expiresAt: nowInSeconds + 30  // now + 30 seconds
       }
     }
-    
+
+    const cap = hasCapability(testSemantics, capabilityWithInfo, await Chained.fromToken(token.encode(ucan)))
+    console.log('gotten cap', cap)
+
+    expect(cap).toBeTruthy()
+
+    if (!cap) return
+
+    expect(cap.info.originator).toEqual(alice.did())
+    expect(cap.capability.email).toEqual('alice@email.com')
+  })
+
+  // ------------------------------------
+
+  it('rejects an invalid escalation', async () => {
     const nowInSeconds = Math.floor(Date.now() / 1000) // unix timestamp in seconds
 
     const capabilityWithInfo = {
       // you can technically choose your own format for capabilities
       // I just went for this random thing for now.
       capability: {
-        test: "access to alice's stuff",
-        cap: "OVERWRITE",
+        email: 'alice@email.com',
+        cap: 'FOO'
       },
-      // we need to provide some information about who we think originally created/has the capability
+      // we need to provide some information about who we think originally
+      // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        // originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        // ??? what is originator used for? It works with any example string
+        originator: alice.did(),
         notBefore: nowInSeconds,
-        expiration: nowInSeconds,
-      },
+        // expiration: nowInSeconds,
+        expiresAt: nowInSeconds + 30  // now + 30 seconds
+      }
     }
+
     const cap = hasCapability(testSemantics, capabilityWithInfo, await Chained.fromToken(token.encode(ucan)))
-    console.log('gotten cap', cap)
+
+    expect(cap).toEqual(false)
   })
 
 })
