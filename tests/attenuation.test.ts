@@ -231,7 +231,8 @@ const testSemantics = {
 describe('hasCapability', () => {
 
   it('gets a capability', async () => {
-    const nowInSeconds = Math.floor(Date.now() / 1000) // unix timestamp in seconds
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000) 
 
     const capabilityWithInfo = {
       // you can technically choose your own format for capabilities
@@ -243,7 +244,8 @@ describe('hasCapability', () => {
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        // originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        // originator: "<some DID that originally owns this capability,
+        // in this case that'd be whatever alice's did is>",
         originator: alice.did(),
         notBefore: nowInSeconds,
         // expiration: nowInSeconds,
@@ -251,8 +253,8 @@ describe('hasCapability', () => {
       }
     }
 
-    const cap = hasCapability(testSemantics, capabilityWithInfo, await Chained.fromToken(token.encode(ucan)))
-    console.log('gotten cap', cap)
+    const cap = hasCapability(testSemantics, capabilityWithInfo,
+      await Chained.fromToken(token.encode(ucan)))
 
     expect(cap).toBeTruthy()
 
@@ -262,14 +264,11 @@ describe('hasCapability', () => {
     expect(cap.capability.email).toEqual('alice@email.com')
   })
 
-  // ------------------------------------
-
   it('rejects an invalid escalation', async () => {
-    const nowInSeconds = Math.floor(Date.now() / 1000) // unix timestamp in seconds
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000) 
 
     const capabilityWithInfo = {
-      // you can technically choose your own format for capabilities
-      // I just went for this random thing for now.
       capability: {
         email: 'alice@email.com',
         cap: 'FOO'
@@ -278,7 +277,8 @@ describe('hasCapability', () => {
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        // originator: "<some DID that originally owns this capability, in this case that'd be whatever alice's did is>",
+        // originator: "<some DID that originally owns this capability, in this
+        // case that'd be whatever alice's did is>",
         // ??? what is originator used for? It works with any example string
         originator: alice.did(),
         notBefore: nowInSeconds,
@@ -287,7 +287,35 @@ describe('hasCapability', () => {
       }
     }
 
-    const cap = hasCapability(testSemantics, capabilityWithInfo, await Chained.fromToken(token.encode(ucan)))
+    const cap = hasCapability(testSemantics, capabilityWithInfo,
+      await Chained.fromToken(token.encode(ucan)))
+
+    expect(cap).toEqual(false)
+  })
+
+  it('rejects for an invalid originator', async () => {
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000) 
+
+    const capabilityWithInfo = {
+      capability: {
+        email: 'alice@email.com',
+        cap: 'SEND'
+      },
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // ??? what is originator used for? It works with any example string
+        originator: 'fooo',
+        notBefore: nowInSeconds,
+        // expiration: nowInSeconds,
+        expiresAt: nowInSeconds + 30  // now + 30 seconds
+      }
+    }
+
+    const cap = hasCapability(testSemantics, capabilityWithInfo,
+      await Chained.fromToken(token.encode(ucan)))
 
     expect(cap).toEqual(false)
   })
