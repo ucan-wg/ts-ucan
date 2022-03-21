@@ -2,6 +2,8 @@ import * as uint8arrays from "uint8arrays"
 import nacl from "tweetnacl"
 
 import * as rsa from "../crypto/rsa"
+import * as ecdsa from "../crypto/ecdsa"
+
 import { didToPublicKeyBytes } from "./transformers"
 
 
@@ -19,6 +21,11 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
 
       case "rsa":
         return await rsa.verify(data, signature, publicKey)
+
+      case "p256":
+      case "p384":
+      case "p521":
+        return await ecdsa.verify(data, signature, publicKey)
 
       default: return false
     }

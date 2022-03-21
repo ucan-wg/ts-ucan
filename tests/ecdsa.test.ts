@@ -1,14 +1,14 @@
 import * as did from "../src/did"
-import EdwardsKey from "../src/keypair/ed25519"
+import ECDSAKeyPair from "../src/keypair/ecdsa"
 
-describe("ed25519", () => {
 
-  let keypair: EdwardsKey
+describe("ecdsa", () => {
+  let keypair: ECDSAKeyPair
   let signature: Uint8Array
-  const data = new Uint8Array([1,2,3,4,5,6,7,8,9])
+  const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-  it("creates an edwards keypair", async () => {
-    keypair = await EdwardsKey.create()
+  it("creates an ecdsa keypair", async () => {
+    keypair = await ECDSAKeyPair.create()
   })
 
   it("returns a publicKeyStr and did", () => {
@@ -16,7 +16,7 @@ describe("ed25519", () => {
     const keyDid = keypair.did()
     const transformed = did.didToPublicKey(keyDid)
     expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual("ed25519")
+    expect(transformed.type).toEqual("p256")
   })
 
   it("signs data", async () => {
@@ -27,5 +27,4 @@ describe("ed25519", () => {
     const isValid = await did.verifySignature(data, signature, keypair.did())
     expect(isValid).toEqual(true)
   })
-
 })
