@@ -55,16 +55,16 @@ export const verify = async (msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Arra
 /**
  * The ASN.1 DER encoded header that needs to be added to an
  * ASN.1 DER encoded RSAPublicKey to make it a SubjectPublicKeyInfo.
- * 
+ *
  * This byte sequence is always the same.
- * 
+ *
  * A human-readable version of this as part of a dumpasn1 dump:
- * 
+ *
  *     SEQUENCE {
  *       OBJECT IDENTIFIER rsaEncryption (1 2 840 113549 1 1 1)
  *       NULL
  *     }
- * 
+ *
  * See https://github.com/ucan-wg/ts-ucan/issues/30
  */
 const SPKI_PARAMS_ENCODED = new Uint8Array([48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0])
@@ -152,17 +152,17 @@ function asn1Skip(input: Uint8Array, expectedTag: Uint8Array, position: number):
 }
 
 function asn1Into(input: Uint8Array, expectedTag: Uint8Array, position: number): { position: number; length: number } {
-    // tag
-    const lengthPos = position + expectedTag.length
-    const actualTag = input.subarray(position, lengthPos)
-    if (!uint8arrays.equals(actualTag, expectedTag)) {
-      throw new Error(`ASN parsing error: Expected tag 0x${uint8arrays.toString(expectedTag, "hex")} at position ${position}, but got ${uint8arrays.toString(actualTag, "hex")}.`)
-    }
-    
-    // length
-    const length = asn1DERLengthDecodeWithConsumed(input.subarray(lengthPos/*, we don't know the end */))
-    const contentPos = position + 1 + length.consumed
-    
-    // content
-    return { position: contentPos, length: length.number }
+  // tag
+  const lengthPos = position + expectedTag.length
+  const actualTag = input.subarray(position, lengthPos)
+  if (!uint8arrays.equals(actualTag, expectedTag)) {
+    throw new Error(`ASN parsing error: Expected tag 0x${uint8arrays.toString(expectedTag, "hex")} at position ${position}, but got ${uint8arrays.toString(actualTag, "hex")}.`)
+  }
+
+  // length
+  const length = asn1DERLengthDecodeWithConsumed(input.subarray(lengthPos/*, we don't know the end */))
+  const contentPos = position + 1 + length.consumed
+
+  // content
+  return { position: contentPos, length: length.number }
 }

@@ -1,7 +1,6 @@
 import { SupportedEncodings } from "uint8arrays/util/bases"
 import * as util from "./util"
 
-
 export type Encodings = SupportedEncodings
 
 export interface Keypair {
@@ -25,7 +24,16 @@ export interface ExportableKey {
   export: (format?: Encodings) => Promise<string>
 }
 
-export type KeyType = "rsa" | "ed25519" | "bls12-381"
+export type KeyType =
+  | "rsa"
+  | "p256"
+  | "p384"
+  | "p521"
+  | "ed25519"
+  | "bls12-381"
+
+// https://developer.mozilla.org/en-US/docs/Web/API/EcKeyGenParams
+export type NamedCurve = "P-256" | "P-384" | "P-521"
 
 export type Fact = Record<string, unknown>
 
