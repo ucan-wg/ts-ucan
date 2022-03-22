@@ -70,64 +70,41 @@ export type Ucan<Prf = string> = {
   signature: string
 }
 
+
+
 // TYPE CHECKS
 
+
 export function isUcanHeader(obj: unknown): obj is UcanHeader {
-  return (
-    util.isRecord(obj) &&
-    util.hasProp(obj, "alg") &&
-    typeof obj.alg === "string" &&
-    util.hasProp(obj, "typ") &&
-    typeof obj.typ === "string" &&
-    util.hasProp(obj, "ucv") &&
-    typeof obj.ucv === "string"
-  )
+  return util.isRecord(obj)
+    && util.hasProp(obj, "alg") && typeof obj.alg === "string"
+    && util.hasProp(obj, "typ") && typeof obj.typ === "string"
+    && util.hasProp(obj, "ucv") && typeof obj.ucv === "string"
 }
 
 export function isUcanPayload(obj: unknown): obj is UcanPayload {
-  return (
-    util.isRecord(obj) &&
-    util.hasProp(obj, "iss") &&
-    typeof obj.iss === "string" &&
-    util.hasProp(obj, "aud") &&
-    typeof obj.aud === "string" &&
-    util.hasProp(obj, "exp") &&
-    typeof obj.exp === "number" &&
-    (!util.hasProp(obj, "nbf") || typeof obj.nbf === "number") &&
-    (!util.hasProp(obj, "nnc") || typeof obj.nnc === "string") &&
-    util.hasProp(obj, "att") &&
-    Array.isArray(obj.att) &&
-    obj.att.every(isCapability) &&
-    (!util.hasProp(obj, "fct") ||
-      (Array.isArray(obj.fct) && obj.fct.every(util.isRecord))) &&
-    util.hasProp(obj, "prf") &&
-    Array.isArray(obj.prf) &&
-    obj.prf.every((str) => typeof str === "string")
-  )
+  return util.isRecord(obj)
+    && util.hasProp(obj, "iss") && typeof obj.iss === "string"
+    && util.hasProp(obj, "aud") && typeof obj.aud === "string"
+    && util.hasProp(obj, "exp") && typeof obj.exp === "number"
+    && (!util.hasProp(obj, "nbf") || typeof obj.nbf === "number")
+    && (!util.hasProp(obj, "nnc") || typeof obj.nnc === "string")
+    && util.hasProp(obj, "att") && Array.isArray(obj.att) && obj.att.every(isCapability)
+    && (!util.hasProp(obj, "fct") || Array.isArray(obj.fct) && obj.fct.every(util.isRecord))
+    && util.hasProp(obj, "prf") && Array.isArray(obj.prf) && obj.prf.every(str => typeof str === "string")
 }
 
 export function isCapability(obj: unknown): obj is Capability {
-  return (
-    util.isRecord(obj) &&
-    util.hasProp(obj, "cap") &&
-    typeof obj.cap === "string"
-  )
+  return util.isRecord(obj) && util.hasProp(obj, "cap") && typeof obj.cap === "string"
 }
 
-export function isAvailableCryptoKeyPair(
-  keypair: CryptoKeyPair
-): keypair is AvailableCryptoKeyPair {
+export function isAvailableCryptoKeyPair(keypair: CryptoKeyPair): keypair is AvailableCryptoKeyPair {
   return keypair.publicKey != null && keypair.privateKey != null
 }
 
 export function isKeypair(obj: unknown): obj is Keypair {
-  return (
-    util.isRecord(obj) &&
-    util.hasProp(obj, "publicKey") &&
-    obj.publicKey instanceof Uint8Array &&
-    util.hasProp(obj, "keyType") &&
-    typeof obj.keyType === "string" &&
-    util.hasProp(obj, "sign") &&
-    typeof obj.sign === "function"
-  )
+  return util.isRecord(obj)
+    && util.hasProp(obj, "publicKey") && obj.publicKey instanceof Uint8Array
+    && util.hasProp(obj, "keyType") && typeof obj.keyType === "string"
+    && util.hasProp(obj, "sign") && typeof obj.sign === "function"
 }
