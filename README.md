@@ -85,7 +85,7 @@ type BuildParams = {
   // → "mailto:boris@fission.codes"
   with: { scheme: "mailto", hierPart: "boris@fission.codes" },
 
-  // `can` is an ability, which always has a namespace and optional parts.
+  // `can` is an ability, which always has a namespace and optional segments.
   // → "msg/SEND"
   can: { namespace: "msg", segments: [ "SEND" ] }
 }
