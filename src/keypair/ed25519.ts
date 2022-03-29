@@ -3,6 +3,7 @@ import * as uint8arrays from "uint8arrays"
 import BaseKeypair from "./base"
 import { Encodings } from "../types"
 
+
 export class EdKeypair extends BaseKeypair {
 
   private secretKey: Uint8Array
@@ -42,5 +43,6 @@ export class EdKeypair extends BaseKeypair {
   }
 
 }
+
 
 export default EdKeypair

@@ -3,7 +3,7 @@ import { capabilities, CapabilityInfo, CapabilitySemantics, isCapabilityEscalati
 
 
 export interface IndexByAudience {
-  [audienceDID: string]: Chained[]
+  [ audienceDID: string ]: Chained[]
 }
 
 export class Store {
@@ -24,20 +24,20 @@ export class Store {
 
   add(ucan: Chained): void {
     const audience = ucan.audience()
-    const byAudience = this.index[audience] ?? []
+    const byAudience = this.index[ audience ] ?? []
     if (byAudience.find(storedUcan => storedUcan.encoded() === ucan.encoded()) != null) {
       return
     }
     byAudience.push(ucan)
-    this.index[audience] = byAudience
+    this.index[ audience ] = byAudience
   }
 
   getByAudience(audience: string): Chained[] {
-    return [...(this.index[audience] ?? [])]
+    return [ ...(this.index[ audience ] ?? []) ]
   }
 
   findByAudience(audience: string, predicate: (ucan: Chained) => boolean): Chained | null {
-    return this.index[audience]?.find(ucan => predicate(ucan)) ?? null
+    return this.index[ audience ]?.find(ucan => predicate(ucan)) ?? null
   }
 
   findWithCapability<A>(
@@ -46,7 +46,7 @@ export class Store {
     requirementsCap: A,
     requirementsInfo: (info: CapabilityInfo) => boolean,
   ): { success: true; ucan: Chained } | FindFailure {
-    const ucans = this.index[audience]
+    const ucans = this.index[ audience ]
 
     if (ucans == null) {
       return { success: false, reason: `Couldn't find any UCAN for audience ${audience}` }

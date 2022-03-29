@@ -55,16 +55,16 @@ describe("token.validate", () => {
       issuer: alice,
       capabilities: [
         {
-          "wnfs": "boris.fission.name/public/photos/",
-          "cap": "OVERWRITE"
+          "with": { scheme: "wnfs", hierPart: "//boris.fission.name/public/photos/" },
+          "can": { namespace: "crud", segments: [ "DELETE" ] }
         },
         {
-          "wnfs": "boris.fission.name/private/4tZA6S61BSXygmJGGW885odfQwpnR2UgmCaS5CfCuWtEKQdtkRnvKVdZ4q6wBXYTjhewomJWPL2ui3hJqaSodFnKyWiPZWLwzp1h7wLtaVBQqSW4ZFgyYaJScVkBs32BThn6BZBJTmayeoA9hm8XrhTX4CGX5CVCwqvEUvHTSzAwdaR",
-          "cap": "APPEND"
+          "with": { scheme: "wnfs", hierPart: "//boris.fission.name/private/84MZ7aqwKn7sNiMGsSbaxsEa6EPnQLoKYbXByxNBrCEr" },
+          "can": { namespace: "wnfs", segments: [ "APPEND" ] }
         },
         {
-          "email": "boris@fission.codes",
-          "cap": "SEND"
+          "with": { scheme: "mailto", hierPart: "boris@fission.codes" },
+          "can": { namespace: "msg", segments: [ "SEND" ] }
         }
       ]
     })
@@ -130,7 +130,7 @@ describe("token.validate", () => {
 describe("verifySignatureUtf8", () => {
 
   it("works with an example", async () => {
-    const [header, payload, signature] = token.encode(await token.build({
+    const [ header, payload, signature ] = token.encode(await token.build({
       issuer: alice,
       audience: bob.did(),
     })).split(".")

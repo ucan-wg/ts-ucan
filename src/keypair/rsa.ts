@@ -5,6 +5,7 @@ import * as rsa from "../crypto/rsa"
 import BaseKeypair from "./base"
 import { Encodings, AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types"
 
+
 export class RsaKeypair extends BaseKeypair {
 
   private keypair: AvailableCryptoKeyPair

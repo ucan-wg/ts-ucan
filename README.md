@@ -9,7 +9,6 @@ At a high level, UCANs (“User Controlled Authorization Network”) are an auth
 
 No all-powerful authorization server or server of any kind is required for UCANs. Instead, everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. Because UCANs are self-contained, they are easy to consume permissionlessly, and they work well offline and in distributed systems.
 
-
 UCANs work
 - Server -> Server
 - Client -> Server
@@ -20,14 +19,18 @@ UCANs work
 Read more in the whitepaper: https://whitepaper.fission.codes/access-control/ucan
 
 
+
 ## Structure
- ### Header
+
+### Header
+
  `alg`, Algorithm, the type of signature.
 
  `typ`, Type, the type of this data structure, JWT.
 
  `uav`, UCAN version.
- ### Payload
+
+### Payload
 
  `att`, Attenuation, a list of resources and capabilities that the ucan grants.
 
@@ -44,40 +47,51 @@ Read more in the whitepaper: https://whitepaper.fission.codes/access-control/uca
  `prf`, Proof, an optional nested token with equal or greater privileges.
 
  ### Signature
+
  A signature (using `alg`) of the base64 encoded header and payload concatenated together and delimited by `.`
 
-## Build params
-Use `ucan.build` to help in formatting and signing a ucan. It takes the following parameters
+
+
+## Build
+
+`ucan.build` can be used to help in formatting and signing a UCAN. It takes the following parameters:
 ```ts
-export type BuildParams = {
-  // to/from
-  audience: string
+type BuildParams = {
+  // from/to
   issuer: Keypair
+  audience: string
 
   // capabilities
-  capabilities: Array<Capability>
+  capabilities?: Array<Capability>
 
   // time bounds
   lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
   expiration?: number
   notBefore?: number
 
-  // proof / other info
+  // proofs / other info
   facts?: Array<Fact>
-  proof?: string
-
-  // in the weeds
-  ucanVersion?: string
+  proofs?: Array<string>
+  addNonce?: boolean
 }
 ```
+
 ### Capabilities
-`capabilities` is an array of resources and permission level formatted as:
+
+`capabilities` is an array of resource pointers and abilities:
 ```ts
 {
-  $TYPE: $IDENTIFIER,
-  "cap": $CAPABILITY
+  // `with` is a resource pointer in the form of a URI, which has a `scheme` and `hierPart`.
+  // → "mailto:boris@fission.codes"
+  with: { scheme: "mailto", hierPart: "boris@fission.codes" },
+
+  // `can` is an ability, which always has a namespace and optional segments.
+  // → "msg/SEND"
+  can: { namespace: "msg", segments: [ "SEND" ] }
 }
 ```
+
+
 
 ## Installation
 
@@ -95,25 +109,25 @@ yarn add ucans
 
 ## Example
 ```ts
-import * as ucan from 'ucans'
+import * as ucan from "ucans"
 
 // in-memory keypair
 const keypair = await ucan.EdKeypair.create()
 const u = await ucan.build({
-  audience: "did:key:zabcde...", //recipient DID
-  issuer: keypair, //signing key
+  audience: "did:key:zabcde...", // recipient DID
+  issuer: keypair, // signing key
   capabilities: [ // permissions for ucan
     {
-      "wnfs": "boris.fission.name/public/photos/",
-      "cap": "OVERWRITE"
+      with: { scheme: "wnfs", hierPart: "//boris.fission.name/public/photos/" },
+      can: { namespace: "wnfs", segments: [ "OVERWRITE" ] }
     },
     {
-      "wnfs": "boris.fission.name/private/4tZA6S61BSXygmJGGW885odfQwpnR2UgmCaS5CfCuWtEKQdtkRnvKVdZ4q6wBXYTjhewomJWPL2ui3hJqaSodFnKyWiPZWLwzp1h7wLtaVBQqSW4ZFgyYaJScVkBs32BThn6BZBJTmayeoA9hm8XrhTX4CGX5CVCwqvEUvHTSzAwdaR",
-      "cap": "APPEND"
+      with: { scheme: "wnfs", hierPart: "//boris.fission.name/private/4tZA6S61BSXygmJGGW885odfQwpnR2UgmCaS5CfCuWtEKQdtkRnvKVdZ4q6wBXYTjhewomJWPL2ui3hJqaSodFnKyWiPZWLwzp1h7wLtaVBQqSW4ZFgyYaJScVkBs32BThn6BZBJTmayeoA9hm8XrhTX4CGX5CVCwqvEUvHTSzAwdaR" },
+      can: { namespace: "wnfs", segments: [ "APPEND" ] }
     },
     {
-      "email": "boris@fission.codes",
-      "cap": "SEND"
+      with: { scheme: "mailto", hierPart: "boris@fission.codes" },
+      can: { namespace: "wnfs", segments: [ "SEND" ] }
     }
   ]
 })
@@ -124,6 +138,8 @@ const payload = await ucan.buildPayload(...)
 const u = await ucan.sign(payload, keyType, signingFn)
 ```
 
+
+
 ## Sponsors
 
 Sponsors that contribute developer time or resources to this implementation of UCANs:
@@ -133,4 +149,5 @@ Sponsors that contribute developer time or resources to this implementation of U
 
 
 ## UCAN Toucan
+
 ![](https://ipfs.runfission.com/ipfs/QmcyAwK7AjvLXbGuL4cqG5nufEKJquFmFGo2SDsaAe939Z)
