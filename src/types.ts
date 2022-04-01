@@ -1,5 +1,4 @@
 import { SupportedEncodings } from "uint8arrays/util/bases"
-
 import { Capability, isCapability, isEncodedCapability } from "./capability"
 import * as util from "./util"
 
