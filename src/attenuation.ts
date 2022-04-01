@@ -180,7 +180,8 @@ export function hasCapability<Cap>(
       continue
     }
 
-    const delegatedCapability = semantics.tryDelegating(cap.capability, capability.capability)
+    const delegatedCapability = semantics.tryDelegating(cap.capability,
+      capability.capability)
 
     if (isCapabilityEscalation(delegatedCapability)) {
       continue

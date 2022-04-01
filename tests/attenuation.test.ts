@@ -3,17 +3,17 @@ import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
 import { emailCapabilities, emailCapabilityFn,
-  EmailCapability } from "./capability/email"
+  /*EmailCapability*/ } from "./capability/email"
 import { maxNbf } from "./utils"
 
 import { hasCapability, CapabilityEscalation,
-  CapabilityWithInfo } from '../src/attenuation'
+  /*CapabilityWithInfo*/ } from '../src/attenuation'
 import { Ucan } from "../src/types"
 import { Capability } from "../src/capability"
 import { SUPERUSER } from "../src/capability/super-user"
 
 var ucan:Ucan
-var emailCaps:(CapabilityWithInfo<EmailCapability> | CapabilityEscalation<EmailCapability>)[]
+// var emailCaps:(CapabilityWithInfo<EmailCapability> | CapabilityEscalation<EmailCapability>)[]
 
 describe("attenuation.emailCapabilities", () => {
 
@@ -185,11 +185,12 @@ const testSemantics = {
 
   // here you decide whether the given `childCap` is allowed to be created
   // by the given `parentCap`
-  tryDelegating(parentCap: Capability, childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
+  tryDelegating(parentCap: Capability,
+    childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
     // a shitty version of deep-equal :P
-    return JSON.stringify(parentCap) === JSON.stringify(childCap) ?
-      childCap :
-      null
+    const isEq = JSON.stringify(parentCap) === JSON.stringify(childCap)
+
+    return  isEq ? childCap : null
   }
 }
 
@@ -201,24 +202,13 @@ describe('hasCapability', () => {
 
     const capabilityWithInfo = {
       // you can technically choose your own format for capabilities
-      capability: {
-        email: 'alice@email.com',
-        cap: 'SEND',
-        with: {
-          scheme: 'string',
-          hierPart: 'Superuser | string'
-        },
-        can: SUPERUSER
-      },
+      capability: emailCapabilityFn('alice@email.com'),
       // we need to provide some information about who we think originally
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        // originator: "<some DID that originally owns this capability,
-        // in this case that'd be whatever alice's did is>",
         originator: alice.did(),
         notBefore: nowInSeconds,
-        // expiration: nowInSeconds,
         expiresAt: nowInSeconds + 30  // now + 30 seconds
       }
     }
@@ -231,7 +221,7 @@ describe('hasCapability', () => {
     if (!cap) return
 
     expect(cap.info.originator).toEqual(alice.did())
-    expect(cap.capability.email).toEqual('alice@email.com')
+    expect(cap.capability.with.hierPart).toEqual('alice@email.com')
   })
 
   it('rejects an invalid escalation', async () => {
@@ -252,12 +242,8 @@ describe('hasCapability', () => {
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        // originator: "<some DID that originally owns this capability, in this
-        // case that'd be whatever alice's did is>",
-        // ??? what is originator used for? It works with any example string
         originator: alice.did(),
         notBefore: nowInSeconds,
-        // expiration: nowInSeconds,
         expiresAt: nowInSeconds + 30  // now + 30 seconds
       }
     }
@@ -286,10 +272,9 @@ describe('hasCapability', () => {
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
-        // ??? what is originator used for? It works with any example string
+        // an invalid originator
         originator: 'fooo',
         notBefore: nowInSeconds,
-        // expiration: nowInSeconds,
         expiresAt: nowInSeconds + 30  // now + 30 seconds
       }
     }
