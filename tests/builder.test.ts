@@ -1,6 +1,7 @@
 import { Builder } from "../src/builder"
-import { wnfsPublicSemantics } from "../src/capability/wnfs"
-import { emailSemantics } from "./emailCapabilities"
+import { emailCapability } from "./capability/email"
+import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
+import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
 
 
@@ -9,8 +10,8 @@ describe("Builder", () => {
   it("builds with a simple example", async () => {
     const fact1 = { test: true }
     const fact2 = { preimage: "abc", hash: "sth" }
-    const cap1 = { email: "alice@email.com", cap: "SEND" }
-    const cap2 = { wnfs: "alice.fission.name/public/", cap: "SUPER_USER" }
+    const cap1 = emailCapability("alice@email.com")
+    const cap2 = wnfsCapability("alice.fission.name/public/", "SUPER_USER")
     const expiration = Math.floor(Date.now() / 1000) + 30
     const notBefore = Math.floor(Date.now() / 1000) - 30
 
@@ -28,8 +29,8 @@ describe("Builder", () => {
     expect(ucan.audience()).toEqual(bob.did())
     expect(ucan.expiresAt()).toEqual(expiration)
     expect(ucan.notBefore()).toEqual(notBefore)
-    expect(ucan.facts()).toEqual([fact1, fact2])
-    expect(ucan.attenuation()).toEqual([cap1, cap2])
+    expect(ucan.facts()).toEqual([ fact1, fact2 ])
+    expect(ucan.attenuation()).toEqual([ cap1, cap2 ])
     expect(ucan.nonce()).toBeDefined()
   })
 
@@ -48,18 +49,18 @@ describe("Builder", () => {
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
-      .claimCapability({ wnfs: "alice.fission.name/public/", cap: "SUPER_USER" })
+      .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
     const payload = Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
-      .delegateCapability(wnfsPublicSemantics, { wnfs: "alice.fission.name/public/Apps", cap: "CREATE" }, ucan)
-      .delegateCapability(wnfsPublicSemantics, { wnfs: "alice.fission.name/public/Documents", cap: "OVERWRITE" }, ucan)
+      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), ucan)
+      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), ucan)
       .buildPayload()
 
-    expect(payload.prf).toEqual([ucan.encoded()])
+    expect(payload.prf).toEqual([ ucan.encoded() ])
   })
 
   it("throws when it's not ready to be built", () => {
@@ -95,7 +96,7 @@ describe("Builder", () => {
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
-      .claimCapability({ email: "alice@email.com", cap: "SEND" })
+      .claimCapability(emailCapability("alice@email.com"))
       .build()
 
     expect(() => {
@@ -103,7 +104,7 @@ describe("Builder", () => {
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)
-        .delegateCapability(emailSemantics, { email: "bob@email.com", cap: "SEND" }, ucan)
+        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), ucan)
         .buildPayload()
     }).toThrow()
   })

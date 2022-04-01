@@ -2,7 +2,7 @@ import { Chained } from "../src/chained"
 import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
-import { emailCapabilities, EmailCapability } from "./emailCapabilities"
+import { emailCapabilities, emailCapability } from "./capability/email"
 import { maxNbf } from "./utils"
 
 import { hasCapability, CapabilityEscalation, CapabilityWithInfo } from '../src/attenuation'
@@ -20,34 +20,28 @@ describe("attenuation.emailCapabilities", () => {
     const leafUcan = await token.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [{
-        email: "alice@email.com",
-        cap: "SEND",
-      }]
+      capabilities: [ emailCapability("alice@email.com") ]
     })
 
     ucan = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [{
-        email: "alice@email.com",
-        cap: "SEND",
-      }],
-      proofs: [token.encode(leafUcan)]
+      capabilities: [ emailCapability("alice@email.com") ],
+      proofs: [ token.encode(leafUcan) ]
     })
 
-    emailCaps = Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))
-    expect(emailCaps).toEqual([{
+    const emailCaps = Array.from(
+      emailCapabilities(await Chained.fromToken(token.encode(ucan)))
+    )
+
+    expect(emailCaps).toEqual([ {
       info: {
         originator: alice.did(),
         expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
         notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
       },
-      capability: {
-        email: "alice@email.com",
-        cap: "SEND"
-      }
-    }])
+      capability: emailCapability("alice@email.com")
+    } ])
   })
 
   it("reports the first issuer in the chain as originator", async () => {
@@ -62,25 +56,19 @@ describe("attenuation.emailCapabilities", () => {
     const ucan = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [{
-        email: "bob@email.com",
-        cap: "SEND",
-      }],
-      proofs: [token.encode(leafUcan)]
+      capabilities: [ emailCapability("bob@email.com") ],
+      proofs: [ token.encode(leafUcan) ]
     })
 
     // we implicitly expect the originator to become bob
-    expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([{
+    expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([ {
       info: {
         originator: bob.did(),
         expiresAt: ucan.payload.exp,
         notBefore: ucan.payload.nbf,
       },
-      capability: {
-        email: "bob@email.com",
-        cap: "SEND"
-      }
-    }])
+      capability: emailCapability("bob@email.com"),
+    } ])
   })
 
   it("finds the right proof chain for the originator", async () => {
@@ -90,35 +78,23 @@ describe("attenuation.emailCapabilities", () => {
     const leafUcanAlice = await token.build({
       issuer: alice,
       audience: mallory.did(),
-      capabilities: [{
-        email: "alice@email.com",
-        cap: "SEND",
-      }]
+      capabilities: [ emailCapability("alice@email.com") ]
     })
 
     const leafUcanBob = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [{
-        email: "bob@email.com",
-        cap: "SEND",
-      }]
+      capabilities: [ emailCapability("bob@email.com") ]
     })
 
     const ucan = await token.build({
       issuer: mallory,
       audience: alice.did(),
       capabilities: [
-        {
-          email: "alice@email.com",
-          cap: "SEND",
-        },
-        {
-          email: "bob@email.com",
-          cap: "SEND",
-        }
+        emailCapability("alice@email.com"),
+        emailCapability("bob@email.com")
       ],
-      proofs: [token.encode(leafUcanAlice), token.encode(leafUcanBob)]
+      proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
     })
 
     const chained = await Chained.fromToken(token.encode(ucan))
@@ -130,10 +106,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
         },
-        capability: {
-          email: "alice@email.com",
-          cap: "SEND",
-        }
+        capability: emailCapability("alice@email.com")
       },
       {
         info: {
@@ -141,10 +114,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
         },
-        capability: {
-          email: "bob@email.com",
-          cap: "SEND",
-        }
+        capability: emailCapability("bob@email.com")
       }
     ])
   })
@@ -155,28 +125,25 @@ describe("attenuation.emailCapabilities", () => {
     // and both grant that capability to mallory
     // a verifier needs to know both to verify valid email access
 
-    const aliceEmail = {
-      email: "alice@email.com",
-      cap: "SEND",
-    }
+    const aliceEmail = emailCapability("alice@email.com")
 
     const leafUcanAlice = await token.build({
       issuer: alice,
       audience: mallory.did(),
-      capabilities: [aliceEmail]
+      capabilities: [ aliceEmail ]
     })
 
     const leafUcanBob = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [aliceEmail]
+      capabilities: [ aliceEmail ]
     })
 
     const ucan = await token.build({
       issuer: mallory,
       audience: alice.did(),
-      capabilities: [aliceEmail],
-      proofs: [token.encode(leafUcanAlice), token.encode(leafUcanBob)]
+      capabilities: [ aliceEmail ],
+      proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
     })
 
     const chained = await Chained.fromToken(token.encode(ucan))
@@ -188,10 +155,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
         },
-        capability: {
-          email: "alice@email.com",
-          cap: "SEND",
-        }
+        capability: emailCapability("alice@email.com")
       },
       {
         info: {
@@ -199,10 +163,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
         },
-        capability: {
-          email: "alice@email.com",
-          cap: "SEND",
-        }
+        capability: emailCapability("alice@email.com")
       }
     ])
   })

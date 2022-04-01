@@ -1,4 +1,5 @@
-import { Ucan, Capability, Fact } from "./types"
+import { Capability } from "./capability"
+import { Ucan, Fact } from "./types"
 import * as token from "./token"
 
 

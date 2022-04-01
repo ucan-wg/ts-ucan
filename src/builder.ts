@@ -1,6 +1,7 @@
 import * as token from "./token"
 import * as util from "./util"
-import { Capability, Keypair, Fact, UcanPayload, isKeypair, isCapability } from "./types"
+import { Keypair, Fact, UcanPayload, isKeypair } from "./types"
+import { Capability, isCapability } from "./capability"
 import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation"
 import { Chained } from "./chained"
 import { Store } from "./store"
@@ -158,7 +159,7 @@ export class Builder<State extends Partial<BuildableState>> {
     }
     return new Builder(this.state, {
       ...this.defaultable,
-      facts: [...this.defaultable.facts, fact, ...facts]
+      facts: [ ...this.defaultable.facts, fact, ...facts ]
     })
   }
 
@@ -180,7 +181,7 @@ export class Builder<State extends Partial<BuildableState>> {
     }
     return new Builder(this.state, {
       ...this.defaultable,
-      capabilities: [...this.defaultable.capabilities, capability, ...capabilities]
+      capabilities: [ ...this.defaultable.capabilities, capability, ...capabilities ]
     })
   }
 
@@ -231,9 +232,9 @@ export class Builder<State extends Partial<BuildableState>> {
       }
       return new Builder(this.state, {
         ...this.defaultable,
-        capabilities: [...this.defaultable.capabilities, requiredCapability],
+        capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
         proofs: this.defaultable.proofs.find(proof => proof.encoded() === storeOrProof.encoded()) == null
-          ? [...this.defaultable.proofs, storeOrProof]
+          ? [ ...this.defaultable.proofs, storeOrProof ]
           : this.defaultable.proofs
       })
     } else {
@@ -243,9 +244,9 @@ export class Builder<State extends Partial<BuildableState>> {
       if (result.success) {
         return new Builder(this.state, {
           ...this.defaultable,
-          capabilities: [...this.defaultable.capabilities, requiredCapability],
+          capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
           proofs: this.defaultable.proofs.find(proof => proof.encoded() === result.ucan.encoded()) == null
-            ? [...this.defaultable.proofs, result.ucan]
+            ? [ ...this.defaultable.proofs, result.ucan ]
             : this.defaultable.proofs
         })
       } else {
