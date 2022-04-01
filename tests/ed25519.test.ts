@@ -5,9 +5,9 @@ describe("ed25519", () => {
 
   let keypair: EdwardsKey
   let signature: Uint8Array
-  const data = new Uint8Array([1,2,3,4,5,6,7,8,9])
+  const data = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-  it("creates an rsa keypair", async () => {
+  it("creates an edwards curve keypair", async () => {
     keypair = await EdwardsKey.create()
   })
 

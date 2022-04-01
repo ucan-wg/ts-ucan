@@ -1,9 +1,10 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
 
-import * as rsa  from "../crypto/rsa"
+import * as rsa from "../crypto/rsa"
 import BaseKeypair from "./base"
 import { Encodings, AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types"
+
 
 export class RsaKeypair extends BaseKeypair {
 

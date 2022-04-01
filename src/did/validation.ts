@@ -1,7 +1,9 @@
+import * as ed25519 from "@stablelib/ed25519"
 import * as uint8arrays from "uint8arrays"
-import nacl from "tweetnacl"
 
 import * as rsa from "../crypto/rsa"
+import * as ecdsa from "../crypto/ecdsa"
+
 import { didToPublicKeyBytes } from "./transformers"
 
 
@@ -15,10 +17,19 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
     switch (type) {
 
       case "ed25519":
-        return nacl.sign.detached.verify(data, signature, publicKey)
+        return ed25519.verify(publicKey, data, signature)
 
       case "rsa":
         return await rsa.verify(data, signature, publicKey)
+
+      case "p256":
+        return await ecdsa.verify(data, signature, publicKey, "P-256")
+
+      case "p384":
+        return await ecdsa.verify(data, signature, publicKey, "P-384")
+
+      case "p521":
+        return await ecdsa.verify(data, signature, publicKey, "P-521")
 
       default: return false
     }

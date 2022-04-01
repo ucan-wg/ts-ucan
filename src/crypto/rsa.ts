@@ -6,16 +6,17 @@ export const DEFAULT_KEY_SIZE = 2048
 export const DEFAULT_HASH_ALG = "SHA-256"
 export const SALT_LEGNTH = 128
 
+
 export const generateKeypair = async (size: number = DEFAULT_KEY_SIZE): Promise<CryptoKeyPair> => {
   return await webcrypto.subtle.generateKey(
     {
       name: RSA_ALG,
       modulusLength: size,
-      publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+      publicExponent: new Uint8Array([ 0x01, 0x00, 0x01 ]),
       hash: { name: DEFAULT_HASH_ALG }
     },
     false,
-    ["sign", "verify"]
+    [ "sign", "verify" ]
   )
 }
 
@@ -30,7 +31,7 @@ export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
     key.buffer,
     { name: RSA_ALG, hash: { name: DEFAULT_HASH_ALG } },
     true,
-    ["verify"]
+    [ "verify" ]
   )
 }
 
@@ -55,28 +56,28 @@ export const verify = async (msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Arra
 /**
  * The ASN.1 DER encoded header that needs to be added to an
  * ASN.1 DER encoded RSAPublicKey to make it a SubjectPublicKeyInfo.
- * 
+ *
  * This byte sequence is always the same.
- * 
+ *
  * A human-readable version of this as part of a dumpasn1 dump:
- * 
+ *
  *     SEQUENCE {
  *       OBJECT IDENTIFIER rsaEncryption (1 2 840 113549 1 1 1)
  *       NULL
  *     }
- * 
+ *
  * See https://github.com/ucan-wg/ts-ucan/issues/30
  */
-const SPKI_PARAMS_ENCODED = new Uint8Array([48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0])
-const ASN_SEQUENCE_TAG = new Uint8Array([0x30])
-const ASN_BITSTRING_TAG = new Uint8Array([0x03])
+const SPKI_PARAMS_ENCODED = new Uint8Array([ 48, 13, 6, 9, 42, 134, 72, 134, 247, 13, 1, 1, 1, 5, 0 ])
+const ASN_SEQUENCE_TAG = new Uint8Array([ 0x30 ])
+const ASN_BITSTRING_TAG = new Uint8Array([ 0x03 ])
 
 export const convertRSAPublicKeyToSubjectPublicKeyInfo = (rsaPublicKey: Uint8Array): Uint8Array => {
   // More info on bitstring encoding: https://docs.microsoft.com/en-us/windows/win32/seccertenroll/about-bit-string
   const bitStringEncoded = uint8arrays.concat([
     ASN_BITSTRING_TAG,
     asn1DERLengthEncode(rsaPublicKey.length + 1),
-    new Uint8Array([0x00]), // amount of unused bits at the end of our bitstring (counts into length?!)
+    new Uint8Array([ 0x00 ]), // amount of unused bits at the end of our bitstring (counts into length?!)
     rsaPublicKey
   ])
   return uint8arrays.concat([
@@ -96,7 +97,7 @@ export const convertSubjectPublicKeyInfoToRSAPublicKey = (subjectPublicKeyInfo: 
   // we expect the bitstring next
   const bitstringParams = asn1Into(subjectPublicKeyInfo, ASN_BITSTRING_TAG, position)
   const bitstring = subjectPublicKeyInfo.subarray(bitstringParams.position, bitstringParams.position + bitstringParams.length)
-  const unusedBitPadding = bitstring[0]
+  const unusedBitPadding = bitstring[ 0 ]
   if (unusedBitPadding !== 0) {
     throw new Error(`Can't convert SPKI to PKCS: Expected bitstring length to be multiple of 8, but got ${unusedBitPadding} unused bits in last byte.`)
   }
@@ -112,7 +113,7 @@ export function asn1DERLengthEncode(length: number): Uint8Array {
   }
 
   if (length <= 127) {
-    return new Uint8Array([length])
+    return new Uint8Array([ length ])
   }
 
   const octets: number[] = []
@@ -121,15 +122,15 @@ export function asn1DERLengthEncode(length: number): Uint8Array {
     length = length >>> 8
   }
   octets.reverse()
-  return new Uint8Array([0x80 | (octets.length & 0xFF), ...octets])
+  return new Uint8Array([ 0x80 | (octets.length & 0xFF), ...octets ])
 }
 
 function asn1DERLengthDecodeWithConsumed(bytes: Uint8Array): { number: number; consumed: number } {
-  if ((bytes[0] & 0x80) === 0) {
-    return { number: bytes[0], consumed: 1 }
+  if ((bytes[ 0 ] & 0x80) === 0) {
+    return { number: bytes[ 0 ], consumed: 1 }
   }
 
-  const numberBytes = bytes[0] & 0x7F
+  const numberBytes = bytes[ 0 ] & 0x7F
   if (bytes.length < numberBytes + 1) {
     throw new Error(`ASN parsing error: Too few bytes. Expected encoded length's length to be at least ${numberBytes}`)
   }
@@ -137,7 +138,7 @@ function asn1DERLengthDecodeWithConsumed(bytes: Uint8Array): { number: number; c
   let length = 0
   for (let i = 0; i < numberBytes; i++) {
     length = length << 8
-    length = length | bytes[i + 1]
+    length = length | bytes[ i + 1 ]
   }
   return { number: length, consumed: numberBytes + 1 }
 }
@@ -152,17 +153,17 @@ function asn1Skip(input: Uint8Array, expectedTag: Uint8Array, position: number):
 }
 
 function asn1Into(input: Uint8Array, expectedTag: Uint8Array, position: number): { position: number; length: number } {
-    // tag
-    const lengthPos = position + expectedTag.length
-    const actualTag = input.subarray(position, lengthPos)
-    if (!uint8arrays.equals(actualTag, expectedTag)) {
-      throw new Error(`ASN parsing error: Expected tag 0x${uint8arrays.toString(expectedTag, "hex")} at position ${position}, but got ${uint8arrays.toString(actualTag, "hex")}.`)
-    }
-    
-    // length
-    const length = asn1DERLengthDecodeWithConsumed(input.subarray(lengthPos/*, we don't know the end */))
-    const contentPos = position + 1 + length.consumed
-    
-    // content
-    return { position: contentPos, length: length.number }
+  // tag
+  const lengthPos = position + expectedTag.length
+  const actualTag = input.subarray(position, lengthPos)
+  if (!uint8arrays.equals(actualTag, expectedTag)) {
+    throw new Error(`ASN parsing error: Expected tag 0x${uint8arrays.toString(expectedTag, "hex")} at position ${position}, but got ${uint8arrays.toString(actualTag, "hex")}.`)
+  }
+
+  // length
+  const length = asn1DERLengthDecodeWithConsumed(input.subarray(lengthPos/*, we don't know the end */))
+  const contentPos = position + 1 + length.consumed
+
+  // content
+  return { position: contentPos, length: length.number }
 }
