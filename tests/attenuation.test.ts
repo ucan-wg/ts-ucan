@@ -220,7 +220,7 @@ describe("hasCapability", () => {
       info: {
         originator: alice.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
       }
     }
 
@@ -251,7 +251,7 @@ describe("hasCapability", () => {
       info: {
         originator: alice.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
       }
     }
 
@@ -274,7 +274,30 @@ describe("hasCapability", () => {
         // an invalid originator
         originator: bob.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toEqual(false)
+  })
+
+  it("rejects for an expired capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+    // unix timestamp in seconds. Will be after 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: emailCapability("alice@email.com"),
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // an invalid originator
+        originator: bob.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds + 60 * 60 * 24 // expiry is older than it should be
       }
     }
 
