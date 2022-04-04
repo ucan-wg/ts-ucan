@@ -55,7 +55,7 @@ export function emailResourcePointer(emailAddress: string): ResourcePointer {
 }
 
 
-export function emailCapabilityFn(emailAddress: string): Capability {
+export function emailCapability(emailAddress: string): Capability {
   return {
     with: emailResourcePointer(emailAddress),
     can: SEND_ABILITY
