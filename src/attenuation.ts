@@ -182,15 +182,42 @@ export function hasCapability<Cap>(
 
     const delegatedCapability = semantics.tryDelegating(cap.capability, capability.capability)
 
+    // Whether we can delegate said capability
     if (isCapabilityEscalation(delegatedCapability)) {
       continue
     }
 
-    if (delegatedCapability != null) {
-      return {
-        info: delegateCapabilityInfo(capability.info, cap.info),
-        capability: delegatedCapability,
+    // Whether delegation works is unknown
+    if (delegatedCapability == null) {
+      continue
+    }
+
+    // check that the originator is who you'd expect
+    if (cap.info.originator !== capability.info.originator) {
+      continue
+    }
+
+    // make sure the capability didn't expire before we expect it
+    if (cap.info.expiresAt < capability.info.expiresAt) {
+      continue
+    }
+
+    if (cap.info.notBefore != null) {
+      // if there's a min timestamp but we require it to be limitless
+      if (capability.info.notBefore == null) {
+        continue
       }
+
+      // if the min timestamp is after the time we need it to be
+      if (cap.info.notBefore > capability.info.notBefore) {
+        continue
+      }
+    }
+
+    // All checks went through, we're good to go
+    return {
+      info: delegateCapabilityInfo(capability.info, cap.info),
+      capability: delegatedCapability,
     }
   }
 

@@ -5,6 +5,9 @@ import { alice, bob, mallory } from "./fixtures"
 import { emailCapabilities, emailCapability } from "./capability/email"
 import { maxNbf } from "./utils"
 
+import { hasCapability, CapabilitySemantics } from "../src/attenuation"
+import { Capability } from "../src/capability"
+import { SUPERUSER } from "../src/capability/super-user"
 
 describe("attenuation.emailCapabilities", () => {
 
@@ -161,6 +164,146 @@ describe("attenuation.emailCapabilities", () => {
         capability: emailCapability("alice@email.com")
       }
     ])
+  })
+
+})
+
+
+// semantics based on the idea "you can delegate something if it's the same capability"
+const equalityCapabilitySemantics: CapabilitySemantics<Capability> = {
+  tryParsing(cap) {
+    return cap
+  },
+
+  // here you decide whether the given `childCap` is allowed to be created
+  // by the given `parentCap`
+  tryDelegating(parentCap, childCap) {
+    const isEq = JSON.stringify(parentCap) === JSON.stringify(childCap)
+
+    return isEq ? childCap : null
+  }
+}
+
+describe("hasCapability", () => {
+
+  async function aliceEmailDelegationExample() {
+    // alice -> bob, bob -> mallory
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("alice@email.com") ]
+    })
+
+    const ucan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ emailCapability("alice@email.com") ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    return await Chained.fromToken(token.encode(ucan))
+  }
+
+  it("gets a capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: emailCapability("alice@email.com"),
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        originator: alice.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toBeTruthy()
+
+    if (!cap) return
+
+    expect(cap.info.originator).toEqual(alice.did())
+    expect(cap.capability.with.hierPart).toEqual("alice@email.com")
+  })
+
+  it("rejects an invalid escalation", async () => {
+    const chained = await aliceEmailDelegationExample()
+
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: {
+        ...emailCapability("alice@email.com"),
+        can: SUPERUSER
+      },
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        originator: alice.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toEqual(false)
+  })
+
+  it("rejects for an invalid originator", async () => {
+    const chained = await aliceEmailDelegationExample()
+    // unix timestamp in seconds
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: emailCapability("alice@email.com"),
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // an invalid originator
+        originator: bob.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toEqual(false)
+  })
+
+  it("rejects for an expired capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+    // unix timestamp in seconds. Will be after 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: emailCapability("alice@email.com"),
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // an invalid originator
+        originator: bob.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds + 60 * 60 * 24 // expiry is older than it should be
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toEqual(false)
   })
 
 })
