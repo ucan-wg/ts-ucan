@@ -2,18 +2,12 @@ import { Chained } from "../src/chained"
 import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
-import { emailCapabilities, emailCapabilityFn,
-  /*EmailCapability*/ } from "./capability/email"
+import { emailCapabilities, emailCapability } from "./capability/email"
 import { maxNbf } from "./utils"
 
-import { hasCapability, CapabilityEscalation,
-  /*CapabilityWithInfo*/ } from '../src/attenuation'
-import { Ucan } from "../src/types"
+import { hasCapability, CapabilitySemantics } from "../src/attenuation"
 import { Capability } from "../src/capability"
 import { SUPERUSER } from "../src/capability/super-user"
-
-var ucan:Ucan
-// var emailCaps:(CapabilityWithInfo<EmailCapability> | CapabilityEscalation<EmailCapability>)[]
 
 describe("attenuation.emailCapabilities", () => {
 
@@ -24,13 +18,13 @@ describe("attenuation.emailCapabilities", () => {
     const leafUcan = await token.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ emailCapabilityFn("alice@email.com") ]
+      capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    ucan = await token.build({
+    const ucan = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ emailCapabilityFn("alice@email.com") ],
+      capabilities: [ emailCapability("alice@email.com") ],
       proofs: [ token.encode(leafUcan) ]
     })
 
@@ -44,7 +38,7 @@ describe("attenuation.emailCapabilities", () => {
         expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
         notBefore: maxNbf(leafUcan.payload.nbf, ucan.payload.nbf),
       },
-      capability: emailCapabilityFn("alice@email.com")
+      capability: emailCapability("alice@email.com")
     } ])
   })
 
@@ -60,7 +54,7 @@ describe("attenuation.emailCapabilities", () => {
     const ucan = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ emailCapabilityFn("bob@email.com") ],
+      capabilities: [ emailCapability("bob@email.com") ],
       proofs: [ token.encode(leafUcan) ]
     })
 
@@ -71,7 +65,7 @@ describe("attenuation.emailCapabilities", () => {
         expiresAt: ucan.payload.exp,
         notBefore: ucan.payload.nbf,
       },
-      capability: emailCapabilityFn("bob@email.com"),
+      capability: emailCapability("bob@email.com"),
     } ])
   })
 
@@ -82,21 +76,21 @@ describe("attenuation.emailCapabilities", () => {
     const leafUcanAlice = await token.build({
       issuer: alice,
       audience: mallory.did(),
-      capabilities: [ emailCapabilityFn("alice@email.com") ]
+      capabilities: [ emailCapability("alice@email.com") ]
     })
 
     const leafUcanBob = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ emailCapabilityFn("bob@email.com") ]
+      capabilities: [ emailCapability("bob@email.com") ]
     })
 
     const ucan = await token.build({
       issuer: mallory,
       audience: alice.did(),
       capabilities: [
-        emailCapabilityFn("alice@email.com"),
-        emailCapabilityFn("bob@email.com")
+        emailCapability("alice@email.com"),
+        emailCapability("bob@email.com")
       ],
       proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
     })
@@ -110,7 +104,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
         },
-        capability: emailCapabilityFn("alice@email.com")
+        capability: emailCapability("alice@email.com")
       },
       {
         info: {
@@ -118,7 +112,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
         },
-        capability: emailCapabilityFn("bob@email.com")
+        capability: emailCapability("bob@email.com")
       }
     ])
   })
@@ -129,7 +123,7 @@ describe("attenuation.emailCapabilities", () => {
     // and both grant that capability to mallory
     // a verifier needs to know both to verify valid email access
 
-    const aliceEmail = emailCapabilityFn("alice@email.com")
+    const aliceEmail = emailCapability("alice@email.com")
 
     const leafUcanAlice = await token.build({
       issuer: alice,
@@ -159,7 +153,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanAlice.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanAlice.payload.nbf, ucan.payload.nbf),
         },
-        capability: emailCapabilityFn("alice@email.com")
+        capability: emailCapability("alice@email.com")
       },
       {
         info: {
@@ -167,7 +161,7 @@ describe("attenuation.emailCapabilities", () => {
           expiresAt: Math.min(leafUcanBob.payload.exp, ucan.payload.exp),
           notBefore: maxNbf(leafUcanBob.payload.nbf, ucan.payload.nbf),
         },
-        capability: emailCapabilityFn("alice@email.com")
+        capability: emailCapability("alice@email.com")
       }
     ])
   })
@@ -175,67 +169,80 @@ describe("attenuation.emailCapabilities", () => {
 })
 
 
-// let's do semantics based on the idea "you can delegate something if it's
-// the same capability"
-const testSemantics = {
-  // ??? what is `tryParsing` used for?
-  tryParsing(cap: Capability): Capability | null {
+// semantics based on the idea "you can delegate something if it's the same capability"
+const equalityCapabilitySemantics: CapabilitySemantics<Capability> = {
+  tryParsing(cap) {
     return cap
   },
 
   // here you decide whether the given `childCap` is allowed to be created
   // by the given `parentCap`
-  tryDelegating(parentCap: Capability,
-    childCap: Capability): Capability | null | CapabilityEscalation<Capability> {
-    // a shitty version of deep-equal :P
+  tryDelegating(parentCap, childCap) {
     const isEq = JSON.stringify(parentCap) === JSON.stringify(childCap)
 
-    return  isEq ? childCap : null
+    return isEq ? childCap : null
   }
 }
 
-describe('hasCapability', () => {
+describe("hasCapability", () => {
 
-  it('gets a capability', async () => {
+  async function aliceEmailDelegationExample() {
+    // alice -> bob, bob -> mallory
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("alice@email.com") ]
+    })
+
+    const ucan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ emailCapability("alice@email.com") ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    return await Chained.fromToken(token.encode(ucan))
+  }
+
+  it("gets a capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+
     // unix timestamp in seconds
-    const nowInSeconds = Math.floor(Date.now() / 1000) 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
 
     const capabilityWithInfo = {
-      // you can technically choose your own format for capabilities
-      capability: emailCapabilityFn('alice@email.com'),
+      capability: emailCapability("alice@email.com"),
       // we need to provide some information about who we think originally
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
         originator: alice.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
       }
     }
 
-    const cap = hasCapability(testSemantics, capabilityWithInfo,
-      await Chained.fromToken(token.encode(ucan)))
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toBeTruthy()
 
     if (!cap) return
 
     expect(cap.info.originator).toEqual(alice.did())
-    expect(cap.capability.with.hierPart).toEqual('alice@email.com')
+    expect(cap.capability.with.hierPart).toEqual("alice@email.com")
   })
 
-  it('rejects an invalid escalation', async () => {
+  it("rejects an invalid escalation", async () => {
+    const chained = await aliceEmailDelegationExample()
+
     // unix timestamp in seconds
-    const nowInSeconds = Math.floor(Date.now() / 1000) 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
 
     const capabilityWithInfo = {
       capability: {
-        email: 'alice@email.com',
-        cap: 'FOO',
-        with: {
-          scheme: 'string',
-          hierPart: 'Superuser | string'
-        },
+        ...emailCapability("alice@email.com"),
         can: SUPERUSER
       },
       // we need to provide some information about who we think originally
@@ -244,43 +251,57 @@ describe('hasCapability', () => {
       info: {
         originator: alice.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
       }
     }
 
-    const cap = hasCapability(testSemantics, capabilityWithInfo,
-      await Chained.fromToken(token.encode(ucan)))
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
   })
 
-  it('rejects for an invalid originator', async () => {
+  it("rejects for an invalid originator", async () => {
+    const chained = await aliceEmailDelegationExample()
     // unix timestamp in seconds
-    const nowInSeconds = Math.floor(Date.now() / 1000) 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
 
     const capabilityWithInfo = {
-      capability: {
-        email: 'alice@email.com',
-        cap: 'SEND',
-        with: {
-          scheme: 'string',
-          hierPart: 'Superuser | string'
-        },
-        can: SUPERUSER
-      },
+      capability: emailCapability("alice@email.com"),
       // we need to provide some information about who we think originally
       // created/has the capability
       // and for which interval in time we want to check for the capability.
       info: {
         // an invalid originator
-        originator: 'fooo',
+        originator: bob.did(),
         notBefore: nowInSeconds,
-        expiresAt: nowInSeconds + 30  // now + 30 seconds
+        expiresAt: nowInSeconds
       }
     }
 
-    const cap = hasCapability(testSemantics, capabilityWithInfo,
-      await Chained.fromToken(token.encode(ucan)))
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+
+    expect(cap).toEqual(false)
+  })
+
+  it("rejects for an expired capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+    // unix timestamp in seconds. Will be after 
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+
+    const capabilityWithInfo = {
+      capability: emailCapability("alice@email.com"),
+      // we need to provide some information about who we think originally
+      // created/has the capability
+      // and for which interval in time we want to check for the capability.
+      info: {
+        // an invalid originator
+        originator: bob.did(),
+        notBefore: nowInSeconds,
+        expiresAt: nowInSeconds + 60 * 60 * 24 // expiry is older than it should be
+      }
+    }
+
+    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
   })
