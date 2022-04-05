@@ -160,7 +160,7 @@ import * as ucans from "ucans"
 
 // Utility functions to create capabilities
 const ucan = ucans.build({
-  audience: "",
+  audience: "did:key:zabcde...",
   issuer: keypair,
   capabilities: [
     ucans.capability.my("resource"),
