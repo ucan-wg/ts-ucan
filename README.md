@@ -10,8 +10,8 @@ At a high level, UCANs (“User Controlled Authorization Network”) are an auth
 No all-powerful authorization server or server of any kind is required for UCANs. Instead, everything a user can do is captured directly in a key or token, which can be sent to anyone who knows how to interpret the UCAN format. Because UCANs are self-contained, they are easy to consume permissionlessly, and they work well offline and in distributed systems.
 
 UCANs work
-- Server -> Server
-- Client -> Server
+- Server → Server
+- Client → Server
 - Peer-to-peer
 
 **OAuth is designed for a centralized world, UCAN is the distributed user-controlled version.**
@@ -109,11 +109,11 @@ yarn add ucans
 
 ## Example
 ```ts
-import * as ucan from "ucans"
+import * as ucans from "ucans"
 
 // in-memory keypair
-const keypair = await ucan.EdKeypair.create()
-const u = await ucan.build({
+const keypair = await ucans.EdKeypair.create()
+const ucan = await ucans.build({
   audience: "did:key:zabcde...", // recipient DID
   issuer: keypair, // signing key
   capabilities: [ // permissions for ucan
@@ -131,11 +131,87 @@ const u = await ucan.build({
     }
   ]
 })
-const token = ucan.encode(u) // base64 jwt-formatted auth token
+const token = ucans.encode(ucan) // base64 jwt-formatted auth token
 
 // You can also use your own signing function if you're bringing your own key management solution
-const payload = await ucan.buildPayload(...)
-const u = await ucan.sign(payload, keyType, signingFn)
+const payload = await ucans.buildPayload(...)
+const ucan = await ucans.sign(payload, keyType, signingFn)
+```
+
+
+
+## Validating
+
+```ts
+import * as ucans from "ucans"
+
+const ucan = ucans.build({ ... })
+
+ucans.isExpired(ucan)
+ucans.isTooEarly(ucan)
+ucans.validate(ucans.encode(ucan)) // checks signature, issuer key type, and the above.
+```
+
+
+## Capabilities
+
+```ts
+import * as ucans from "ucans"
+
+// Utility functions to create capabilities
+const ucan = ucans.build({
+  audience: "did:key:zabcde...",
+  issuer: keypair,
+  capabilities: [
+    ucans.capability.my("resource"),
+    {
+      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/"),
+      can: ucans.capability.ability.parse("wnfs/OVERWRITE")
+    }
+  ]
+})
+
+// Capability semantics
+const SEMANTICS = {
+  // wether or not to use the default capability structure
+  // (this would parse a regular capability into a custom one)
+  tryParsing: a => a,
+
+  // can a given child capability be delegated from a parent capability?
+  tryDelegating: (parentCap, childCap) => {
+    if (childCap.with.scheme !== "wnfs") return null
+
+    // we've got access to everything
+    if (parentCap.with.hierPart === ucans.capability.superUser.SUPERUSER) return childCap
+
+    // path must be the same or a path below
+    if (childCap.with.hierPart.startsWith(parentCap.with.hierPart)) return childCap
+
+    // 🚨 cannot delegate
+    return null
+  }
+}
+
+// Capability checking
+const nowInSeconds = Math.floor(Date.now() / 1000)
+const result = ucans.hasCapability(
+  SEMANTICS,
+  {
+    info: {
+      originator: keypair.did(),  // capability must have been originated from this issuer
+      expiresAt: nowInSeconds,    // ucan must not have been expired before this timestamp
+      notBefore: nowInSeconds     // optional
+    },
+    capability: {
+      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/vacation/"),
+      can: ucans.capability.ability.parse("wnfs/REVISE")
+    }
+  },
+  ucans.Chained.fromToken(ucans.encode(ucan))
+)
+
+if (result === false) log("UCAN does not have this capability 🚨")
+else log("UCAN has the capability ✅ Info:", result.info, "Capability:", result.capability)
 ```
 
 
