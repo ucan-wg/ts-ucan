@@ -12,7 +12,6 @@
   "engines": {
     "node": ">=15"
   },
-  "type": "module",
   "exports": {
     "./*": {
       "import": "./esm/*",
