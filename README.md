@@ -177,10 +177,18 @@ const SEMANTICS = {
   // (this would parse a regular capability into a custom one)
   tryParsing: a => a,
 
-  // capability delegation
-  tryDelegating: (parentCapability, childCapability) => {
-    const isEq = JSON.stringify(parentCapability) === JSON.stringify(childCapability)
-    return isEq ? childCapability : null
+  // can a given child capability be delegated from a parent capability?
+  tryDelegating: (parentCap, childCap) => {
+    if (childCap.with.scheme !== "wnfs") return null
+
+    // we've got access to everything
+    if (parentCap.with.hierPart === ucans.capability.superUser.SUPERUSER) return childCap
+
+    // path must be the same or a path below
+    if (childCap.with.hierPart.startsWith(parentCap.with.hierPart)) return childCap
+
+    // 🚨 cannot delegate
+    return null
   }
 }
 
@@ -189,9 +197,15 @@ const nowInSeconds = Math.floor(Date.now() / 1000)
 const result = ucans.hasCapability(
   SEMANTICS,
   {
-    originator: keypair.did(),  // capability must have been originated from this issuer
-    expiresAt: nowInSeconds,    // ucan must not have been expired before this timestamp
-    notBefore: nowInSeconds     // optional
+    info: {
+      originator: keypair.did(),  // capability must have been originated from this issuer
+      expiresAt: nowInSeconds,    // ucan must not have been expired before this timestamp
+      notBefore: nowInSeconds     // optional
+    },
+    capability: {
+      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/vacation/"),
+      can: ucans.capability.ability.parse("wnfs/REVISE")
+    }
   },
   ucans.Chained.fromToken(ucans.encode(ucan))
 )
