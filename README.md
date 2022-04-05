@@ -178,7 +178,10 @@ const SEMANTICS = {
   tryParsing: a => a,
 
   // capability delegation
-  tryDelegating: (parentCapability, childCapability)
+  tryDelegating: (parentCapability, childCapability) => {
+    const isEq = JSON.stringify(parentCapability) === JSON.stringify(childCapability)
+    return isEq ? childCap : null
+  }
 }
 
 // Capability checking
