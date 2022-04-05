@@ -2,30 +2,42 @@
   "name": "ucans",
   "version": "0.9.0",
   "description": "Typescript implementation of UCANs",
-  "main": "dist/index.js",
-  "browser": "dist/index.js",
-  "typings": "dist/index.d.ts",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
     "url": "https://github.com/fission-suite/ucan"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "package.json"
-  ],
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=15"
   },
+  "type": "module",
+  "exports": {
+    "./*": {
+      "import": "./esm/*",
+      "require": "./cjs/*",
+      "types": "./types/*"
+    },
+    ".": {
+      "import": "./esm/index.js",
+      "require": "./cjs/index.js",
+      "types": "./types/index.d.ts"
+    }
+  },
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "tsc",
-    "dev": "tsc -w",
+    "build": "yarn run dist",
+    "dev": "tsc --watch --module commonjs --outDir ./dist/cjs/ --sourceMap",
+    "dist": "yarn run dist:prep && yarn run dist:src && yarn run dist:cjs && yarn run dist:esm && yarn run dist:types && yarn run dist:pkg",
+    "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
+    "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
+    "dist:pkg": "node ./scripts/package.js",
+    "dist:prep": "copyfiles --error LICENSE package.json README.md tsconfig.json ./dist/",
+    "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
+    "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
     "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
+    "publish": "yarn publish ./dist/",
     "test": "jest",
     "test:watch": "jest --watch",
     "prepare": "yarn build"
@@ -42,9 +54,11 @@
     "@types/semver": "^7.3.9",
     "@typescript-eslint/eslint-plugin": "^5.5.0",
     "@typescript-eslint/parser": "^5.5.0",
+    "copyfiles": "^2.4.1",
     "eslint": "^8.3.0",
     "fast-check": "^2.20.0",
     "jest": "^27.2.0",
+    "mkdirp": "^1.0.4",
     "rimraf": "^3.0.2",
     "ts-jest": "^27.0.5",
     "typescript": "^4.4.3",
