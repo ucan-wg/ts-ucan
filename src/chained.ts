@@ -35,7 +35,9 @@ export class Chained {
     const ucan = await token.validate(encodedUcan, options)
 
     // parse proofs recursively
-    const proofs = await Promise.all(ucan.payload.prf.map(encodedPrf => Chained.fromToken(encodedPrf, options)))
+    const proofs = await Promise.all(
+      ucan.payload.prf.map(encodedPrf => Chained.fromToken(encodedPrf, options))
+    )
 
     // check sender/receiver matchups. A parent ucan's audience must match the child ucan's issuer
     const incorrectProof = proofs.find(proof => proof.audience() !== ucan.payload.iss)
@@ -50,6 +52,7 @@ export class Chained {
         prf: proofs
       },
     }
+
     return new Chained(encodedUcan, ucanTransformed)
   }
 

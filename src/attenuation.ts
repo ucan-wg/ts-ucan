@@ -98,15 +98,18 @@ export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A,
   return false
 }
 
+/**
+ * Iterate through the capabilities of a UCAN chain.
+ */
 export function capabilities<A>(
   ucan: Chained,
-  capability: CapabilitySemantics<A>,
+  semantics: CapabilitySemantics<A>,
 ): Iterable<CapabilityResult<A>> {
 
   function* findParsingCaps(ucan: Ucan<never>): Iterable<CapabilityWithInfo<A>> {
     const capInfo = parseCapabilityInfo(ucan)
     for (const cap of ucan.payload.att) {
-      const parsedCap = capability.tryParsing(cap)
+      const parsedCap = semantics.tryParsing(cap)
       if (parsedCap != null) yield { info: capInfo, capability: parsedCap }
     }
   }
@@ -122,7 +125,7 @@ export function capabilities<A>(
               yield parsedParentCap
             } else {
               // try figuring out whether we can delegate the capabilities from this to the parent
-              const delegated = capability.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
+              const delegated = semantics.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
               // if the capabilities *are* related, then this will be non-null
               // otherwise we just continue looking
               if (delegated != null) {
@@ -154,7 +157,15 @@ export function capabilities<A>(
   return ucan.reduce(delegate)()
 }
 
-function delegateCapabilityInfo(childInfo: CapabilityInfo, parentInfo: CapabilityInfo): CapabilityInfo {
+/**
+ * Build a `CapabilityInfo` object based on a child and parent `CapabilityInfo`.
+ * It will take the earliest expiry timestamp and the latest `notBefore` timestamp.
+ * The originator will always be that of the given parent info.
+ */
+function delegateCapabilityInfo(
+  childInfo: CapabilityInfo,
+  parentInfo: CapabilityInfo
+): CapabilityInfo {
   let notBefore = {}
   if (childInfo.notBefore != null && parentInfo.notBefore != null) {
     notBefore = { notBefore: Math.max(childInfo.notBefore, parentInfo.notBefore) }
@@ -170,6 +181,13 @@ function delegateCapabilityInfo(childInfo: CapabilityInfo, parentInfo: Capabilit
   }
 }
 
+/**
+ * Check if a UCAN chain has a specific `Capability`.
+ *
+ * This check depends on the given capability info.
+ * We need to check the originator of the capability,
+ * otherwise anyone could pretend to have these rights.
+ */
 export function hasCapability<Cap>(
   semantics: CapabilitySemantics<Cap>,
   capability: CapabilityWithInfo<Cap>,
