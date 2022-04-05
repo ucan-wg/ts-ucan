@@ -180,7 +180,7 @@ const SEMANTICS = {
   // capability delegation
   tryDelegating: (parentCapability, childCapability) => {
     const isEq = JSON.stringify(parentCapability) === JSON.stringify(childCapability)
-    return isEq ? childCap : null
+    return isEq ? childCapability : null
   }
 }
 
