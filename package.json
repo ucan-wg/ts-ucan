@@ -12,18 +12,6 @@
   "engines": {
     "node": ">=15"
   },
-  "exports": {
-    "./*": {
-      "import": "./esm/*",
-      "require": "./cjs/*",
-      "types": "./types/*"
-    },
-    ".": {
-      "import": "./esm/index.js",
-      "require": "./cjs/index.js",
-      "types": "./types/index.d.ts"
-    }
-  },
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "yarn run dist",
@@ -32,15 +20,47 @@
     "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
     "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
     "dist:pkg": "node ./scripts/package.js",
-    "dist:prep": "copyfiles --error LICENSE package.json README.md tsconfig.json ./dist/",
+    "dist:prep": "copyfiles --error tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
     "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
-    "prepublish": "yarn build",
-    "publish": "yarn publish ./dist/ --ignore-scripts --tag alpha",
+    "prepare": "yarn build",
+    "publish-alpha": "yarn publish --tag alpha",
+    "publish-stable": "yarn publish --tag latest",
     "test": "jest",
     "test:watch": "jest --watch"
   },
+  "exports": {
+    "./*": {
+      "import": "./dist/esm/*",
+      "require": "./dist/cjs/*",
+      "types": "./dist/types/*"
+    },
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "index.d.ts": [
+        "./dist/types/index.d.ts"
+      ],
+      "*": [
+        "./dist/types/*"
+      ]
+    }
+  },
+  "files": [
+    "dist",
+    "docs",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
   "dependencies": {
     "@stablelib/ed25519": "^1.0.2",
     "one-webcrypto": "^1.0.1",
