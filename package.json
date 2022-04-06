@@ -31,21 +31,19 @@
     "test:watch": "jest --watch"
   },
   "exports": {
-    "./*": {
-      "import": "./dist/esm/*",
-      "require": "./dist/cjs/*",
-      "types": "./dist/types/*"
-    },
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/esm/*.js",
+      "require": "./dist/cjs/*.js",
+      "types": "./dist/types/*.d.ts"
     }
   },
-  "main": "dist/cjs/index.js",
-  "types": "dist/types/index.d.ts",
   "typesVersions": {
-    "<3.5": {
+    "*": {
       "index.d.ts": [
         "dist/types/index.d.ts"
       ],
