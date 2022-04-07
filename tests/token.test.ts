@@ -1,3 +1,6 @@
+import * as uint8arrays from "uint8arrays"
+
+import * as capability from "../src/capability"
 import * as token from "../src/token"
 import { verifySignatureUtf8 } from "../src/did"
 import { alice, bob } from "./fixtures"
@@ -39,6 +42,42 @@ describe("token.build", () => {
         data => alice.sign(data)
       )
     }).rejects.toBeDefined()
+  })
+
+})
+
+
+
+// ENCODING
+
+
+describe("token.encodePayload", () => {
+
+  it("encodes capabilities", () => {
+    const encodedCaps = {
+      with: "wnfs://boris.fission.name/public/photos/",
+      can: "crud/DELETE"
+    }
+
+    const payload = token.buildPayload({
+      issuer: alice.did(),
+      audience: bob.did(),
+      capabilities: [ capability.parse(encodedCaps) ]
+    })
+
+    const encoded = token.encodePayload(payload)
+    const decodedString = uint8arrays.toString(
+      uint8arrays.fromString(encoded, "base64url"),
+      "utf8"
+    )
+
+    const decoded = JSON.parse(decodedString)
+
+    expect(
+      JSON.stringify(decoded.capabilities)
+    ).toEqual(
+      JSON.stringify([ encodedCaps ])
+    )
   })
 
 })

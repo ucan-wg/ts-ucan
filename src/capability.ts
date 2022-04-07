@@ -75,6 +75,23 @@ export function prf(selector: Superuser | number, ability: Ability): Capability 
 
 
 
+// 🛠
+
+
+/**
+ * Check if two capabilities are equal.
+ *
+ * This is not the same as `JSON.stringify(capA) === JSON.stringify(capB)`.
+ * Specifically:
+ *   - For resource pointers, it does case-insensitive matching of the `scheme`.
+ *   - For abilities, it does case-insensitive matching of the namespace and segments.
+ */
+export function isEqual(a: Capability, b: Capability): boolean {
+  return resourcePointer.isEqual(a.with, b.with) && ability.isEqual(a.can, b.can)
+}
+
+
+
 // ENCODING
 
 
