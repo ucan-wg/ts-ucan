@@ -1,14 +1,14 @@
-import * as did from "./did"
 import * as uint8arrays from "uint8arrays"
 
+import * as capability from "./capability"
+import * as did from "./did"
 import * as util from "./util"
+import { Capability, isCapability, isEncodedCapability } from "./capability"
+import { Fact, KeyType, Keypair } from "./types"
+import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types"
 import { handleCompatibility } from "./compatibility"
 import { isUcanHeader, isUcanPayload } from "./types"
 import { verifySignatureUtf8 } from "./did/validation"
-import { Capability, isEncodedCapability } from "./capability"
-import { Fact, Keypair, KeyType } from "./types"
-import { Ucan, UcanHeader, UcanPayload, UcanParts } from "./types"
-import { capability, isCapability } from "."
 
 
 // CONSTANTS
@@ -196,16 +196,31 @@ export function encode(ucan: Ucan): string {
  * @returns The header of a UCAN encoded as url-safe base64 JSON
  */
 export function encodeHeader(header: UcanHeader): string {
-  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(header), "utf8"), "base64url")
+  return uint8arrays.toString(
+    uint8arrays.fromString(JSON.stringify(header), "utf8"),
+    "base64url"
+  )
 }
 
 /**
  * Encode the payload of a UCAN.
  *
+ * NOTE: This will encode capabilities as well, so that it matches the UCAN spec.
+ *       In other words, `{ with: { scheme, hierPart }, can: { namespace, segments } }`
+ *       becomes `{ with: "${scheme}:${hierPart}", can: "${namespace}/${segment}" }`
+ *
  * @param payload The UcanPayload to encode
  */
 export function encodePayload(payload: UcanPayload): string {
-  return uint8arrays.toString(uint8arrays.fromString(JSON.stringify(payload), "utf8"), "base64url")
+  const payloadWithEncodedCaps = {
+    ...payload,
+    att: payload.att.map(capability.encode)
+  }
+
+  return uint8arrays.toString(
+    uint8arrays.fromString(JSON.stringify(payloadWithEncodedCaps), "utf8"),
+    "base64url"
+  )
 }
 
 /**

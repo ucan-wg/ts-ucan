@@ -164,9 +164,17 @@ const ucan = ucans.build({
   issuer: keypair,
   capabilities: [
     ucans.capability.my("resource"),
+    ucans.capability.parse({
+      with: "wnfs://boris.fission.name/public/photos/",
+      can: "wnfs/OVERWRITE"
+    }),
     {
-      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/"),
-      can: ucans.capability.ability.parse("wnfs/OVERWRITE")
+      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/vacation/"),
+      can: ucans.capability.ability.parse("wnfs/REVISE")
+    },
+    {
+      with: { scheme: "wnfs", hierPart: "//boris.fission.name/public/photos/vacation/" },
+      can: { namespace: "wnfs", segments: [ "REVISE" ] }
     }
   ]
 })
@@ -212,6 +220,21 @@ const result = ucans.hasCapability(
 
 if (result === false) log("UCAN does not have this capability 🚨")
 else log("UCAN has the capability ✅ Info:", result.info, "Capability:", result.capability)
+
+// Comparing capabilities
+const a = {
+  with: { scheme: "scheme", hierPart: "hierPart" },
+  can: { namespace: "namespace", segments: [ "a", "B" ] }
+}
+
+const b = {
+  with: { scheme: "SCHEME", hierPart: "hierPart" },
+  can: { namespace: "NAMESPACE", segments: [ "A", "b" ] }
+}
+
+ucans.capability.isEqual(a, b)
+ucans.capability.resourcePointer.isEqual(a.with, b.with)
+ucans.capability.ability.isEqual(a.can, b.can)
 ```
 
 
