@@ -74,7 +74,7 @@ describe("token.encodePayload", () => {
     const decoded = JSON.parse(decodedString)
 
     expect(
-      JSON.stringify(decoded.capabilities)
+      JSON.stringify(decoded.att)
     ).toEqual(
       JSON.stringify([ encodedCaps ])
     )

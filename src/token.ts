@@ -214,7 +214,7 @@ export function encodeHeader(header: UcanHeader): string {
 export function encodePayload(payload: UcanPayload): string {
   const payloadWithEncodedCaps = {
     ...payload,
-    capabilities: payload.att.map(capability.encode)
+    att: payload.att.map(capability.encode)
   }
 
   return uint8arrays.toString(
