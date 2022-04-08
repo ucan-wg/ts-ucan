@@ -1,11 +1,12 @@
-import * as token from "./token"
-import * as util from "./util"
-import { Keypair, Fact, UcanPayload, isKeypair } from "./types"
-import { Capability, isCapability } from "./capability"
-import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation"
-import { Chained } from "./chained"
-import { Store } from "./store"
-import { publicKeyBytesToDid } from "./did/transformers"
+import * as token from "./token.js"
+import * as util from "./util.js"
+
+import { Keypair, Fact, UcanPayload, isKeypair } from "./types.js"
+import { Capability, isCapability } from "./capability/index.js"
+import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation.js"
+import { Chained } from "./chained.js"
+import { Store } from "./store.js"
+import { publicKeyBytesToDid } from "./did/transformers.js"
 
 
 export interface BuildableState {

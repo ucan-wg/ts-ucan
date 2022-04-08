@@ -1,11 +1,11 @@
-import * as ability from "./capability/ability"
-import * as resourcePointer from "./capability/resource-pointer"
-import * as superUser from "./capability/super-user"
-import * as util from "./util"
+import * as ability from "./ability.js"
+import * as resourcePointer from "./resource-pointer.js"
+import * as superUser from "./super-user.js"
+import * as util from "../util.js"
 
-import { Ability, isAbility } from "./capability/ability"
-import { ResourcePointer, isResourcePointer } from "./capability/resource-pointer"
-import { Superuser, SUPERUSER } from "./capability/super-user"
+import { Ability, isAbility } from "./ability.js"
+import { ResourcePointer, isResourcePointer } from "./resource-pointer.js"
+import { Superuser, SUPERUSER } from "./super-user.js"
 
 
 // RE-EXPORTS

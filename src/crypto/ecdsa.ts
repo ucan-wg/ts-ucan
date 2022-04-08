@@ -1,5 +1,5 @@
 import { webcrypto } from "one-webcrypto"
-import { NamedCurve, KeyType } from "../types"
+import { NamedCurve, KeyType } from "../types.js"
 
 export const ALG = "ECDSA"
 export const DEFAULT_CURVE = "P-256"
@@ -14,7 +14,7 @@ export const generateKeypair = async (
       namedCurve,
     },
     false,
-    ["sign", "verify"]
+    [ "sign", "verify" ]
   )
 }
 
@@ -32,7 +32,7 @@ export const importKey = async (
     key.buffer,
     { name: ALG, namedCurve },
     true,
-    ["verify"]
+    [ "verify" ]
   )
 }
 

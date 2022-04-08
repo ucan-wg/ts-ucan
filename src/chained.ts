@@ -1,6 +1,6 @@
-import { Capability } from "./capability"
-import { Ucan, Fact } from "./types"
-import * as token from "./token"
+import { Capability } from "./capability/index.js"
+import { Ucan, Fact } from "./types.js"
+import * as token from "./token.js"
 
 
 /**

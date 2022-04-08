@@ -1,7 +1,8 @@
 import * as ed25519 from "@stablelib/ed25519"
 import * as uint8arrays from "uint8arrays"
-import BaseKeypair from "./base"
-import { Encodings } from "../types"
+
+import BaseKeypair from "./base.js"
+import { Encodings } from "../types.js"
 
 
 export class EdKeypair extends BaseKeypair {

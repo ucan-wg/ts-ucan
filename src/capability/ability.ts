@@ -1,5 +1,5 @@
-import { Superuser, SUPERUSER } from "./super-user"
-import * as util from "../util"
+import { Superuser, SUPERUSER } from "./super-user.js"
+import * as util from "../util.js"
 
 
 // 💎
