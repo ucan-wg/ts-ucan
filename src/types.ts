@@ -1,6 +1,6 @@
-import { SupportedEncodings } from "uint8arrays/util/bases"
-import { Capability, isCapability, isEncodedCapability } from "./capability"
-import * as util from "./util"
+import { SupportedEncodings } from "uint8arrays/util/bases.js"
+import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
+import * as util from "./util.js"
 
 
 // 💎

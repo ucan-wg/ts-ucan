@@ -1,5 +1,5 @@
-import { Chained } from "./chained"
-import { capabilities, CapabilityInfo, CapabilitySemantics, isCapabilityEscalation } from "./attenuation"
+import { Chained } from "./chained.js"
+import { capabilities, CapabilityInfo, CapabilitySemantics, isCapabilityEscalation } from "./attenuation.js"
 
 
 export interface IndexByAudience {

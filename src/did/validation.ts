@@ -1,10 +1,10 @@
 import * as ed25519 from "@stablelib/ed25519"
 import * as uint8arrays from "uint8arrays"
 
-import * as rsa from "../crypto/rsa"
-import * as ecdsa from "../crypto/ecdsa"
+import * as rsa from "../crypto/rsa.js"
+import * as ecdsa from "../crypto/ecdsa.js"
 
-import { didToPublicKeyBytes } from "./transformers"
+import { didToPublicKeyBytes } from "./transformers.js"
 
 
 /**

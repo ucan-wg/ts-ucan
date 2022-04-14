@@ -1,14 +1,14 @@
 import * as uint8arrays from "uint8arrays"
 
-import * as capability from "./capability"
-import * as did from "./did"
-import * as util from "./util"
-import { Capability, isCapability, isEncodedCapability } from "./capability"
-import { Fact, KeyType, Keypair } from "./types"
-import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types"
-import { handleCompatibility } from "./compatibility"
-import { isUcanHeader, isUcanPayload } from "./types"
-import { verifySignatureUtf8 } from "./did/validation"
+import * as capability from "./capability/index.js"
+import * as did from "./did.js"
+import * as util from "./util.js"
+
+import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
+import { Fact, KeyType, Keypair } from "./types.js"
+import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types.js"
+import { handleCompatibility } from "./compatibility.js"
+import { verifySignatureUtf8 } from "./did/validation.js"
 
 
 // CONSTANTS

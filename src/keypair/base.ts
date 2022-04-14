@@ -1,6 +1,7 @@
 import * as uint8arrays from "uint8arrays"
-import { publicKeyBytesToDid } from "../did/transformers"
-import { Keypair, KeyType, Encodings, Didable, ExportableKey } from "../types"
+
+import { publicKeyBytesToDid } from "../did/transformers.js"
+import { Keypair, KeyType, Encodings, Didable, ExportableKey } from "../types.js"
 
 
 export default abstract class BaseKeypair implements Keypair, Didable, ExportableKey {

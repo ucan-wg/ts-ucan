@@ -1,12 +1,12 @@
 // A module to hold all the ugly compatibility logic
 // for getting from old UCANs to newer version UCANs.
 
-import * as semver from "semver"
+import semver from "semver"
 
-import * as util from "./util"
-import { SUPERUSER } from "./capability/super-user"
-import { UcanParts, isUcanHeader, isUcanPayload } from "./types"
-import { my } from "./capability"
+import * as util from "./util.js"
+import { SUPERUSER } from "./capability/super-user.js"
+import { UcanParts, isUcanHeader, isUcanPayload } from "./types.js"
+import { my } from "./capability/index.js"
 
 
 type UcanHeader_0_3_0 = {

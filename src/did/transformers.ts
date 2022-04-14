@@ -1,8 +1,8 @@
 import * as uint8arrays from "uint8arrays"
 
-import * as rsa from "../crypto/rsa"
-import { BASE58_DID_PREFIX, RSA_DID_PREFIX_OLD, magicBytes, parseMagicBytes, hasPrefix } from "./prefix"
-import { KeyType, Encodings } from "../types"
+import * as rsa from "../crypto/rsa.js"
+import { BASE58_DID_PREFIX, RSA_DID_PREFIX_OLD, magicBytes, parseMagicBytes, hasPrefix } from "./prefix.js"
+import { KeyType, Encodings } from "../types.js"
 
 
 // DID → PUBLIC KEY
@@ -93,7 +93,7 @@ export function publicKeyBytesToDid(
     publicKeyBytes = rsa.convertSubjectPublicKeyInfoToRSAPublicKey(publicKeyBytes)
   }
 
-  const prefixedBytes = uint8arrays.concat([prefix, publicKeyBytes])
+  const prefixedBytes = uint8arrays.concat([ prefix, publicKeyBytes ])
 
   // Encode prefixed
   return BASE58_DID_PREFIX + uint8arrays.toString(prefixedBytes, "base58btc")

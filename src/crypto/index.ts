@@ -1,2 +1,2 @@
-export * as rsa from "./rsa"
-export * as ecdsa from "./ecdsa"
+export * as rsa from "./rsa.js"
+export * as ecdsa from "./ecdsa.js"

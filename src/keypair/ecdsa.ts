@@ -1,13 +1,14 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
-import * as ecdsa from "../crypto/ecdsa"
+
+import * as ecdsa from "../crypto/ecdsa.js"
 import {
   AvailableCryptoKeyPair,
   Encodings,
   isAvailableCryptoKeyPair,
   NamedCurve,
-} from "../types"
-import BaseKeypair from "./base"
+} from "../types.js"
+import BaseKeypair from "./base.js"
 
 export class EcdsaKeypair extends BaseKeypair {
   private keypair: AvailableCryptoKeyPair

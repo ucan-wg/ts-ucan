@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.9.1
+
+Fixed ESM build.
+
 ### v0.9.0
 
 - Adjusted implementation to the 0.8.x [specification](https://github.com/ucan-wg/spec#readme).
