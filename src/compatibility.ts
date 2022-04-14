@@ -1,7 +1,7 @@
 // A module to hold all the ugly compatibility logic
 // for getting from old UCANs to newer version UCANs.
 
-import * as semver from "semver"
+import semver from "semver"
 
 import * as util from "./util.js"
 import { SUPERUSER } from "./capability/super-user.js"
