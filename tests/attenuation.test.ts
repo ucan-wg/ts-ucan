@@ -1,4 +1,6 @@
 import { Chained } from "../src/chained"
+import { EdKeypair } from "../src/keypair/ed25519"
+import * as capability from "../src/capability"
 import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
@@ -169,22 +171,22 @@ describe("attenuation.emailCapabilities", () => {
 })
 
 
-// semantics based on the idea "you can delegate something if it's the same capability"
-const equalityCapabilitySemantics: CapabilitySemantics<Capability> = {
-  tryParsing(cap) {
-    return cap
-  },
-
-  // here you decide whether the given `childCap` is allowed to be created
-  // by the given `parentCap`
-  tryDelegating(parentCap, childCap) {
-    const isEq = JSON.stringify(parentCap) === JSON.stringify(childCap)
-
-    return isEq ? childCap : null
-  }
-}
 
 describe("hasCapability", () => {
+
+  // semantics based on the idea "you can delegate something if it's the same capability"
+  const equalityCapabilitySemantics: CapabilitySemantics<Capability> = {
+    tryParsing(cap) {
+      return cap
+    },
+
+    // here you decide whether the given `childCap` is allowed to be created
+    // by the given `parentCap`
+    tryDelegating(parentCap, childCap) {
+      const isEq = JSON.stringify(parentCap) === JSON.stringify(childCap)
+      return isEq ? childCap : null
+    }
+  }
 
   async function aliceEmailDelegationExample() {
     // alice -> bob, bob -> mallory
@@ -206,10 +208,7 @@ describe("hasCapability", () => {
     return await Chained.fromToken(token.encode(ucan))
   }
 
-  it("gets a capability", async () => {
-    const chained = await aliceEmailDelegationExample()
-
-    // unix timestamp in seconds
+  function aliceCapInfo() {
     const nowInSeconds = Math.floor(Date.now() / 1000)
 
     const capabilityWithInfo = {
@@ -224,7 +223,12 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+    return capabilityWithInfo
+  }
+
+  it("gets a capability", async () => {
+    const chained = await aliceEmailDelegationExample()
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
 
     expect(cap).toBeTruthy()
 
@@ -285,7 +289,7 @@ describe("hasCapability", () => {
 
   it("rejects for an expired capability", async () => {
     const chained = await aliceEmailDelegationExample()
-    // unix timestamp in seconds. Will be after 
+    // unix timestamp in seconds. Will be after
     const nowInSeconds = Math.floor(Date.now() / 1000)
 
     const capabilityWithInfo = {
@@ -304,6 +308,158 @@ describe("hasCapability", () => {
     const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
+  })
+
+  it("supports redelegation via forwarding with a `my` capability", async () => {
+    // alice -> bob
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("alice@email.com") ]
+    })
+
+    const ucan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ capability.my(capability.superUser.SUPERUSER) ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    const chained = await Chained.fromToken(token.encode(ucan))
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+
+    expect(cap).toBeTruthy()
+
+    if (!cap) return
+
+    expect(cap.info.originator).toEqual(alice.did())
+    expect(cap.capability.with.hierPart).toEqual("alice@email.com")
+  })
+
+  it("rejects an improper `my` redelegation", async () => {
+    // alice -> bob
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("invalid@email.com") ]
+    })
+
+    const ucan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ capability.my(capability.superUser.SUPERUSER) ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    const chained = await Chained.fromToken(token.encode(ucan))
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+
+    expect(cap).toBeFalsy()
+  })
+
+  it("supports redelegation via forwarding with a `my` & `as` capability", async () => {
+    // alice -> bob
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("alice@email.com") ]
+    })
+
+    const middleUcan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ capability.my(capability.superUser.SUPERUSER) ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    const anonymous = await EdKeypair.create()
+
+    const ucan = await token.build({
+      issuer: mallory,
+      audience: anonymous.did(),
+      capabilities: [ capability.as(`${anonymous.did()}:${SUPERUSER}`) ],
+      proofs: [ token.encode(middleUcan) ]
+    })
+
+    const chained = await Chained.fromToken(token.encode(ucan))
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+
+    expect(cap).toBeTruthy()
+
+    if (!cap) return
+
+    expect(cap.info.originator).toEqual(alice.did())
+    expect(cap.capability.with.hierPart).toEqual("alice@email.com")
+  })
+
+  it("rejects improper `as` redelegation", async () => {
+    // alice -> bob
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("invalid@email.com") ]
+    })
+
+    const middleUcan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [ capability.my(capability.superUser.SUPERUSER) ],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    const anonymous = await EdKeypair.create()
+
+    const ucan = await token.build({
+      issuer: mallory,
+      audience: anonymous.did(),
+      capabilities: [ capability.as(`${anonymous.did()}:${SUPERUSER}`) ],
+      proofs: [ token.encode(middleUcan) ]
+    })
+
+    const chained = await Chained.fromToken(token.encode(ucan))
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+
+    expect(cap).toBeFalsy()
+  })
+
+  it("rejects improper `as` redelegation - no `my`", async () => {
+    // alice -> bob
+    // alice delegates access to sending email as her to bob
+    // and bob delegates it further to mallory
+    const leafUcan = await token.build({
+      issuer: alice,
+      audience: bob.did(),
+      capabilities: [ emailCapability("alice@email.com") ]
+    })
+
+    const middleUcan = await token.build({
+      issuer: bob,
+      audience: mallory.did(),
+      capabilities: [],
+      proofs: [ token.encode(leafUcan) ]
+    })
+
+    const anonymous = await EdKeypair.create()
+
+    const ucan = await token.build({
+      issuer: mallory,
+      audience: anonymous.did(),
+      capabilities: [ capability.as(`${anonymous.did()}:${SUPERUSER}`) ],
+      proofs: [ token.encode(middleUcan) ]
+    })
+
+    const chained = await Chained.fromToken(token.encode(ucan))
+    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+
+    expect(cap).toBeFalsy()
   })
 
 })
