@@ -64,7 +64,7 @@ export class Chained {
   }
 
   /**
-   * @returns A representation of delgated capabilities throughout all ucan chains
+   * @returns A representation of delegated capabilities throughout all ucan chains
    */
   reduce<A>(reduceLayer: (ucan: Ucan<never>, reducedProofs: () => Iterable<A>) => A): A {
     // eslint-disable-next-line @typescript-eslint/no-this-alias

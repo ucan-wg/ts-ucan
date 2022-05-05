@@ -119,7 +119,10 @@ export function capabilities<A>(
     return function* () {
       for (const parsedChildCap of findParsingCaps(ucan)) {
         let isCoveredByProof = false
+        let proofIndex: null | number = null
+
         for (const capabilitiesInProof of capabilitiesInProofs()) {
+          proofIndex = proofIndex === null ? 0 : proofIndex + 1
           for (const parsedParentCap of capabilitiesInProof()) {
             // pass through capability escalations from parents
             if (isCapabilityEscalation(parsedParentCap)) {
@@ -127,12 +130,25 @@ export function capabilities<A>(
 
             } else if (
               capability.isCapability(parsedChildCap.capability) &&
+              parsedChildCap.capability.with.scheme.toLowerCase() === "prf" &&
               (
-                parsedChildCap.capability.with.scheme.toLowerCase() === "as" ||
-                parsedChildCap.capability.with.scheme.toLowerCase() === "my"
+                parsedChildCap.capability.with.hierPart === capability.superUser.SUPERUSER ||
+                parsedChildCap.capability.with.hierPart === `${proofIndex}`
               )
             ) {
               yield parsedParentCap
+
+            } else if (
+              capability.isCapability(parsedParentCap.capability) &&
+              (
+                parsedParentCap.capability.with.scheme.toLowerCase() === "my" ||
+                parsedParentCap.capability.with.scheme.toLowerCase() === "as"
+              )
+            ) {
+              yield {
+                info: parsedParentCap.info,
+                capability: parsedChildCap.capability
+              }
 
             } else {
               // try figuring out whether we can delegate the capabilities from this to the parent

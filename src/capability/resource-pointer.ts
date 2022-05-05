@@ -10,6 +10,10 @@ export type ResourcePointer = {
   hierPart: Superuser | string
 }
 
+
+/**
+ * Separator for pieces of a URI.
+ */
 export const SEPARATOR: string = ":"
 
 
