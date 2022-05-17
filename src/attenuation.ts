@@ -119,10 +119,9 @@ export function capabilities<A>(
     return function* () {
       for (const parsedChildCap of findParsingCaps(ucan)) {
         let isCoveredByProof = false
-        let proofIndex: null | number = null
+        let proofIndex = 0
 
         for (const capabilitiesInProof of capabilitiesInProofs()) {
-          proofIndex = proofIndex === null ? 0 : proofIndex + 1
           for (const parsedParentCap of capabilitiesInProof()) {
             // pass through capability escalations from parents
             if (isCapabilityEscalation(parsedParentCap)) {
@@ -170,7 +169,10 @@ export function capabilities<A>(
               }
             }
           }
+
+          proofIndex++
         }
+
         // If a capability can't be considered to be delegated by any of its proofs
         // (or if there are no proofs),
         // then we root its origin in the UCAN we're looking at.
