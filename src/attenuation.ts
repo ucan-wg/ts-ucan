@@ -1,9 +1,9 @@
 // https://github.com/ucan-wg/spec/blob/dd4ac83f893cef109f5a26b07970b2484f23aabf/README.md#325-attenuation-scope
-import * as capability from "./capability"
-import * as util from "./util"
-import { Capability } from "./capability"
-import { Chained } from "./chained"
-import { Ucan } from "./types"
+import * as capability from "./capability/index.js"
+import * as util from "./util.js"
+import { Capability } from "./capability/index.js"
+import { Chained } from "./chained.js"
+import { Ucan } from "./types.js"
 
 
 // TYPES
