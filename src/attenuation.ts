@@ -1,8 +1,9 @@
 // https://github.com/ucan-wg/spec/blob/dd4ac83f893cef109f5a26b07970b2484f23aabf/README.md#325-attenuation-scope
+import * as capability from "./capability/index.js"
+import * as util from "./util.js"
 import { Capability } from "./capability/index.js"
 import { Chained } from "./chained.js"
 import { Ucan } from "./types.js"
-import * as util from "./util.js"
 
 
 // TYPES
@@ -118,11 +119,36 @@ export function capabilities<A>(
     return function* () {
       for (const parsedChildCap of findParsingCaps(ucan)) {
         let isCoveredByProof = false
+        let proofIndex = 0
+
         for (const capabilitiesInProof of capabilitiesInProofs()) {
           for (const parsedParentCap of capabilitiesInProof()) {
             // pass through capability escalations from parents
             if (isCapabilityEscalation(parsedParentCap)) {
               yield parsedParentCap
+
+            } else if (
+              capability.isCapability(parsedChildCap.capability) &&
+              parsedChildCap.capability.with.scheme.toLowerCase() === "prf" &&
+              (
+                parsedChildCap.capability.with.hierPart === capability.superUser.SUPERUSER ||
+                parsedChildCap.capability.with.hierPart === `${proofIndex}`
+              )
+            ) {
+              yield parsedParentCap
+
+            } else if (
+              capability.isCapability(parsedParentCap.capability) &&
+              (
+                parsedParentCap.capability.with.scheme.toLowerCase() === "my" ||
+                parsedParentCap.capability.with.scheme.toLowerCase() === "as"
+              )
+            ) {
+              yield {
+                info: parsedParentCap.info,
+                capability: parsedChildCap.capability
+              }
+
             } else {
               // try figuring out whether we can delegate the capabilities from this to the parent
               const delegated = semantics.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
@@ -143,7 +169,10 @@ export function capabilities<A>(
               }
             }
           }
+
+          proofIndex++
         }
+
         // If a capability can't be considered to be delegated by any of its proofs
         // (or if there are no proofs),
         // then we root its origin in the UCAN we're looking at.

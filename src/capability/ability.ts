@@ -9,7 +9,18 @@ export type Ability
   = Superuser
   | { namespace: string; segments: string[] }
 
+
+/**
+ * Separator for an ability's segments.
+ */
 export const SEPARATOR: string = "/"
+
+
+/**
+ * Ability that can be used with a `prf` resource-pointer.
+ * This redelegates all capabilities of the proof(s).
+ */
+export const REDELEGATE: Ability = { namespace: "ucan", segments: [ "DELEGATE" ] }
 
 
 
