@@ -4,6 +4,7 @@ import * as capability from "../src/capability"
 import * as token from "../src/token"
 import { verifySignatureUtf8 } from "../src/did"
 import { alice, bob } from "./fixtures"
+import ECDSAKeyPair from "../src/keypair/ecdsa"
 
 
 // COMPOSING
@@ -113,6 +114,23 @@ describe("token.validate", () => {
     const ucan = await makeUcan()
     const parsedUcan = await token.validate(token.encode(ucan))
     expect(parsedUcan).toBeDefined()
+  })
+
+  it("allows supported alg types", async () => {
+    const ucanES256 = await token.build({ audience: (await ECDSAKeyPair.create()).did(), issuer: await ECDSAKeyPair.create() })
+    const parsedUcanES256 = await token.validate(token.encode(ucanES256))
+
+    expect(parsedUcanES256).toBeDefined()
+
+    const ucanES384 = await token.build({ audience: (await ECDSAKeyPair.create()).did(), issuer: await ECDSAKeyPair.create() })
+    const parsedUcanES384 = await token.validate(token.encode(ucanES384))
+
+    expect(parsedUcanES384).toBeDefined()
+
+    const ucanES521 = await token.build({ audience: (await ECDSAKeyPair.create()).did(), issuer: await ECDSAKeyPair.create() })
+    const parsedUcanES521 = await token.validate(token.encode(ucanES521))
+
+    expect(parsedUcanES521).toBeDefined()
   })
 
   it("throws with a bad audience", async () => {

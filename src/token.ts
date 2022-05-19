@@ -377,12 +377,21 @@ export const isTooEarly = (ucan: Ucan): boolean => {
 
 /**
  * JWT algorithm to be used in a JWT header.
+ *
+ * TODO(appcypher): Learn more about JWA spec.
+ * The algorithms here are not JWA spec-compliant even though they may have similar names.
+ * keyType does not say anything about the hash functions used in encryption algorithms which JWA seems to make explicit.
+ *
+ * See https://datatracker.ietf.org/doc/html/rfc7518#page-6
  */
 function jwtAlgorithm(keyType: KeyType): string {
   switch (keyType) {
     case "bls12-381": throw new Error(`Unknown KeyType "${keyType}"`)
     case "ed25519": return "EdDSA"
     case "rsa": return "RS256"
+    case "p256": return "ES256"
+    case "p384": return "ES384"
+    case "p521": return "ES521"
     default: throw new Error(`Unknown KeyType "${keyType}"`)
   }
 }
