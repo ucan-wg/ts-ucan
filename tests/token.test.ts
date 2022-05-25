@@ -117,25 +117,21 @@ describe("token.validate", () => {
 
   it("throws with a bad audience", async () => {
     const ucan = await makeUcan()
-    const badUcan = token.encode({
-      ...ucan,
-      payload: {
-        ...ucan.payload,
-        aud: "fakeaudience"
-      }
-    })
+    const badPayload = {
+      ...ucan.payload,
+      aud: "fakeaudience"
+    }
+    const badUcan = `${token.encodeHeader(ucan.header)}.${token.encodePayload(badPayload)}.${ucan.signature}`
     await expect(() => token.validate(badUcan)).rejects.toBeDefined()
   })
 
   it("throws with a bad issuer", async () => {
     const ucan = await makeUcan()
-    const badUcan = token.encode({
-      ...ucan,
-      header: {
-        ...ucan.header,
-        alg: "RS256"
-      }
-    })
+    const badHeader = {
+      ...ucan.header,
+      alg: "RS256"
+    }
+    const badUcan = `${token.encodeHeader(badHeader)}.${token.encodePayload(ucan.payload)}.${ucan.signature}`
     await expect(() => token.validate(badUcan)).rejects.toBeDefined()
   })
 

@@ -1,8 +1,10 @@
+import * as token from "../src/token"
 import { Builder } from "../src/builder"
 import { emailCapability } from "./capability/email"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
+import { Chained } from "../src/chained"
 
 
 describe("Builder", () => {
@@ -25,13 +27,13 @@ describe("Builder", () => {
       .claimCapability(cap1, cap2)
       .build()
 
-    expect(ucan.issuer()).toEqual(alice.did())
-    expect(ucan.audience()).toEqual(bob.did())
-    expect(ucan.expiresAt()).toEqual(expiration)
-    expect(ucan.notBefore()).toEqual(notBefore)
-    expect(ucan.facts()).toEqual([ fact1, fact2 ])
-    expect(ucan.attenuation()).toEqual([ cap1, cap2 ])
-    expect(ucan.nonce()).toBeDefined()
+    expect(ucan.payload.iss).toEqual(alice.did())
+    expect(ucan.payload.aud).toEqual(bob.did())
+    expect(ucan.payload.exp).toEqual(expiration)
+    expect(ucan.payload.nbf).toEqual(notBefore)
+    expect(ucan.payload.fct).toEqual([ fact1, fact2 ])
+    expect(ucan.payload.att).toEqual([ cap1, cap2 ])
+    expect(ucan.payload.nnc).toBeDefined()
   })
 
   it("builds with lifetimeInSeconds", async () => {
@@ -51,16 +53,18 @@ describe("Builder", () => {
       .withLifetimeInSeconds(30)
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
+  
+    const chained = await Chained.fromToken(token.encode(ucan))
 
     const payload = Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
-      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), ucan)
-      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), ucan)
+      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), chained)
+      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), chained)
       .buildPayload()
 
-    expect(payload.prf).toEqual([ ucan.encoded() ])
+    expect(payload.prf).toEqual([ token.encode(ucan) ])
   })
 
   it("throws when it's not ready to be built", () => {
@@ -98,13 +102,15 @@ describe("Builder", () => {
       .withLifetimeInSeconds(30)
       .claimCapability(emailCapability("alice@email.com"))
       .build()
+    
+    const chained = await Chained.fromToken(token.encode(ucan))
 
     expect(() => {
       Builder.create()
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)
-        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), ucan)
+        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), chained)
         .buildPayload()
     }).toThrow()
   })

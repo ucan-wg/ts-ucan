@@ -10,12 +10,9 @@ import * as token from "./token.js"
  */
 export class Chained {
 
-  // We need to keep the encoded version around to preserve the signature
-  private _encoded: string
   private _decoded: Ucan<Chained>
 
-  constructor(encoded: string, decoded: Ucan<Chained>) {
-    this._encoded = encoded
+  constructor(decoded: Ucan<Chained>) {
     this._decoded = decoded
   }
 
@@ -53,14 +50,14 @@ export class Chained {
       },
     }
 
-    return new Chained(encodedUcan, ucanTransformed)
+    return new Chained(ucanTransformed)
   }
 
   /**
    * @returns The original JWT-encoded UCAN this chain was parsed from.
    */
   encoded(): string {
-    return this._encoded
+    return token.encode(this._decoded)
   }
 
   /**

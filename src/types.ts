@@ -9,6 +9,8 @@ import * as util from "./util.js"
 export type Ucan<Prf = string> = {
   header: UcanHeader
   payload: UcanPayload<Prf>
+  // We need to keep the encoded version around to preserve the signature
+  signedData: string
   signature: string
 }
 

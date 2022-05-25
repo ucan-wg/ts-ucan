@@ -145,15 +145,19 @@ export async function sign(
   const encodedPayload = encodePayload(payload)
 
   // Sign
-  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
+  const signedData = `${encodedHeader}.${encodedPayload}`
+  const toSign = uint8arrays.fromString(signedData, "utf8")
   const sig = await signFn(toSign)
 
   // 📦
-  return {
+  // we freeze the object to make it more unlikely
+  // for signedData & header/payload to get out of sync
+  return Object.freeze({
     header,
     payload,
+    signedData,
     signature: uint8arrays.toString(sig, "base64url")
-  }
+  })
 }
 
 /**
@@ -180,13 +184,8 @@ export async function signWithKeypair(
  *
  * @param ucan The UCAN to encode
  */
-export function encode(ucan: Ucan): string {
-  const encodedHeader = encodeHeader(ucan.header)
-  const encodedPayload = encodePayload(ucan.payload)
-
-  return encodedHeader + "." +
-    encodedPayload + "." +
-    ucan.signature
+export function encode(ucan: Ucan<unknown>): string {
+  return `${ucan.signedData}.${ucan.signature}`
 }
 
 /**
@@ -338,7 +337,8 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
     }
   }
 
-  const ucan: Ucan = { header, payload, signature }
+  const signedData = `${encodedHeader}.${encodedPayload}`
+  const ucan: Ucan = { header, payload, signedData, signature }
 
   if (checkIsExpired && isExpired(ucan)) {
     throw new Error(`Invalid UCAN: ${encodedUcan}: Expired.`)

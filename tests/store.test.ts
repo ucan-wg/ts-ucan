@@ -1,7 +1,9 @@
+import * as token from "../src/token"
 import { Store } from "../src/store"
 import { Builder } from "../src/builder"
 import { alice, bob, mallory } from "./fixtures"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
+import { Chained } from "../src/chained"
 
 
 describe("Store.add", () => {
@@ -13,9 +15,11 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
+    const encoded = token.encode(ucan)
+
     const store = await Store.fromTokens([])
-    store.add(ucan)
-    expect(store.findByAudience(ucan.audience(), find => find === ucan)).toEqual(ucan)
+    store.add(await Chained.fromToken(encoded))
+    expect(store.findByAudience(ucan.payload.aud, find => find.encoded() === encoded)?.encoded()).toEqual(encoded)
   })
 
   it("makes added items retrievable with findByAudience among multiple others", async () => {
@@ -31,10 +35,11 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
+    const encoded = token.encode(ucan)
     const store = await Store.fromTokens([])
-    store.add(ucan2)
-    store.add(ucan)
-    expect(store.findByAudience(ucan.audience(), find => find === ucan)).toEqual(ucan)
+    store.add(await Chained.fromToken(token.encode(ucan2)))
+    store.add(await Chained.fromToken(encoded))
+    expect(store.findByAudience(ucan.payload.aud, find => find.encoded() === encoded)?.encoded()).toEqual(encoded)
   })
 
   it("doesn't add items twice", async () => {
@@ -44,10 +49,11 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
+    const chained = await Chained.fromToken(token.encode(ucan))
     const store = await Store.fromTokens([])
-    store.add(ucan)
-    store.add(ucan)
-    expect(store.getByAudience(ucan.audience())).toEqual([ ucan ])
+    store.add(chained)
+    store.add(chained)
+    expect(store.getByAudience(ucan.payload.aud)).toEqual([ chained ])
   })
 
 })
@@ -67,10 +73,10 @@ describe("Store.findByAudience", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ ucanBob, ucanAlice ].map(ucan => ucan.encoded()))
+    const store = await Store.fromTokens([ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
     expect(store.findByAudience(mallory.did(), () => true)).toEqual(null)
-    expect(store.findByAudience(bob.did(), () => true)?.encoded()).toEqual(ucanBob.encoded())
-    expect(store.findByAudience(alice.did(), () => true)?.encoded()).toEqual(ucanAlice.encoded())
+    expect(store.findByAudience(bob.did(), () => true)?.encoded()).toEqual(token.encode(ucanBob))
+    expect(store.findByAudience(alice.did(), () => true)?.encoded()).toEqual(token.encode(ucanAlice))
   })
 
 })
@@ -85,7 +91,7 @@ describe("Store.findWithCapability", () => {
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
-    const store = await Store.fromTokens([ ucan.encoded() ])
+    const store = await Store.fromTokens([ token.encode(ucan) ])
 
     const result = store.findWithCapability(bob.did(), wnfsPublicSemantics, {
       user: "alice.fission.name",
@@ -98,7 +104,7 @@ describe("Store.findWithCapability", () => {
       throw new Error(`Unexpected result ${JSON.stringify(result)}`)
     }
 
-    expect(result.ucan.encoded()).toEqual(ucan.encoded())
+    expect(result.ucan.encoded()).toEqual(token.encode(ucan))
   })
 
   it("reports an error if the capability can't be found with given audience", async () => {
@@ -115,7 +121,7 @@ describe("Store.findWithCapability", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ ucanAlice.encoded(), ucanBob.encoded() ])
+    const store = await Store.fromTokens([ token.encode(ucanAlice), token.encode(ucanBob) ])
 
     const result = store.findWithCapability(alice.did(), wnfsPublicSemantics, {
       user: "alice.fission.name",

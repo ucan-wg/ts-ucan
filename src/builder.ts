@@ -1,7 +1,7 @@
 import * as token from "./token.js"
 import * as util from "./util.js"
 
-import { Keypair, Fact, UcanPayload, isKeypair } from "./types.js"
+import { Keypair, Fact, UcanPayload, isKeypair, Ucan } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
 import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation.js"
 import { Chained } from "./chained.js"
@@ -283,15 +283,13 @@ export class Builder<State extends Partial<BuildableState>> {
    *
    * @throws If the builder hasn't yet been set an issuer, audience and expiration.
    */
-  async build(): Promise<State extends BuildableState ? Chained : never>
-  async build(): Promise<Chained> {
+  async build(): Promise<State extends BuildableState ? Ucan : never>
+  async build(): Promise<Ucan> {
     if (!isBuildableState(this.state)) {
       throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
     const payload = this.buildPayload()
-    const signed = await token.signWithKeypair(payload, this.state.issuer)
-    const encoded = token.encode(signed)
-    return new Chained(encoded, { ...signed, payload: { ...signed.payload, prf: this.defaultable.proofs } })
+    return await token.signWithKeypair(payload, this.state.issuer)
   }
 
 }
