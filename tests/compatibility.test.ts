@@ -16,7 +16,7 @@ describe("compatibility", () => {
       header: {
         alg: header.alg, // "RS256",
         typ: header.typ, // "JWT",
-        ucv: "0.3.0" // we translate uav: 1.0.0 to ucv: 0.3.0
+        ucv: { major: 0, minor: 3, patch: 0 } // we translate uav: 1.0.0 to ucv: 0.3.0
       },
       payload: {
         iss: payload.iss, // "did:key:z13V3Sog2YaUKhdGCmgx9UZuW1o1ShFJYc6DvGYe7NTt689NoL2VjvAGbWu1kvfVQarU5V1pSRsc9apGhvt7Z82fQh5Aa55n5fm3dk6JqnMw3de8XouufTWfuxzDVHkHSFWK19mRYb8wm9wUpfLmQixAWm2wEYVjSgD4Gzc8UP9CJ1q2F8eyiUub18FnWxcgcQhjupw93qRS3X9WP5bziRb18M6tVo3iBxeJ3oikE3ZktRpKSd9dpu9YcWdXhx6CBf956uQxdL6hNJi6eLnfuxV64HieMkdUhM2Ry8Qwyjf48fvV1XEUMsxC9aac4KBpbN42GGu8RadD57r6n1aNsb2N57FCNbqH1uKtxMNeGdrvAiTPdsV2AFjis2o7n7j8L5n5bbxLYxU8MTpwAZatZdJ",

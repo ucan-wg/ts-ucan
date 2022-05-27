@@ -1,5 +1,6 @@
 import * as uint8arrays from "uint8arrays"
 
+import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
 import * as did from "./did.js"
 import * as util from "./util.js"
@@ -15,7 +16,7 @@ import { verifySignatureUtf8 } from "./did/validation.js"
 
 
 const TYPE = "JWT"
-const VERSION = "0.8.1"
+const VERSION = { major: 0, minor: 8, patch: 1 }
 
 
 
@@ -195,8 +196,12 @@ export function encode(ucan: Ucan<unknown>): string {
  * @returns The header of a UCAN encoded as url-safe base64 JSON
  */
 export function encodeHeader(header: UcanHeader): string {
+  const headerFormatted = {
+    ...header,
+    ucv: semver.format(header.ucv)
+  }
   return uint8arrays.toString(
-    uint8arrays.fromString(JSON.stringify(header), "utf8"),
+    uint8arrays.fromString(JSON.stringify(headerFormatted), "utf8"),
     "base64url"
   )
 }
@@ -351,6 +356,17 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   return ucan
 }
 
+/**
+ * Iterates over all proofs and parses & validates them at the same time.
+ * 
+ * If there's an audience/issuer mismatch, the iterated item will contain an `Error`.
+ * Otherwise the iterated out will contain a `Ucan`.
+ * 
+ * @param ucan a parsed UCAN
+ * @param options optional ValidateOptions to use for validating each proof
+ * @return an async iterator of the given ucan's proofs parsed & validated, or an `Error`
+ *         for each proof that couldn't be validated or parsed.
+ */
 export async function* validateProofs(ucan: Ucan, options?: ValidateOptions): AsyncIterable<Ucan | Error> {
   for (const prf of ucan.payload.prf) {
     try {

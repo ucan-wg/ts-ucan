@@ -1,13 +1,15 @@
 // A module to hold all the ugly compatibility logic
 // for getting from old UCANs to newer version UCANs.
 
-import semver from "semver"
+import * as semver from "./semver.js"
 
 import * as util from "./util.js"
 import { SUPERUSER } from "./capability/super-user.js"
 import { UcanParts, isUcanHeader, isUcanPayload } from "./types.js"
 import { my } from "./capability/index.js"
 
+
+const VERSION_0_3 = { major: 0, minor: 3, patch: 0 }
 
 type UcanHeader_0_3_0 = {
   alg: string
@@ -64,6 +66,13 @@ export function handleCompatibility(header: unknown, payload: unknown): UcanPart
   }
 
   if (semver.gte(version, "0.8.0")) {
+    if (typeof header.ucv !== "string") {
+      throw fail("header", "Invalid format: Missing 'ucv' key or 'ucv' is not a string")
+    }
+    header.ucv = semver.parse(header.ucv)
+    if (header.ucv == null) {
+      throw fail("header", "Invalid format: 'ucv' string cannot be parsed into a semantic version")
+    }
     if (!isUcanHeader(header)) throw fail("header", "Invalid format")
     if (!isUcanPayload(payload)) throw fail("payload", "Invalid format")
     return { header, payload }
@@ -77,7 +86,7 @@ export function handleCompatibility(header: unknown, payload: unknown): UcanPart
     header: {
       alg: header.alg,
       typ: header.typ,
-      ucv: "0.3.0",
+      ucv: VERSION_0_3,
     },
     payload: {
       iss: payload.iss,
