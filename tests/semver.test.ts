@@ -39,6 +39,39 @@ describe("SemVer", () => {
     })
   })
 
+  describe("parse", () => {
+
+    it("parses 0.1.2", () => {
+      expect(parse("0.1.2")).toEqual({
+        major: 0,
+        minor: 1,
+        patch: 2,
+      })
+    })
+
+    it("parses 11.22.33", () => {
+      expect(parse("11.22.33")).toEqual({
+        major: 11,
+        minor: 22,
+        patch: 33,
+      })
+    })
+
+    it("doesn't parse negative integers", () => {
+      expect(parse("0.-1.1")).toEqual(null)
+    
+    })
+
+    it("doesn't parse octal integers", () => {
+      expect(parse("0.010.0")).toEqual(null)
+    })
+
+    it("doesn't parse scientific integers", () => {
+      expect(parse("1e5.0.0")).toEqual(null)
+    })
+
+  })
+
 })
 
 function flip(sign: GT | EQ | LT): GT | EQ | LT {

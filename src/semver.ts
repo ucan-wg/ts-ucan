@@ -19,10 +19,22 @@ export function isSemVer(obj: unknown): obj is SemVer {
 
 // Parsing
 
+const NUM_REGEX = /^0|[1-9]\d*/
+
+const matchesRegex = (regex: RegExp) => (str: string) => {
+  const m = str.match(regex)
+  if (!m) return false
+  return m[0].length === str.length
+}
+
 export function parse(version: string): SemVer | null {
   const parts = version.split(".")
   
   if (parts.length !== 3) {
+    return null
+  }
+
+  if (!parts.every(matchesRegex(NUM_REGEX))) {
     return null
   }
   
