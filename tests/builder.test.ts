@@ -4,7 +4,6 @@ import { emailCapability } from "./capability/email"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import { Chained } from "../src/chained"
 
 
 describe("Builder", () => {

@@ -4,7 +4,6 @@ import * as util from "./util.js"
 import { Keypair, Fact, UcanPayload, isKeypair, Ucan } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
 import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation.js"
-import { Chained } from "./chained.js"
 import { Store } from "./store.js"
 import { publicKeyBytesToDid } from "./did/transformers.js"
 

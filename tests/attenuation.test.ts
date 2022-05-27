@@ -1,4 +1,3 @@
-import { Chained } from "../src/chained"
 import { EdKeypair } from "../src/keypair/ed25519"
 import * as capability from "../src/capability"
 import * as token from "../src/token"
