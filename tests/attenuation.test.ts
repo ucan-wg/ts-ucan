@@ -31,11 +31,7 @@ describe("attenuation.emailCapabilities", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const emailCaps = Array.from(
-      emailCapabilities(await Chained.fromToken(token.encode(ucan)))
-    )
-
-    expect(emailCaps).toEqual([ {
+    expect(await all(emailCapabilities(ucan))).toEqual([ {
       info: {
         originator: alice.did(),
         expiresAt: Math.min(leafUcan.payload.exp, ucan.payload.exp),
@@ -62,7 +58,7 @@ describe("attenuation.emailCapabilities", () => {
     })
 
     // we implicitly expect the originator to become bob
-    expect(Array.from(emailCapabilities(await Chained.fromToken(token.encode(ucan))))).toEqual([ {
+    expect(await all(emailCapabilities(ucan))).toEqual([ {
       info: {
         originator: bob.did(),
         expiresAt: ucan.payload.exp,
@@ -98,9 +94,7 @@ describe("attenuation.emailCapabilities", () => {
       proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-
-    expect(Array.from(emailCapabilities(chained))).toEqual([
+    expect(await all(emailCapabilities(ucan))).toEqual([
       {
         info: {
           originator: alice.did(),
@@ -147,9 +141,7 @@ describe("attenuation.emailCapabilities", () => {
       proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-
-    expect(Array.from(emailCapabilities(chained))).toEqual([
+    expect(await all(emailCapabilities(ucan))).toEqual([
       {
         info: {
           originator: alice.did(),
@@ -206,7 +198,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    return await Chained.fromToken(token.encode(ucan))
+    return ucan
   }
 
   function nowInSeconds() {
@@ -231,7 +223,7 @@ describe("hasCapability", () => {
 
   it("gets a capability", async () => {
     const chained = await aliceEmailDelegationExample()
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
 
     expect(cap).toBeTruthy()
 
@@ -262,7 +254,7 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
   })
@@ -285,7 +277,7 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
   })
@@ -308,7 +300,7 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, capabilityWithInfo, chained)
 
     expect(cap).toEqual(false)
   })
@@ -330,8 +322,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -364,8 +355,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -382,8 +372,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const chainedFaulty = await Chained.fromToken(token.encode(faultyUcan))
-    const capFaulty = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chainedFaulty)
+    const capFaulty = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), faultyUcan)
 
     expect(capFaulty).toBeFalsy()
   })
@@ -405,8 +394,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeFalsy()
   })
@@ -428,8 +416,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -464,8 +451,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(middleUcan) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -491,8 +477,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const chained = await Chained.fromToken(token.encode(ucan))
-    const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+    const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
     expect(cap).toBeFalsy()
   })
@@ -514,10 +499,17 @@ describe("hasCapability", () => {
   //     proofs: [ token.encode(leafUcan) ]
   //   })
 
-  //   const chained = await Chained.fromToken(token.encode(ucan))
-  //   const cap = hasCapability(equalityCapabilitySemantics, aliceCapInfo(), chained)
+  //   const cap = await hasCapability(equalityCapabilitySemantics, aliceCapInfo(), ucan)
 
   //   expect(cap).toBeFalsy()
   // })
 
 })
+
+async function all<T>(it: AsyncIterable<T>): Promise<T[]> {
+  const arr = []
+  for await (const i of it) {
+    arr.push(i)
+  }
+  return arr
+}

@@ -1,8 +1,8 @@
 // https://github.com/ucan-wg/spec/blob/dd4ac83f893cef109f5a26b07970b2484f23aabf/README.md#325-attenuation-scope
 import * as capability from "./capability/index.js"
 import * as util from "./util.js"
+import * as token from "./token.js"
 import { Capability } from "./capability/index.js"
-import { Chained } from "./chained.js"
 import { Ucan } from "./types.js"
 
 
@@ -66,7 +66,7 @@ export function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscala
 // PARSING
 
 
-function parseCapabilityInfo(ucan: Ucan<never>): CapabilityInfo {
+function parseCapabilityInfo(ucan: Ucan<unknown>): CapabilityInfo {
   return {
     originator: ucan.payload.iss,
     expiresAt: ucan.payload.exp,
@@ -79,8 +79,8 @@ function parseCapabilityInfo(ucan: Ucan<never>): CapabilityInfo {
 // FUNCTIONS
 
 
-export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A, ucan: Chained): boolean {
-  for (const cap of capabilities(ucan, semantics)) {
+export async function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A, ucan: Ucan): Promise<boolean> {
+  for await (const cap of capabilities(ucan, semantics)) {
     if (isCapabilityEscalation(cap)) {
       continue
     }
@@ -102,12 +102,12 @@ export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A,
 /**
  * Iterate through the capabilities of a UCAN chain.
  */
-export function capabilities<A>(
-  ucan: Chained,
+export async function* capabilities<A>(
+  ucan: Ucan,
   semantics: CapabilitySemantics<A>,
-): Iterable<CapabilityResult<A>> {
+): AsyncIterable<CapabilityResult<A>> {
 
-  function* findParsingCaps(ucan: Ucan<never>): Iterable<CapabilityWithInfo<A>> {
+  function* findParsingCaps(ucan: Ucan<unknown>): Iterable<CapabilityWithInfo<A>> {
     const capInfo = parseCapabilityInfo(ucan)
     for (const cap of ucan.payload.att) {
       const parsedCap = semantics.tryParsing(cap)
@@ -115,75 +115,73 @@ export function capabilities<A>(
     }
   }
 
-  const delegate = (ucan: Ucan<never>, capabilitiesInProofs: () => Iterable<() => Iterable<CapabilityResult<A>>>) => {
-    return function* () {
-      for (const parsedChildCap of findParsingCaps(ucan)) {
-        let isCoveredByProof = false
-        let proofIndex = 0
+  for (const parsedChildCap of findParsingCaps(ucan)) {
+    let isCoveredByProof = false
+    let proofIndex = 0
 
-        for (const capabilitiesInProof of capabilitiesInProofs()) {
-          for (const parsedParentCap of capabilitiesInProof()) {
-            // pass through capability escalations from parents
-            if (isCapabilityEscalation(parsedParentCap)) {
-              yield parsedParentCap
+    for await (const proof of token.validateProofs(ucan)) {
+      if (proof instanceof Error) {
+        throw proof
+      }
 
-            } else if (
-              capability.isCapability(parsedChildCap.capability) &&
-              parsedChildCap.capability.with.scheme.toLowerCase() === "prf" &&
-              (
-                parsedChildCap.capability.with.hierPart === capability.superUser.SUPERUSER ||
-                parsedChildCap.capability.with.hierPart === `${proofIndex}`
-              )
-            ) {
-              yield parsedParentCap
+      for await (const parsedParentCap of capabilities(proof, semantics)) {
+        // pass through capability escalations from parents
+        if (isCapabilityEscalation(parsedParentCap)) {
+          yield parsedParentCap
 
-            } else if (
-              capability.isCapability(parsedParentCap.capability) &&
-              (
-                parsedParentCap.capability.with.scheme.toLowerCase() === "my" ||
-                parsedParentCap.capability.with.scheme.toLowerCase() === "as"
-              )
-            ) {
-              yield {
-                info: parsedParentCap.info,
-                capability: parsedChildCap.capability
-              }
+        } else if (
+          capability.isCapability(parsedChildCap.capability) &&
+          parsedChildCap.capability.with.scheme.toLowerCase() === "prf" &&
+          (
+            parsedChildCap.capability.with.hierPart === capability.superUser.SUPERUSER ||
+            parsedChildCap.capability.with.hierPart === `${proofIndex}`
+          )
+        ) {
+          yield parsedParentCap
 
+        } else if (
+          capability.isCapability(parsedParentCap.capability) &&
+          (
+            parsedParentCap.capability.with.scheme.toLowerCase() === "my" ||
+            parsedParentCap.capability.with.scheme.toLowerCase() === "as"
+          )
+        ) {
+          yield {
+            info: parsedParentCap.info,
+            capability: parsedChildCap.capability
+          }
+
+        } else {
+          // try figuring out whether we can delegate the capabilities from this to the parent
+          const delegated = semantics.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
+          // if the capabilities *are* related, then this will be non-null
+          // otherwise we just continue looking
+          if (delegated != null) {
+            // we infer that the capability was meant to be delegated
+            isCoveredByProof = true
+            // it's still possible that that delegation was invalid, i.e. an escalation, though
+            if (isCapabilityEscalation(delegated)) {
+              yield delegated // which is an escalation
             } else {
-              // try figuring out whether we can delegate the capabilities from this to the parent
-              const delegated = semantics.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
-              // if the capabilities *are* related, then this will be non-null
-              // otherwise we just continue looking
-              if (delegated != null) {
-                // we infer that the capability was meant to be delegated
-                isCoveredByProof = true
-                // it's still possible that that delegation was invalid, i.e. an escalation, though
-                if (isCapabilityEscalation(delegated)) {
-                  yield delegated // which is an escalation
-                } else {
-                  yield {
-                    info: delegateCapabilityInfo(parsedChildCap.info, parsedParentCap.info),
-                    capability: delegated
-                  }
-                }
+              yield {
+                info: delegateCapabilityInfo(parsedChildCap.info, parsedParentCap.info),
+                capability: delegated
               }
             }
           }
-
-          proofIndex++
-        }
-
-        // If a capability can't be considered to be delegated by any of its proofs
-        // (or if there are no proofs),
-        // then we root its origin in the UCAN we're looking at.
-        if (!isCoveredByProof) {
-          yield parsedChildCap
         }
       }
+
+      proofIndex++
+    }
+
+    // If a capability can't be considered to be delegated by any of its proofs
+    // (or if there are no proofs),
+    // then we root its origin in the UCAN we're looking at.
+    if (!isCoveredByProof) {
+      yield parsedChildCap
     }
   }
-
-  return ucan.reduce(delegate)()
 }
 
 /**
@@ -217,12 +215,12 @@ function delegateCapabilityInfo(
  * We need to check the originator of the capability,
  * otherwise anyone could pretend to have these rights.
  */
-export function hasCapability<Cap>(
+export async function hasCapability<Cap>(
   semantics: CapabilitySemantics<Cap>,
   capability: CapabilityWithInfo<Cap>,
-  ucan: Chained
-): CapabilityWithInfo<Cap> | false {
-  for (const cap of capabilities(ucan, semantics)) {
+  ucan: Ucan
+): Promise<CapabilityWithInfo<Cap> | false> {
+  for await (const cap of capabilities(ucan, semantics)) {
     if (isCapabilityEscalation(cap)) {
       continue
     }

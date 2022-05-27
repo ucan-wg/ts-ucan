@@ -25,7 +25,7 @@ function isBuildableState(obj: unknown): obj is BuildableState {
 interface DefaultableState {
   capabilities: Capability[]
   facts: Fact[]
-  proofs: Chained[]
+  proofs: Ucan[]
   addNonce: boolean
   notBefore?: number
 }
@@ -200,9 +200,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * @throws If given proof can't be used to delegate given capability
    * @throws If the builder hasn't set an issuer and expiration yet
    */
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Chained): State extends CapabilityLookupCapableState ? Builder<State> : never
-  delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Chained): Builder<State> {
+  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Promise<State extends CapabilityLookupCapableState ? Builder<State> : never>
+  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Ucan): Promise<State extends CapabilityLookupCapableState ? Builder<State> : never>
+  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Ucan): Promise<Builder<State>> {
     if (!isCapability(requiredCapability)) {
       throw new TypeError(`Expected 'requiredCapability' as a second argument, but got ${requiredCapability}`)
     }
@@ -210,9 +210,8 @@ export class Builder<State extends Partial<BuildableState>> {
       throw new Error(`Can't delegate capabilities without having these paramenters set in the builder: issuer and expiration.`)
     }
 
-    function isProof(proof: Store | Chained): proof is Chained {
-      const encodedFnc = (proof as unknown as Record<string, unknown>).encoded
-      return typeof encodedFnc === "function"
+    function isProof(proof: Store | Ucan): proof is Ucan {
+      return util.hasProp(proof, "signedData") && util.hasProp(proof, "signature")
     }
 
     const parsedRequirement = semantics.tryParsing(requiredCapability)
@@ -228,25 +227,27 @@ export class Builder<State extends Partial<BuildableState>> {
     }
 
     if (isProof(storeOrProof)) {
-      if (!canDelegate(semantics, parsedRequirement, storeOrProof)) {
+      const proof: Ucan = storeOrProof
+      if (!await canDelegate(semantics, parsedRequirement, proof)) {
         throw new Error(`Can't add capability to UCAN: Given proof doesn't give required rights to delegate.`)
       }
       return new Builder(this.state, {
         ...this.defaultable,
         capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
-        proofs: this.defaultable.proofs.find(proof => proof.encoded() === storeOrProof.encoded()) == null
+        proofs: this.defaultable.proofs.find(proof => token.encode(proof) === token.encode(proof)) == null
           ? [ ...this.defaultable.proofs, storeOrProof ]
           : this.defaultable.proofs
       })
     } else {
+      const store: Store = storeOrProof
       const issuer = publicKeyBytesToDid(this.state.issuer.publicKey, this.state.issuer.keyType)
       // we look up a proof that has our issuer as an audience
-      const result = storeOrProof.findWithCapability(issuer, semantics, parsedRequirement, hasInfoRequirements)
+      const result = await store.findWithCapability(issuer, semantics, parsedRequirement, hasInfoRequirements)
       if (result.success) {
         return new Builder(this.state, {
           ...this.defaultable,
           capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
-          proofs: this.defaultable.proofs.find(proof => proof.encoded() === result.ucan.encoded()) == null
+          proofs: this.defaultable.proofs.find(proof => token.encode(proof) === token.encode(result.ucan)) == null
             ? [ ...this.defaultable.proofs, result.ucan ]
             : this.defaultable.proofs
         })
@@ -274,7 +275,7 @@ export class Builder<State extends Partial<BuildableState>> {
 
       capabilities: this.defaultable.capabilities,
       facts: this.defaultable.facts,
-      proofs: this.defaultable.proofs.map(proof => proof.encoded()),
+      proofs: this.defaultable.proofs.map(proof => token.encode(proof)),
     })
   }
 

@@ -1,8 +1,8 @@
 import { Ability, isAbility } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
 import { CapabilityEscalation, CapabilitySemantics, capabilities } from "../../src/attenuation"
-import { Chained } from "../../src/chained"
 import { SUPERUSER } from "../../src/capability/super-user"
+import { Ucan } from "../../src/types"
 
 
 export const WNFS_ABILITY_LEVELS = {
@@ -121,7 +121,7 @@ export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
 
 }
 
-export function wnfsPublicCapabilities(ucan: Chained) {
+export function wnfsPublicCapabilities(ucan: Ucan) {
   return capabilities(ucan, wnfsPublicSemantics)
 }
 
@@ -190,6 +190,6 @@ const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
 
 }
 
-export function wnfsPrivateCapabilities(ucan: Chained) {
+export function wnfsPrivateCapabilities(ucan: Ucan) {
   return capabilities(ucan, wnfsPrivateSemantics)
 }

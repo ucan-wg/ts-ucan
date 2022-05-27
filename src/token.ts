@@ -351,6 +351,26 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   return ucan
 }
 
+export async function* validateProofs(ucan: Ucan, options?: ValidateOptions): AsyncIterable<Ucan | Error> {
+  for (const prf of ucan.payload.prf) {
+    try {
+      const proof = await validate(prf, options)
+
+      if (proof.payload.aud !== ucan.payload.iss) {
+        throw new Error(`Invalid UCAN: Proof's audience ${proof.payload.aud} doesn't match issuer ${ucan.payload.iss}`)
+      }
+
+      yield proof
+    } catch (e) {
+      if (e instanceof Error) {
+        yield e
+      } else {
+        yield new Error(`Error when trying to parse UCAN proof: ${e}`)
+      }
+    }
+  }
+}
+
 /**
  * Check if a UCAN is expired.
  *

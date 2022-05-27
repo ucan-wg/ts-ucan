@@ -54,15 +54,15 @@ describe("Builder", () => {
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
   
-    const chained = await Chained.fromToken(token.encode(ucan))
-
-    const payload = Builder.create()
+    let builder = Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
-      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), chained)
-      .delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), chained)
-      .buildPayload()
+    
+    builder = await builder.delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), ucan)
+    builder = await builder.delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), ucan)
+
+    const payload = builder.buildPayload()
 
     expect(payload.prf).toEqual([ token.encode(ucan) ])
   })
@@ -103,16 +103,14 @@ describe("Builder", () => {
       .claimCapability(emailCapability("alice@email.com"))
       .build()
     
-    const chained = await Chained.fromToken(token.encode(ucan))
-
-    expect(() => {
-      Builder.create()
+    await expect(async () => {
+      (await Builder.create()
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)
-        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), chained)
+        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), ucan))
         .buildPayload()
-    }).toThrow()
+    }).rejects.toBeDefined()
   })
 
 })

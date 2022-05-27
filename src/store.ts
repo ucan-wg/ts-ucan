@@ -1,9 +1,10 @@
-import { Chained } from "./chained.js"
+import { encode, validate } from "./token.js"
 import { capabilities, CapabilityInfo, CapabilitySemantics, isCapabilityEscalation } from "./attenuation.js"
+import { Ucan } from "./types.js"
 
 
 export interface IndexByAudience {
-  [ audienceDID: string ]: Chained[]
+  [ audienceDID: string ]: Ucan[]
 }
 
 export class Store {
@@ -17,35 +18,35 @@ export class Store {
   static async fromTokens(tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
     const store = new Store({})
     for await (const token of tokens) {
-      store.add(await Chained.fromToken(token))
+      store.add(await validate(token))
     }
     return store
   }
 
-  add(ucan: Chained): void {
-    const audience = ucan.audience()
+  add(ucan: Ucan): void {
+    const audience = ucan.payload.aud
     const byAudience = this.index[ audience ] ?? []
-    if (byAudience.find(storedUcan => storedUcan.encoded() === ucan.encoded()) != null) {
+    if (byAudience.find(storedUcan => encode(storedUcan) === encode(ucan)) != null) {
       return
     }
     byAudience.push(ucan)
     this.index[ audience ] = byAudience
   }
 
-  getByAudience(audience: string): Chained[] {
+  getByAudience(audience: string): Ucan[] {
     return [ ...(this.index[ audience ] ?? []) ]
   }
 
-  findByAudience(audience: string, predicate: (ucan: Chained) => boolean): Chained | null {
+  findByAudience(audience: string, predicate: (ucan: Ucan) => boolean): Ucan | null {
     return this.index[ audience ]?.find(ucan => predicate(ucan)) ?? null
   }
 
-  findWithCapability<A>(
+  async findWithCapability<A>(
     audience: string,
     semantics: CapabilitySemantics<A>,
     requirementsCap: A,
     requirementsInfo: (info: CapabilityInfo) => boolean,
-  ): { success: true; ucan: Chained } | FindFailure {
+  ): Promise<{ success: true; ucan: Ucan } | FindFailure> {
     const ucans = this.index[ audience ]
 
     if (ucans == null) {
@@ -53,7 +54,7 @@ export class Store {
     }
 
     for (const ucan of ucans) {
-      for (const result of capabilities(ucan, semantics)) {
+      for await (const result of capabilities(ucan, semantics)) {
         if (isCapabilityEscalation(result)) continue
         const { info, capability } = result
         if (!requirementsInfo(info)) continue

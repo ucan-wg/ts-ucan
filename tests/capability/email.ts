@@ -1,13 +1,13 @@
 import { Ability } from "../../src/capability/ability"
 import { CapabilityResult } from "../../src/attenuation"
 import { Capability } from "../../src/capability"
-import { Chained } from "../../src/chained"
 import { ResourcePointer } from "../../src/capability/resource-pointer"
 
 import { capabilities, CapabilityEscalation, CapabilitySemantics } from "../../src/attenuation"
 
 import * as abilities from "../../src/capability/ability"
 import * as resourcePointers from "../../src/capability/resource-pointer"
+import { Ucan } from "../../src/types"
 
 
 // 🌸
@@ -63,6 +63,6 @@ export function emailCapability(emailAddress: string): Capability {
 }
 
 
-export function emailCapabilities(ucan: Chained): Iterable<CapabilityResult<EmailCapability>> {
+export function emailCapabilities(ucan: Ucan): AsyncIterable<CapabilityResult<EmailCapability>> {
   return capabilities(ucan, EMAIL_SEMANTICS)
 }
