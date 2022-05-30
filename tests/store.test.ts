@@ -4,7 +4,7 @@ import { Builder } from "../src/builder"
 import { alice, bob, mallory } from "./fixtures"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { Ucan } from "../src/types"
-import { equalitySemantics } from "../src/attenuation"
+import { equalCanDelegate } from "../src/attenuation"
 import { all } from "../src/util"
 
 
@@ -19,7 +19,7 @@ describe("Store.add", () => {
 
     const encoded = token.encode(ucan)
 
-    const store = await Store.fromTokens(equalitySemantics, [])
+    const store = await Store.fromTokens(equalCanDelegate, [])
     await store.add(ucan)
     expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
   })
@@ -38,7 +38,7 @@ describe("Store.add", () => {
       .build()
 
     const encoded = token.encode(ucan)
-    const store = await Store.fromTokens(equalitySemantics, [])
+    const store = await Store.fromTokens(equalCanDelegate, [])
     await store.add(ucan2)
     await store.add(ucan)
     expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
@@ -51,7 +51,7 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens(equalitySemantics, [])
+    const store = await Store.fromTokens(equalCanDelegate, [])
     await store.add(ucan)
     await store.add(ucan)
     expect(store.getByAudience(ucan.payload.aud)).toEqual([ ucan ])
@@ -74,7 +74,7 @@ describe("Store.findByAudience", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens(equalitySemantics, [ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
+    const store = await Store.fromTokens(equalCanDelegate, [ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
     expect(store.findByAudience(mallory.did(), () => true)).toEqual(null)
     expect(encodeOrNull(store.findByAudience(bob.did(), () => true))).toEqual(token.encode(ucanBob))
     expect(encodeOrNull(store.findByAudience(alice.did(), () => true))).toEqual(token.encode(ucanAlice))

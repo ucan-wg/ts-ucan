@@ -1,12 +1,10 @@
-import { EdKeypair } from "../src/keypair/ed25519"
 import * as capability from "../src/capability"
 import * as token from "../src/token"
 
 import { alice, bob, mallory } from "./fixtures"
 import { emailCapabilities, emailCapability } from "./capability/email"
-import { maxNbf } from "./utils"
 
-import { CapabilitySemantics, equalitySemantics, hasCapability } from "../src/attenuation"
+import { equalCanDelegate, hasCapability } from "../src/attenuation"
 import { REDELEGATE } from "../src/capability/ability"
 import { SUPERUSER } from "../src/capability/super-user"
 import { all } from "../src/util"
@@ -72,21 +70,18 @@ describe("attenuation.emailCapabilities", () => {
     const leafUcanAlice = await token.build({
       issuer: alice,
       audience: mallory.did(),
-      lifetimeInSeconds: 10000,
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
     const leafUcanBob = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      lifetimeInSeconds: 10000,
       capabilities: [ emailCapability("bob@email.com") ]
     })
 
     const ucan = await token.build({
       issuer: mallory,
       audience: alice.did(),
-      lifetimeInSeconds: 10000,
       capabilities: [
         emailCapability("alice@email.com"),
         emailCapability("bob@email.com")
@@ -208,7 +203,7 @@ describe("hasCapability", () => {
 
   it("gets a capability", async () => {
     const ucan = await aliceEmailDelegationExample()
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -238,7 +233,7 @@ describe("hasCapability", () => {
       },
     }
 
-    const cap = await hasCapability(equalitySemantics, capabilityWithInfo, ucan)
+    const cap = await hasCapability(equalCanDelegate, capabilityWithInfo, ucan)
 
     expect(cap).toEqual(false)
   })
@@ -261,7 +256,7 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = await hasCapability(equalitySemantics, capabilityWithInfo, ucan)
+    const cap = await hasCapability(equalCanDelegate, capabilityWithInfo, ucan)
 
     expect(cap).toEqual(false)
   })
@@ -284,7 +279,7 @@ describe("hasCapability", () => {
       }
     }
 
-    const cap = await hasCapability(equalitySemantics, capabilityWithInfo, ucan)
+    const cap = await hasCapability(equalCanDelegate, capabilityWithInfo, ucan)
 
     expect(cap).toEqual(false)
   })
@@ -306,7 +301,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -339,7 +334,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -356,7 +351,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const capFaulty = await hasCapability(equalitySemantics, aliceCapInfo(), faultyUcan)
+    const capFaulty = await hasCapability(equalCanDelegate, aliceCapInfo(), faultyUcan)
 
     expect(capFaulty).toBeFalsy()
   })
@@ -378,7 +373,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeFalsy()
   })
@@ -400,7 +395,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -416,14 +411,12 @@ describe("hasCapability", () => {
     const leafUcan = await token.build({
       issuer: alice,
       audience: bob.did(),
-      lifetimeInSeconds: 1000000,
       capabilities: [ capability.my(capability.superUser.SUPERUSER) ]
     })
 
     const middleUcan = await token.build({
       issuer: bob,
       audience: mallory.did(),
-      lifetimeInSeconds: 1000000,
       capabilities: [ capability.as(alice.did(), SUPERUSER) ],
       proofs: [ token.encode(leafUcan) ]
     })
@@ -431,12 +424,11 @@ describe("hasCapability", () => {
     const ucan = await token.build({
       issuer: mallory,
       audience: "did:key:someone",
-      lifetimeInSeconds: 1000000,
       capabilities: [ emailCapability("alice@email.com") ],
       proofs: [ token.encode(middleUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeTruthy()
 
@@ -462,7 +454,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeFalsy()
   })
@@ -484,7 +476,7 @@ describe("hasCapability", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const cap = await hasCapability(equalitySemantics, aliceCapInfo(), ucan)
+    const cap = await hasCapability(equalCanDelegate, aliceCapInfo(), ucan)
 
     expect(cap).toBeFalsy()
   })
