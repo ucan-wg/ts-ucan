@@ -218,7 +218,7 @@ export class Builder<State extends Partial<BuildableState>> {
         throw new TypeError(`Expected 'semantics' as third argument if a 'proof' DelegationChain was passed as second.`)
       }
       const proof: DelegationChain = storeOrProof
-      const ucan = "capability" in proof ? proof.ucan : proof.chain[0].ucan
+      const ucan = proof.ucan
       if (!capabilityCanBeDelegated(semantics, requiredCapability, proof)) {
         throw new Error(`Can't add capability to UCAN: Given proof doesn't give required rights to delegate.`)
       }
@@ -235,7 +235,7 @@ export class Builder<State extends Partial<BuildableState>> {
       // we look up a proof that has our issuer as an audience
       const result = util.first(store.findWithCapability(issuer, requiredCapability, issuer))
       if (result != null) {
-        const ucan = "capability" in result ? result.ucan : result.chain[0].ucan
+        const ucan = result.ucan
         const ucanEncoded = token.encode(ucan)
         return new Builder(this.state, {
           ...this.defaultable,

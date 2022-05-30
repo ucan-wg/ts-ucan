@@ -36,10 +36,9 @@ export interface DelegatedCapability {
 }
 export interface DelegatedOwnership {
   ownershipDID: string
-  chain: Array<{
-    scope: OwnershipScope
-    ucan: Ucan
-  }>
+  scope: OwnershipScope
+  ucan: Ucan
+  chainStep?: DelegatedOwnership
 }
 
 export type OwnershipScope
@@ -67,10 +66,7 @@ export function capabilityCanBeDelegated(
   if ("capability" in fromDelegationChain) {
     return canDelegate(semantics, fromDelegationChain.capability, capability)
   }
-  if (fromDelegationChain.chain.length <= 0) {
-    throw new Error(`Invalid delegation chain with zero entries: ${JSON.stringify(fromDelegationChain)}`)
-  }
-  const ownershipScope = fromDelegationChain.chain[0].scope
+  const ownershipScope = fromDelegationChain.scope
   if (ownershipScope === SUPERUSER) {
     return true
   }
@@ -85,15 +81,11 @@ export function ownershipCanBeDelegated(
   scope: OwnershipScope,
   fromDelegationChain: DelegatedOwnership
 ): boolean {
-  if (fromDelegationChain.chain.length <= 0) {
-    throw new Error(`Invalid delegation chain with zero entries: ${JSON.stringify(fromDelegationChain)}`)
-  }
-
   if (did !== fromDelegationChain.ownershipDID) {
     return false
   }
 
-  const parentScope = fromDelegationChain.chain[0].scope
+  const parentScope = fromDelegationChain.scope
 
   // parent OwnershipScope can delegate child OwnershipScope
 
@@ -126,10 +118,8 @@ function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
 
         yield {
           ownershipDID: ucan.payload.iss,
-          chain: [{
-            scope,
-            ucan,
-          }]
+          scope,
+          ucan,
         }
         break
       }
@@ -200,7 +190,7 @@ async function * handleAsDelegation(
   capability: Capability,
   ucan: Ucan,
   proof: Ucan,
-) {
+): AsyncIterable<DelegatedOwnership | Error> {
   const split = capability.with.hierPart.split(":")
   const scheme = split[split.length - 1]
   const ownershipDID = split.slice(0, -1).join(":")
@@ -224,10 +214,9 @@ async function * handleAsDelegation(
     )) {
       yield {
         ownershipDID,
-        chain: [{
-          scope,
-          ucan,
-        }, ...delegationChain.chain]
+        scope,
+        ucan,
+        chainStep: delegationChain
       }
     }
   }
@@ -239,7 +228,7 @@ async function * handlePrfDelegation(
   ucan: Ucan,
   proof: Ucan,
   proofIndex: number,
-) {
+): AsyncIterable<DelegatedCapability | Error> {
   if (
     capability.with.hierPart !== SUPERUSER
     && parseInt(capability.with.hierPart, 10) !== proofIndex
@@ -269,7 +258,7 @@ async function * handleNormalDelegation(
   capability: Capability,
   ucan: Ucan,
   proof: Ucan,
-) {
+): AsyncIterable<DelegatedCapability | Error> {
   for await (const delegationChain of delegationChains(semantics, proof)) {
     if (delegationChain instanceof Error) {
       yield delegationChain
