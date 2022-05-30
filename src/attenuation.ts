@@ -145,7 +145,7 @@ function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
   }
 }
 
-async function* capabilitiesFromDelegation(
+async function * capabilitiesFromDelegation(
   semantics: CapabilitySemantics,
   ucan: Ucan,
 ): AsyncIterable<DelegationChain | Error> {
@@ -163,78 +163,15 @@ async function* capabilitiesFromDelegation(
           switch (capability.with.scheme.toLowerCase()) {
             case "my": continue // cannot be delegated, only introduced by parenthood.
             case "as": {
-              const split = capability.with.hierPart.split(":")
-              const scheme = split[split.length - 1]
-              const ownershipDID = split.slice(0, -1).join(":")
-              const scope = scheme === SUPERUSER
-                ? SUPERUSER
-                : { scheme, ability: capability.can }
-
-              for await (const delegationChain of delegationChains(semantics, proof)) {
-                if (delegationChain instanceof Error) {
-                  yield delegationChain
-                  continue
-                }
-                if (!("ownershipDID" in delegationChain)) {
-                  continue
-                }
-                if (ownershipCanBeDelegated(
-                  semantics,
-                  ownershipDID,
-                  scope,
-                  delegationChain
-                )) {
-                  yield {
-                    ownershipDID,
-                    chain: [{
-                      scope,
-                      ucan,
-                    }, ...delegationChain.chain]
-                  }
-                }
-              }
+              yield* handleAsDelegation(semantics, capability, ucan, proof)
               break
             }
             case "prf": {
-              if (
-                capability.with.hierPart !== SUPERUSER
-                && parseInt(capability.with.hierPart, 10) !== proofIndex
-              ) {
-                // if it's something like prf:2, we need to make sure that
-                // we only process the delegation if proofIndex === 2
-                continue
-              }
-              for await (const delegationChain of delegationChains(semantics, proof)) {
-                if (delegationChain instanceof Error) {
-                  yield delegationChain
-                  continue
-                }
-                if (!("capability" in delegationChain)) {
-                  continue
-                }
-                yield {
-                  capability: delegationChain.capability,
-                  ucan,
-                  chainStep: delegationChain
-                }
-              }
+              yield* handlePrfDelegation(semantics, capability, ucan, proof, proofIndex)
               break
             }
             default: {
-              for await (const delegationChain of delegationChains(semantics, proof)) {
-                if (delegationChain instanceof Error) {
-                  yield delegationChain
-                  continue
-                }
-                if (!capabilityCanBeDelegated(semantics, capability, delegationChain)) {
-                  continue
-                }
-                yield {
-                  capability,
-                  ucan,
-                  chainStep: delegationChain
-                }
-              }
+              yield* handleNormalDelegation(semantics, capability, ucan, proof)
             }
           }
         } catch (e) {
@@ -254,6 +191,97 @@ async function* capabilitiesFromDelegation(
       return e
     } else {
       return new Error(`Error during capability delegation checking: ${e}`)
+    }
+  }
+}
+
+async function * handleAsDelegation(
+  semantics: CapabilitySemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+) {
+  const split = capability.with.hierPart.split(":")
+  const scheme = split[split.length - 1]
+  const ownershipDID = split.slice(0, -1).join(":")
+  const scope = scheme === SUPERUSER
+    ? SUPERUSER
+    : { scheme, ability: capability.can }
+
+  for await (const delegationChain of delegationChains(semantics, proof)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!("ownershipDID" in delegationChain)) {
+      continue
+    }
+    if (ownershipCanBeDelegated(
+      semantics,
+      ownershipDID,
+      scope,
+      delegationChain
+    )) {
+      yield {
+        ownershipDID,
+        chain: [{
+          scope,
+          ucan,
+        }, ...delegationChain.chain]
+      }
+    }
+  }
+}
+
+async function * handlePrfDelegation(
+  semantics: CapabilitySemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+  proofIndex: number,
+) {
+  if (
+    capability.with.hierPart !== SUPERUSER
+    && parseInt(capability.with.hierPart, 10) !== proofIndex
+  ) {
+    // if it's something like prf:2, we need to make sure that
+    // we only process the delegation if proofIndex === 2
+    return
+  }
+  for await (const delegationChain of delegationChains(semantics, proof)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!("capability" in delegationChain)) {
+      continue
+    }
+    yield {
+      capability: delegationChain.capability,
+      ucan,
+      chainStep: delegationChain
+    }
+  }
+}
+
+async function * handleNormalDelegation(
+  semantics: CapabilitySemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+) {
+  for await (const delegationChain of delegationChains(semantics, proof)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!capabilityCanBeDelegated(semantics, capability, delegationChain)) {
+      continue
+    }
+    yield {
+      capability,
+      ucan,
+      chainStep: delegationChain
     }
   }
 }
