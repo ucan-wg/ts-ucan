@@ -1,8 +1,9 @@
 import { Ability, isAbility } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
-import { CapabilityEscalation, CapabilitySemantics, capabilities } from "../../src/attenuation"
+import { CapabilitySemantics, DelegatedCapability, DelegatedOwnership, delegationChains, rootIssuer } from "../../src/attenuation"
 import { SUPERUSER } from "../../src/capability/super-user"
 import { Ucan } from "../../src/types"
+import { ResourcePointer } from "../../src/capability/resource-pointer"
 
 
 export const WNFS_ABILITY_LEVELS = {
@@ -49,80 +50,83 @@ export function wnfsCapability(path: string, ability: WnfsAbility): Capability {
 //////////////////////////////
 
 
-export interface WnfsPublicCapability {
+interface WnfsPublicResourcePointer {
   user: string // e.g. matheus23.fission.name
   publicPath: string[]
-  ability: WnfsAbility
 }
 
-export const wnfsPublicSemantics: CapabilitySemantics<WnfsPublicCapability> = {
+function tryParseWnfsPublicResource(pointer: ResourcePointer): WnfsPublicResourcePointer | null {
+  if (pointer.scheme !== "wnfs") return null
 
-  /**
-   * Example valid public wnfs capability:
-   * ```js
-   * {
-   *   with: { scheme: "wnfs", hierPart: "//boris.fission.name/public/path/to/dir/or/file" },
-   *   can: { namespace: "wnfs", segments: [ "OVERWRITE" ] }
-   * }
-   * ```
-   */
-  tryParsing(cap: Capability): WnfsPublicCapability | null {
-    if (!isWnfsCap(cap)) return null
+  // remove trailing slash
+  const path = pointer.hierPart.replace(/^\/\//, "")
+  const trimmed = path.endsWith("/") ? path.slice(0, -1) : path
+  const split = trimmed.split("/")
+  const user = split[ 0 ]
+  const publicPath = split.slice(2) // drop first two: matheus23.fission.name/public/keep/this
+  if (user == null || split[ 1 ] !== "public") return null
 
-    // remove trailing slash
-    const path = cap.with.hierPart.replace(/^\/\//, "")
-    const trimmed = path.endsWith("/") ? path.slice(0, -1) : path
-    const split = trimmed.split("/")
-    const user = split[ 0 ]
-    const publicPath = split.slice(2) // drop first two: matheus23.fission.name/public/keep/this
-    if (user == null || split[ 1 ] !== "public") return null
+  return {
+    user,
+    publicPath,
+  }
+}
 
-    const ability = wnfsAbilityFromAbility(cap.can)
-    if (!ability) return null
+export const wnfsPublicSemantics: CapabilitySemantics = {
 
-    return {
-      user,
-      publicPath,
-      ability
+  canDelegateResource(parentResource, childResource) {
+    const parent = tryParseWnfsPublicResource(parentResource)
+    const child = tryParseWnfsPublicResource(childResource)
+
+    if (parent == null || child == null) {
+      return false
     }
-  },
 
-  tryDelegating(parentCap: WnfsPublicCapability, childCap: WnfsPublicCapability): WnfsPublicCapability | null | CapabilityEscalation<WnfsPublicCapability> {
-    // need to delegate the same user's file system
-    if (childCap.user !== parentCap.user) return null
-
-    // must not escalate capability level
-    if (WNFS_ABILITY_LEVELS[ childCap.ability ] > WNFS_ABILITY_LEVELS[ parentCap.ability ]) {
-      return {
-        escalation: "Capability level escalation",
-        capability: childCap,
-      }
+    if (parent.user !== child.user) {
+      return false
     }
 
     // parentCap path must be a prefix of childCap path
-    if (childCap.publicPath.length < parentCap.publicPath.length) {
-      return {
-        escalation: "WNFS Public path access escalation",
-        capability: childCap,
+    if (child.publicPath.length < parent.publicPath.length) {
+      return false
+    }
+
+    for (let i = 0; i < parent.publicPath.length; i++) {
+      if (child.publicPath[ i ] !== parent.publicPath[ i ]) {
+        return false
       }
     }
 
-    for (let i = 0; i < parentCap.publicPath.length; i++) {
-      if (childCap.publicPath[ i ] !== parentCap.publicPath[ i ]) {
-        return {
-          escalation: "WNFS Public path access escalation",
-          capability: childCap,
-        }
-      }
-    }
-
-    return childCap
+    return true
   },
+
+  canDelegateAbility(parentAbility, childAbility) {
+    const parent = wnfsAbilityFromAbility(parentAbility)
+    const child = wnfsAbilityFromAbility(childAbility)
+
+    if (parent == null || child == null) {
+      return false
+    }
+
+    if (WNFS_ABILITY_LEVELS[ child ] > WNFS_ABILITY_LEVELS[ parent ]) {
+      return false
+    }
+
+    return true
+  }
 
 }
 
-export function wnfsPublicCapabilities(ucan: Ucan) {
-  return capabilities(ucan, wnfsPublicSemantics)
+export async function * wnfsPublicCapabilities(ucan: Ucan) {
+  for await (const delegationChain of delegationChains(wnfsPublicSemantics, ucan)) {
+    if (delegationChain instanceof Error || "ownershipDID" in delegationChain) {
+      continue
+    }
+    yield {
+      capability: delegationChain.capability,
+      rootIssuer: rootIssuer(delegationChain),
+    }
+  }
 }
 
 
@@ -132,64 +136,78 @@ export function wnfsPublicCapabilities(ucan: Ucan) {
 ///////////////////////////////
 
 
-export interface WnfsPrivateCapability {
+interface WnfsPrivateResourcePointer {
   user: string
   requiredINumbers: Set<string>
-  ability: WnfsAbility
 }
 
-const wnfsPrivateSemantics: CapabilitySemantics<WnfsPrivateCapability> = {
+function tryParseWnfsPrivateResource(pointer: ResourcePointer): WnfsPrivateResourcePointer | null {
+  if (pointer.scheme !== "wnfs") return null
 
-  /**
-   * Example valid private wnfs capability:
-   *
-   * ```js
-   * {
-   *   with: { scheme: "wnfs", hierPart: "//boris.fission.name/private/fccXmZ8HYmpwxkvPSjwW9A" },
-   *   can: { namespace: "wnfs", segments: [ "OVERWRITE" ] }
-   * }
-   * ```
-   */
-  tryParsing(cap: Capability): WnfsPrivateCapability | null {
-    if (!isWnfsCap(cap)) return null
+  // split up "boris.fission.name/private/fccXmZ8HYmpwxkvPSjwW9A" into "<user>/private/<inumberBase64url>"
+  const split = pointer.hierPart.replace(/^\/\//, "").split("/")
+  const user = split[ 0 ]
+  const inumberBase64url = split[ 2 ]
 
-    // split up "boris.fission.name/private/fccXmZ8HYmpwxkvPSjwW9A" into "<user>/private/<inumberBase64url>"
-    const split = cap.with.hierPart.replace(/^\/\//, "").split("/")
-    const user = split[ 0 ]
-    const inumberBase64url = split[ 2 ]
+  if (user == null || split[ 1 ] !== "private" || inumberBase64url == null) return null
 
-    if (user == null || split[ 1 ] !== "private" || inumberBase64url == null) return null
+  return {
+    user,
+    requiredINumbers: new Set([ inumberBase64url ]),
+  }
+}
 
-    const ability = wnfsAbilityFromAbility(cap.can)
-    if (!ability) return null
+const wnfsPrivateSemantics: CapabilitySemantics = {
 
-    return {
-      user,
-      requiredINumbers: new Set([ inumberBase64url ]),
-      ability
+  canDelegateResource(parentResource, childResource) {
+    const parent = tryParseWnfsPrivateResource(parentResource)
+    const child = tryParseWnfsPrivateResource(childResource)
+
+    if (parent == null || child == null) {
+      return false
     }
+
+    // There's more tests that need to be run on the resulting delegation chain.
+    return true
   },
 
-  tryDelegating<T extends WnfsPrivateCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<WnfsPrivateCapability> {
-    // If the users don't match, these capabilities are unrelated.
-    if (childCap.user !== parentCap.user) return null
+  canDelegateAbility(parentAbility, childAbility) {
+    const parent = wnfsAbilityFromAbility(parentAbility)
+    const child = wnfsAbilityFromAbility(childAbility)
 
-    // This escalation *could* be wrong, but we shouldn't assume they're unrelated either.
-    if (WNFS_ABILITY_LEVELS[ childCap.ability ] > WNFS_ABILITY_LEVELS[ parentCap.ability ]) {
-      return {
-        escalation: "Capability level escalation",
-        capability: childCap,
-      }
+    if (parent == null || child == null) {
+      return false
     }
 
-    return {
-      ...childCap,
-      requiredINumbers: new Set([ ...childCap.requiredINumbers.values(), ...parentCap.requiredINumbers.values() ]),
+    if (WNFS_ABILITY_LEVELS[ child ] > WNFS_ABILITY_LEVELS[ parent ]) {
+      return false
     }
-  },
+
+    return true
+  }
 
 }
 
-export function wnfsPrivateCapabilities(ucan: Ucan) {
-  return capabilities(ucan, wnfsPrivateSemantics)
+export async function * wnfsPrivateCapabilities(ucan: Ucan) {
+  for await (const delegationChain of delegationChains(wnfsPrivateSemantics, ucan)) {
+    if (delegationChain instanceof Error || "ownershipDID" in delegationChain) {
+      continue
+    }
+    
+    const requiredINumbers = new Set<string>()
+    let chainStep: DelegatedCapability | DelegatedOwnership | undefined = delegationChain
+    
+    while (chainStep != null && "capability" in chainStep) {
+      const hierSplit = chainStep.capability.with.hierPart.split("/")
+      const inumber = hierSplit[hierSplit.length - 1]
+      requiredINumbers.add(inumber)
+      chainStep = chainStep.chainStep
+    }
+
+    yield {
+      capability: delegationChain.capability,
+      requiredINumbers,
+      rootIssuer: rootIssuer(delegationChain),
+    }
+  }
 }

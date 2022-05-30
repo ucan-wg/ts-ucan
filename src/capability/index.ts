@@ -50,9 +50,9 @@ export function isEncodedCapability(obj: unknown): obj is EncodedCapability {
 // 🌸
 
 
-export function as(identifier: string): Capability {
+export function as(did: string, resource: Superuser | string): Capability {
   return {
-    with: resourcePointer.as(identifier),
+    with: resourcePointer.as(did, resource),
     can: SUPERUSER
   }
 }

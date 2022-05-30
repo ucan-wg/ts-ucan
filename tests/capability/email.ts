@@ -1,13 +1,9 @@
-import { Ability } from "../../src/capability/ability"
-import { CapabilityResult } from "../../src/attenuation"
-import { Capability } from "../../src/capability"
-import { ResourcePointer } from "../../src/capability/resource-pointer"
-
-import { capabilities, CapabilityEscalation, CapabilitySemantics } from "../../src/attenuation"
-
-import * as abilities from "../../src/capability/ability"
-import * as resourcePointers from "../../src/capability/resource-pointer"
 import { Ucan } from "../../src/types"
+import { CapabilitySemantics, delegationChains, rootIssuer } from "../../src/attenuation"
+import { Ability } from "../../src/capability/ability"
+import { Capability } from "../../src/capability"
+import { SUPERUSER } from "../../src/capability/super-user"
+import { ResourcePointer } from "../../src/capability/resource-pointer"
 
 
 // 🌸
@@ -26,22 +22,32 @@ export interface EmailCapability {
 export const SEND_ABILITY: Ability = { namespace: "msg", segments: [ "SEND" ] }
 
 
-export const EMAIL_SEMANTICS: CapabilitySemantics<EmailCapability> = {
+export const EMAIL_SEMANTICS: CapabilitySemantics = {
 
-  tryParsing(cap: Capability): EmailCapability | null {
-    if (
-      cap.with.scheme === "email" &&
-      abilities.isEqual(cap.can, abilities.parse("msg/SEND"))
-    ) {
-      return cap
+  canDelegateResource(parentResource, resource) {
+    if (parentResource.scheme !== "email") {
+      return false
     }
-    return null
+    if (resource.scheme !== "email") {
+      return false
+    }
+    return parentResource.hierPart === resource.hierPart
   },
 
-  tryDelegating<T extends EmailCapability>(parentCap: T, childCap: T): T | null | CapabilityEscalation<EmailCapability> {
-    // ability is always "msg/SEND" anyway, so doesn't need to be checked
-    return resourcePointers.isEqual(childCap.with, parentCap.with) ? childCap : null
-  },
+  canDelegateAbility(parentAbility, ability) {
+    if (parentAbility === SUPERUSER) {
+      return true
+    }
+    if (ability === SUPERUSER) {
+      return false
+    }
+    return parentAbility.namespace === "msg"
+      && parentAbility.segments.length === 1
+      && parentAbility.segments[0] === "SEND"
+      && ability.namespace === "msg"
+      && ability.segments.length === 1
+      && ability.segments[0] === "SEND"
+  }
 
 }
 
@@ -63,6 +69,14 @@ export function emailCapability(emailAddress: string): Capability {
 }
 
 
-export function emailCapabilities(ucan: Ucan): AsyncIterable<CapabilityResult<EmailCapability>> {
-  return capabilities(ucan, EMAIL_SEMANTICS)
+export async function * emailCapabilities(ucan: Ucan): AsyncIterable<{ capability: EmailCapability; rootIssuer: string }> {
+  for await (const delegationChain of delegationChains(EMAIL_SEMANTICS, ucan)) {
+    if (delegationChain instanceof Error || "ownershipDID" in delegationChain) {
+      continue
+    }
+    yield {
+      rootIssuer: rootIssuer(delegationChain),
+      capability: delegationChain.capability
+    }
+  }
 }

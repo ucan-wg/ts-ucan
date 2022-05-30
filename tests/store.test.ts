@@ -4,6 +4,8 @@ import { Builder } from "../src/builder"
 import { alice, bob, mallory } from "./fixtures"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { Ucan } from "../src/types"
+import { equalitySemantics } from "../src/attenuation"
+import { all } from "../src/util"
 
 
 describe("Store.add", () => {
@@ -17,8 +19,8 @@ describe("Store.add", () => {
 
     const encoded = token.encode(ucan)
 
-    const store = await Store.fromTokens([])
-    store.add(ucan)
+    const store = await Store.fromTokens(equalitySemantics, [])
+    await store.add(ucan)
     expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
   })
 
@@ -36,9 +38,9 @@ describe("Store.add", () => {
       .build()
 
     const encoded = token.encode(ucan)
-    const store = await Store.fromTokens([])
-    store.add(ucan2)
-    store.add(ucan)
+    const store = await Store.fromTokens(equalitySemantics, [])
+    await store.add(ucan2)
+    await store.add(ucan)
     expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
   })
 
@@ -49,9 +51,9 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([])
-    store.add(ucan)
-    store.add(ucan)
+    const store = await Store.fromTokens(equalitySemantics, [])
+    await store.add(ucan)
+    await store.add(ucan)
     expect(store.getByAudience(ucan.payload.aud)).toEqual([ ucan ])
   })
 
@@ -72,7 +74,7 @@ describe("Store.findByAudience", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
+    const store = await Store.fromTokens(equalitySemantics, [ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
     expect(store.findByAudience(mallory.did(), () => true)).toEqual(null)
     expect(encodeOrNull(store.findByAudience(bob.did(), () => true))).toEqual(token.encode(ucanBob))
     expect(encodeOrNull(store.findByAudience(alice.did(), () => true))).toEqual(token.encode(ucanAlice))
@@ -90,20 +92,19 @@ describe("Store.findWithCapability", () => {
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
-    const store = await Store.fromTokens([ token.encode(ucan) ])
+    const store = await Store.fromTokens(wnfsPublicSemantics, [ token.encode(ucan) ])
 
-    const result = await store.findWithCapability(bob.did(), wnfsPublicSemantics, {
-      user: "alice.fission.name",
-      publicPath: [ "Apps" ],
-      ability: "OVERWRITE",
-    }, () => true)
+    const results = all(store.findWithCapability(
+      bob.did(),
+      wnfsCapability("alice.fission.name/public/Apps", "OVERWRITE"),
+      alice.did()
+    ))
 
-    if (!result.success) {
-      expect(result.success).toEqual(true)
-      throw new Error(`Unexpected result ${JSON.stringify(result)}`)
+    if (!("capability" in results[0])) {
+      throw "no capability"
     }
 
-    expect(token.encode(result.ucan)).toEqual(token.encode(ucan))
+    expect(encodeOrNull(results[0]?.ucan)).toEqual(token.encode(ucan))
   })
 
   it("reports an error if the capability can't be found with given audience", async () => {
@@ -120,15 +121,15 @@ describe("Store.findWithCapability", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ token.encode(ucanAlice), token.encode(ucanBob) ])
+    const store = await Store.fromTokens(wnfsPublicSemantics, [ token.encode(ucanAlice), token.encode(ucanBob) ])
 
-    const result = await store.findWithCapability(alice.did(), wnfsPublicSemantics, {
-      user: "alice.fission.name",
-      publicPath: [ "Apps" ],
-      ability: "OVERWRITE",
-    }, () => true)
+    const results = all(store.findWithCapability(
+      alice.did(),
+      wnfsCapability("alice.fission.name/public/Apps", "OVERWRITE"),
+      alice.did()
+    ))
 
-    expect(result.success).toEqual(false)
+    expect(results).toEqual([])
   })
 
 })

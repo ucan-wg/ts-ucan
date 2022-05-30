@@ -3,7 +3,7 @@ import * as util from "./util.js"
 
 import { Keypair, Fact, UcanPayload, isKeypair, Ucan } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
-import { CapabilityInfo, CapabilitySemantics, canDelegate } from "./attenuation.js"
+import { capabilityCanBeDelegated, CapabilitySemantics, DelegationChain } from "./attenuation.js"
 import { Store } from "./store.js"
 import { publicKeyBytesToDid } from "./did/transformers.js"
 
@@ -199,9 +199,9 @@ export class Builder<State extends Partial<BuildableState>> {
    * @throws If given proof can't be used to delegate given capability
    * @throws If the builder hasn't set an issuer and expiration yet
    */
-  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, store: Store): Promise<State extends CapabilityLookupCapableState ? Builder<State> : never>
-  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, proof: Ucan): Promise<State extends CapabilityLookupCapableState ? Builder<State> : never>
-  async delegateCapability<A>(semantics: CapabilitySemantics<A>, requiredCapability: Capability, storeOrProof: Store | Ucan): Promise<Builder<State>> {
+  delegateCapability(requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
+  delegateCapability(requiredCapability: Capability, proof: DelegationChain, semantics: CapabilitySemantics): State extends CapabilityLookupCapableState ? Builder<State> : never
+  delegateCapability(requiredCapability: Capability, storeOrProof: Store | DelegationChain, semantics?: CapabilitySemantics): Builder<State> {
     if (!isCapability(requiredCapability)) {
       throw new TypeError(`Expected 'requiredCapability' as a second argument, but got ${requiredCapability}`)
     }
@@ -209,49 +209,43 @@ export class Builder<State extends Partial<BuildableState>> {
       throw new Error(`Can't delegate capabilities without having these paramenters set in the builder: issuer and expiration.`)
     }
 
-    function isProof(proof: Store | Ucan): proof is Ucan {
-      return util.hasProp(proof, "signedData") && util.hasProp(proof, "signature")
-    }
-
-    const parsedRequirement = semantics.tryParsing(requiredCapability)
-    if (parsedRequirement == null) {
-      throw new Error(`Can't add capability to UCAN: Semantics can't parse given capability: ${JSON.stringify(requiredCapability)}`)
-    }
-
-    const expiration = this.state.expiration
-    const hasInfoRequirements = (info: CapabilityInfo) => {
-      if (info.expiresAt < expiration) return false
-      if (info.notBefore == null || this.defaultable.notBefore == null) return true
-      return info.notBefore <= this.defaultable.notBefore
+    function isProof(proof: Store | DelegationChain): proof is DelegationChain {
+      return util.hasProp(proof, "capability") || util.hasProp(proof, "ownershipDID")
     }
 
     if (isProof(storeOrProof)) {
-      const proof: Ucan = storeOrProof
-      if (!await canDelegate(semantics, parsedRequirement, proof)) {
+      if (semantics == null) {
+        throw new TypeError(`Expected 'semantics' as third argument if a 'proof' DelegationChain was passed as second.`)
+      }
+      const proof: DelegationChain = storeOrProof
+      const ucan = "capability" in proof ? proof.ucan : proof.chain[0].ucan
+      if (!capabilityCanBeDelegated(semantics, requiredCapability, proof)) {
         throw new Error(`Can't add capability to UCAN: Given proof doesn't give required rights to delegate.`)
       }
       return new Builder(this.state, {
         ...this.defaultable,
         capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
-        proofs: this.defaultable.proofs.find(proof => token.encode(proof) === token.encode(proof)) == null
-          ? [ ...this.defaultable.proofs, storeOrProof ]
+        proofs: this.defaultable.proofs.find(p => token.encode(p) === token.encode(ucan)) == null
+          ? [ ...this.defaultable.proofs, ucan ]
           : this.defaultable.proofs
       })
     } else {
       const store: Store = storeOrProof
       const issuer = publicKeyBytesToDid(this.state.issuer.publicKey, this.state.issuer.keyType)
       // we look up a proof that has our issuer as an audience
-      const result = await store.findWithCapability(issuer, semantics, parsedRequirement, hasInfoRequirements)
-      if (result.success) {
+      const result = util.first(store.findWithCapability(issuer, requiredCapability, issuer))
+      if (result != null) {
+        const ucan = "capability" in result ? result.ucan : result.chain[0].ucan
+        const ucanEncoded = token.encode(ucan)
         return new Builder(this.state, {
           ...this.defaultable,
           capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
-          proofs: this.defaultable.proofs.find(proof => token.encode(proof) === token.encode(result.ucan)) == null
-            ? [ ...this.defaultable.proofs, result.ucan ]
+          proofs: this.defaultable.proofs.find(proof => token.encode(proof) === ucanEncoded) == null
+            ? [ ...this.defaultable.proofs, ucan ]
             : this.defaultable.proofs
         })
       } else {
-        throw new Error(`Can't add capability to UCAN: ${result.reason}`)
+        throw new Error(`Couldn't add capability to UCAN. Couldn't find anything providing this capability in given store.`)
       }
     }
   }

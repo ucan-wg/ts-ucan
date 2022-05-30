@@ -4,6 +4,8 @@ import { emailCapability } from "./capability/email"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
+import { delegationChains } from "../src/attenuation"
+import { first } from "../src/util"
 
 
 describe("Builder", () => {
@@ -52,16 +54,24 @@ describe("Builder", () => {
       .withLifetimeInSeconds(30)
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
-  
-    let builder = Builder.create()
+
+    const publicCapability = await first(delegationChains(wnfsPublicSemantics, ucan))
+
+    if (publicCapability == null) {
+      throw "no capabilities"
+    }
+
+    if (publicCapability instanceof Error) {
+      throw publicCapability
+    }
+
+    const payload = Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
-    
-    builder = await builder.delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Apps", "CREATE"), ucan)
-    builder = await builder.delegateCapability(wnfsPublicSemantics, wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), ucan)
-
-    const payload = builder.buildPayload()
+      .delegateCapability(wnfsCapability("alice.fission.name/public/Apps", "CREATE"), publicCapability, wnfsPublicSemantics)
+      .delegateCapability(wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), publicCapability, wnfsPublicSemantics)
+      .buildPayload()
 
     expect(payload.prf).toEqual([ token.encode(ucan) ])
   })
@@ -101,15 +111,25 @@ describe("Builder", () => {
       .withLifetimeInSeconds(30)
       .claimCapability(emailCapability("alice@email.com"))
       .build()
-    
-    await expect(async () => {
-      (await Builder.create()
+
+    const delegationChain = await first(delegationChains(EMAIL_SEMANTICS, ucan))
+
+    if (delegationChain == null) {
+      throw "no capabilities"
+    }
+
+    if (delegationChain instanceof Error) {
+      throw delegationChain
+    }
+
+    expect(() => {
+      Builder.create()
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)
-        .delegateCapability(EMAIL_SEMANTICS, emailCapability("bob@email.com"), ucan))
+        .delegateCapability(emailCapability("bob@email.com"), delegationChain, EMAIL_SEMANTICS)
         .buildPayload()
-    }).rejects.toBeDefined()
+    }).toThrow()
   })
 
 })
