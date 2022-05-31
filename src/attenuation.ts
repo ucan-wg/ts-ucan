@@ -374,6 +374,17 @@ export const equalCanDelegate: CapabilitySemantics = {
       return false
     }
 
-    return parentAbility === childAbility
+    if (parentAbility.namespace !== childAbility.namespace) {
+      return false
+    }
+
+    // Array equality
+    if (parentAbility.segments.length !== childAbility.segments.length) {
+      return false
+    }
+    return parentAbility.segments.reduce(
+      (acc, v, i) => acc && childAbility.segments[i] === v,
+      true as boolean
+    )
   },
 }
