@@ -5,10 +5,10 @@ import { Fact, Ucan } from "./types.js"
 
 
 export type Result<Ok, Err = Error>
-  = { ok: true; result: Ok }
+  = { ok: true; value: Ok }
   | { ok: false; error: Err }
 
-const ok:  <T, E>(k: T) => Result<T, E> = k => ({ ok: true, result: k })
+const ok:  <T, E>(k: T) => Result<T, E> = k => ({ ok: true, value: k })
 const err: <T, E>(e: E) => Result<T, E> = e => ({ ok: false, error: e })
 
 
@@ -48,7 +48,7 @@ export async function verify(
   isRevoked: (ucan: Ucan) => Promise<boolean>,
   requiredCapabilities: { capability: Capability; rootIssuer: string }[],
   semantics: CapabilitySemantics = equalCanDelegate,
-  checkFacts: (facts: Fact[]) => boolean = () => true
+  checkFacts: (facts: Fact[]) => boolean = () => true,
 ): Promise<Result<Verification[], Error[]>> {
   // type-check arguments
   if (typeof ucan !== "string") {

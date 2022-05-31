@@ -303,52 +303,6 @@ function checkDelegation(ucan: Ucan, proof: Ucan) {
 }
 
 
-interface CapInfo {
-  originator: string
-  notBefore?: number
-  expiresAt: number
-}
-
-export async function hasCapability(
-  semantics: CapabilitySemantics,
-  cap: { capability: Capability; info: CapInfo },
-  ucan: Ucan
-): Promise<false | { capability: Capability; info: CapInfo }> {
-  if (cap.info.expiresAt > ucan.payload.exp) {
-    return false
-  }
-  if (cap.info.notBefore != null) {
-    if (ucan.payload.nbf == null) {
-      return false
-    }
-    if (cap.info.notBefore < ucan.payload.nbf) {
-      return false
-    }
-  }
-
-  for await (const delegationChain of delegationChains(semantics, ucan)) {
-    if (delegationChain instanceof Error) {
-      continue
-    }
-    if (capabilityCanBeDelegated(semantics, cap.capability, delegationChain)) {
-      const originator = rootIssuer(delegationChain)
-      if (originator !== cap.info.originator) {
-        continue
-      }
-      return {
-        capability: cap.capability,
-        info: {
-          originator,
-          notBefore: ucan.payload.nbf,
-          expiresAt: ucan.payload.exp,
-        }
-      }
-    }
-  }
-
-  return false
-}
-
 
 export const equalCanDelegate: CapabilitySemantics = {
   canDelegateResource(parentResource, childResource) {
