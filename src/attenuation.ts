@@ -150,38 +150,34 @@ async function * capabilitiesFromDelegation(
 
   let proofIndex = 0
 
-  for (const prf of ucan.payload.prf) {
-    try {
-      const proof = await token.validate(prf)
-
-      checkDelegation(ucan, proof)
-
-      for (const capability of ucan.payload.att) {
-        try {
-          switch (capability.with.scheme.toLowerCase()) {
-            case "my": continue // cannot be delegated, only introduced by parenthood.
-            case "as": {
-              yield* handleAsDelegation(semantics, capability, ucan, proof, isRevoked)
-              break
-            }
-            case "prf": {
-              yield* handlePrfDelegation(semantics, capability, ucan, proof, proofIndex, isRevoked)
-              break
-            }
-            default: {
-              yield* handleNormalDelegation(semantics, capability, ucan, proof, isRevoked)
-            }
-          }
-        } catch (e) {
-          yield error(e)
-        }
-      }
-
-      proofIndex++
-
-    } catch (e) {
-      yield error(e)
+  for await (const proof of token.validateProofs(ucan)) {
+    if (proof instanceof Error) {
+      yield proof
+      continue
     }
+
+    for (const capability of ucan.payload.att) {
+      try {
+        switch (capability.with.scheme.toLowerCase()) {
+          case "my": continue // cannot be delegated, only introduced by parenthood.
+          case "as": {
+            yield* handleAsDelegation(semantics, capability, ucan, proof, isRevoked)
+            break
+          }
+          case "prf": {
+            yield* handlePrfDelegation(semantics, capability, ucan, proof, proofIndex, isRevoked)
+            break
+          }
+          default: {
+            yield* handleNormalDelegation(semantics, capability, ucan, proof, isRevoked)
+          }
+        }
+      } catch (e) {
+        yield error(e)
+      }
+    }
+
+    proofIndex++
   }
 
   function error(e: unknown): Error {
@@ -285,24 +281,6 @@ async function * handleNormalDelegation(
     }
   }
 }
-
-function checkDelegation(ucan: Ucan, proof: Ucan) {
-  if (ucan.payload.iss !== proof.payload.aud) {
-    throw new Error(`Invalid Proof: Issuer ${ucan.payload.iss} doesn't match parent's audience ${proof.payload.aud}`)
-  }
-  if (proof.payload.nbf != null && ucan.payload.exp > proof.payload.nbf) {
-    throw new Error(`Invalid Proof: 'Not before' (${proof.payload.nbf}) is after parent's expiration (${ucan.payload.exp})`)
-  }
-
-  if (ucan.payload.nbf != null && ucan.payload.nbf > proof.payload.exp) {
-    throw new Error(`Invalid Proof: Expiration (${proof.payload.exp}) is before parent's 'not before' (${ucan.payload.nbf})`)
-  }
-  if (semver.lt(ucan.header.ucv, proof.header.ucv)) {
-    throw new Error(`Invalid Proof: Version (${proof.header.ucv}) is higher than parent's version (${ucan.header.ucv})`)
-  }
-}
-
-
 
 export const equalCanDelegate: CapabilitySemantics = {
   canDelegateResource(parentResource, childResource) {

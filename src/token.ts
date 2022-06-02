@@ -357,6 +357,24 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
 }
 
 /**
+ * Proof validation options.
+ */
+export interface ValidateProofsOptions {
+  /**
+   * Whether to check if the ucan's issuer matches its proofs audiences.
+   */
+  checkAddressing?: boolean
+  /**
+   * Whether to check if a ucan's time bounds are a subset of its proofs time bounds.
+   */
+  checkTimeBoundsSubset?: boolean
+  /**
+   * Whether to check if a ucan's version is bigger or equal to its proofs version.
+   */
+  checkVersionMonotonic?: boolean
+}
+
+/**
  * Iterates over all proofs and parses & validates them at the same time.
  * 
  * If there's an audience/issuer mismatch, the iterated item will contain an `Error`.
@@ -367,13 +385,32 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
  * @return an async iterator of the given ucan's proofs parsed & validated, or an `Error`
  *         for each proof that couldn't be validated or parsed.
  */
-export async function* validateProofs(ucan: Ucan, options?: ValidateOptions): AsyncIterable<Ucan | Error> {
+export async function* validateProofs(
+  ucan: Ucan,
+  options?: ValidateOptions & ValidateProofsOptions
+): AsyncIterable<Ucan | Error> {
+  const checkAddressing = options?.checkAddressing ?? true
+  const checkTimeBoundsSubset = options?.checkTimeBoundsSubset ?? true
+  const checkVersionMonotonic = options?.checkVersionMonotonic ?? true
+
   for (const prf of ucan.payload.prf) {
     try {
       const proof = await validate(prf, options)
 
-      if (proof.payload.aud !== ucan.payload.iss) {
-        throw new Error(`Invalid UCAN: Proof's audience ${proof.payload.aud} doesn't match issuer ${ucan.payload.iss}`)
+      if (checkAddressing && ucan.payload.iss !== proof.payload.aud) {
+        throw new Error(`Invalid Proof: Issuer ${ucan.payload.iss} doesn't match parent's audience ${proof.payload.aud}`)
+      }
+
+      if (checkTimeBoundsSubset && proof.payload.nbf != null && ucan.payload.exp > proof.payload.nbf) {
+        throw new Error(`Invalid Proof: 'Not before' (${proof.payload.nbf}) is after parent's expiration (${ucan.payload.exp})`)
+      }
+
+      if (checkTimeBoundsSubset && ucan.payload.nbf != null && ucan.payload.nbf > proof.payload.exp) {
+        throw new Error(`Invalid Proof: Expiration (${proof.payload.exp}) is before parent's 'not before' (${ucan.payload.nbf})`)
+      }
+
+      if (checkVersionMonotonic && semver.lt(ucan.header.ucv, proof.header.ucv)) {
+        throw new Error(`Invalid Proof: Version (${proof.header.ucv}) is higher than parent's version (${ucan.header.ucv})`)
       }
 
       yield proof
