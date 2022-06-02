@@ -1,5 +1,4 @@
 import * as token from "./token.js"
-import * as semver from "./semver.js"
 import { Capability } from "./capability/index.js"
 import { Ucan } from "./types.js"
 import { ResourcePointer } from "./capability/resource-pointer.js"
