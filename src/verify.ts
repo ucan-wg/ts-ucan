@@ -44,7 +44,7 @@ const err: <T, E>(e: E) => Result<T, E> = e => ({ ok: false, error: e })
  */
 export async function verify(
   ucan: string,
-  audience: string, // domain name like e.g. fission.codes -> looks up dns txt record _did.fission.codes; or DID directly
+  audience: string,
   isRevoked: (ucan: Ucan) => Promise<boolean>,
   requiredCapabilities: { capability: Capability; rootIssuer: string }[],
   semantics: CapabilitySemantics = equalCanDelegate,
