@@ -141,7 +141,7 @@ function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
   }
 }
 
-async function * capabilitiesFromDelegation(
+async function* capabilitiesFromDelegation(
   semantics: CapabilitySemantics,
   ucan: Ucan,
   isRevoked: (ucan: Ucan) => Promise<boolean>
@@ -188,7 +188,7 @@ async function * capabilitiesFromDelegation(
   }
 }
 
-async function * handleAsDelegation(
+async function* handleAsDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
   ucan: Ucan,
@@ -196,7 +196,7 @@ async function * handleAsDelegation(
   isRevoked: (ucan: Ucan) => Promise<boolean>
 ): AsyncIterable<DelegatedOwnership | Error> {
   const split = capability.with.hierPart.split(":")
-  const scheme = split[split.length - 1]
+  const scheme = split[ split.length - 1 ]
   const ownershipDID = split.slice(0, -1).join(":")
   const scope = scheme === SUPERUSER
     ? SUPERUSER
@@ -226,7 +226,7 @@ async function * handleAsDelegation(
   }
 }
 
-async function * handlePrfDelegation(
+async function* handlePrfDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
   ucan: Ucan,
@@ -258,7 +258,7 @@ async function * handlePrfDelegation(
   }
 }
 
-async function * handleNormalDelegation(
+async function* handleNormalDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
   ucan: Ucan,
@@ -314,7 +314,7 @@ export const equalCanDelegate: CapabilitySemantics = {
       return false
     }
     return parentAbility.segments.reduce(
-      (acc, v, i) => acc && childAbility.segments[i] === v,
+      (acc, v, i) => acc && childAbility.segments[ i ] === v,
       true as boolean
     )
   },

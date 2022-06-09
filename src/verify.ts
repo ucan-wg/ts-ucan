@@ -8,7 +8,7 @@ export type Result<Ok, Err = Error>
   = { ok: true; value: Ok }
   | { ok: false; error: Err }
 
-const ok:  <T, E>(k: T) => Result<T, E> = k => ({ ok: true, value: k })
+const ok: <T, E>(k: T) => Result<T, E> = k => ({ ok: true, value: k })
 const err: <T, E>(e: E) => Result<T, E> = e => ({ ok: false, error: e })
 
 
@@ -82,7 +82,7 @@ export async function verify(
 
     // Check that it's addressed to us
     if (decoded.payload.aud !== audience) {
-      return err([new Error(`Invalid UCAN: Expected audience to be ${audience}, but it's ${decoded.payload.aud}`)])
+      return err([ new Error(`Invalid UCAN: Expected audience to be ${audience}, but it's ${decoded.payload.aud}`) ])
     }
 
     const errors: Error[] = []
@@ -119,7 +119,7 @@ export async function verify(
     return remaining.size > 0 ? err(errors) : ok(proven)
 
   } catch (e) {
-    return err([e instanceof Error ? e : new Error(`Unknown error during UCAN verification: ${e}`)])
+    return err([ e instanceof Error ? e : new Error(`Unknown error during UCAN verification: ${e}`) ])
   }
 }
 

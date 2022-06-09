@@ -32,7 +32,7 @@ describe("verify", () => {
   }
 
   const nothingIsRevoked = async () => false
-  
+
   const alicesEmail = {
     capability: emailCapability("alice@email.com"),
     rootIssuer: alice.did(),
@@ -41,30 +41,30 @@ describe("verify", () => {
   it("verifies a delegation chain", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     if (result.ok === false) {
       console.log(result.error)
     }
 
     expect(result.ok).toEqual(true)
-    
+
     if (!result.ok) return
 
-    expect(result.value[0]?.rootIssuer).toEqual(alice.did())
-    expect(result.value[0]?.capability).toEqual(emailCapability("alice@email.com"))
+    expect(result.value[ 0 ]?.rootIssuer).toEqual(alice.did())
+    expect(result.value[ 0 ]?.capability).toEqual(emailCapability("alice@email.com"))
   })
 
   it("rejects an invalid escalation", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [{
+    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [ {
       capability: {
         ...emailCapability("alice@email.com"),
         can: SUPERUSER,
       },
       rootIssuer: alice.did()
-    }])
+    } ])
 
     expect(result.ok).toEqual(false)
   })
@@ -72,7 +72,7 @@ describe("verify", () => {
   it("rejects for an invalid audience", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, bob.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(ucan, bob.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
@@ -80,11 +80,11 @@ describe("verify", () => {
   it("rejects for an invalid rootIssuer", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [{
+    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [ {
       capability: emailCapability("alice@email.com"),
       // an invalid rootIssuer
       rootIssuer: "did:someone-else",
-    }])
+    } ])
 
     expect(result.ok).toEqual(false)
   })
@@ -95,7 +95,7 @@ describe("verify", () => {
     // expiry is in the past
     const ucan = await aliceEmailDelegationExample(nowInSeconds - 60 * 60 * 24)
 
-    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(ucan, mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
@@ -117,14 +117,14 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(true)
-    
+
     if (!result.ok) return
 
-    expect(result.value[0]?.rootIssuer).toEqual(alice.did())
-    expect(result.value[0]?.capability).toEqual(emailCapability("alice@email.com"))
+    expect(result.value[ 0 ]?.rootIssuer).toEqual(alice.did())
+    expect(result.value[ 0 ]?.capability).toEqual(emailCapability("alice@email.com"))
   })
 
   it("supports redelegation with a `prf:1` capability", async () => {
@@ -150,14 +150,14 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(true)
 
     if (!result.ok) return
 
-    expect(result.value[0]?.rootIssuer).toEqual(alice.did())
-    expect(result.value[0]?.capability).toEqual(emailCapability("alice@email.com"))
+    expect(result.value[ 0 ]?.rootIssuer).toEqual(alice.did())
+    expect(result.value[ 0 ]?.capability).toEqual(emailCapability("alice@email.com"))
   })
 
   it("ignores other proofs not referred to by `prf:0`", async () => {
@@ -180,7 +180,7 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
     })
 
-    const result = await verify(token.encode(faultyUcan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(faultyUcan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
@@ -202,7 +202,7 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
@@ -224,13 +224,13 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(true)
 
     if (!result.ok) return
 
-    expect(result.value[0]?.rootIssuer).toEqual(alice.did())
+    expect(result.value[ 0 ]?.rootIssuer).toEqual(alice.did())
   })
 
   it("supports redelegation with a `my` & `as` capability", async () => {
@@ -257,13 +257,13 @@ describe("verify", () => {
       proofs: [ token.encode(middleUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), "did:key:someone", nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), "did:key:someone", nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(true)
 
     if (!result.ok) return
 
-    expect(result.value[0]?.rootIssuer).toEqual(alice.did())
+    expect(result.value[ 0 ]?.rootIssuer).toEqual(alice.did())
   })
 
   it("rejects an improper `my` redelegation", async () => {
@@ -283,7 +283,7 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
@@ -305,7 +305,7 @@ describe("verify", () => {
       proofs: [ token.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [alicesEmail])
+    const result = await verify(token.encode(ucan), mallory.did(), nothingIsRevoked, [ alicesEmail ])
 
     expect(result.ok).toEqual(false)
   })
