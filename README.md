@@ -185,7 +185,7 @@ if (result.ok) {
 ```
 
 
-## Capabilities
+## Delegation Semantics
 
 UCAN capabilities can have arbitrary semantics for delegation.
 These semantics can be configured via a record of two functions:
@@ -194,13 +194,13 @@ These semantics can be configured via a record of two functions:
 Which specify exactly which delegations are valid.
 
 (This doesn't support rights amplification yet, where multiple capabilities
-may result in a delegation being possible. Please talk to us with your use-case
-or ideas for how a good API for that.)
+in combination may result in a delegation being possible. Please talk to us
+with your use-case and ideas for how a good API for that may work.)
 
 ```ts
 import * as ucans from "ucans"
 
-// Capability semantics for path-like capabilities (e.g. "path:/home/abc/")
+// Delegation semantics for path-like capabilities (e.g. "path:/home/abc/")
 const PATH_SEMANTICS = {
   canDelegateResource: (parentRes, childRes) => {
     if (parentRes.with.scheme !== "path" || childRes.with.scheme !== "path") {

@@ -1,5 +1,5 @@
 import * as token from "./token.js"
-import { capabilityCanBeDelegated, CapabilitySemantics, DelegationChain, delegationChains, equalCanDelegate, rootIssuer } from "./attenuation.js"
+import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegationChains, equalCanDelegate, rootIssuer } from "./attenuation.js"
 import { Capability, isCapability } from "./capability/index.js"
 import { Fact, Ucan } from "./types.js"
 
@@ -47,7 +47,7 @@ export async function verify(
   audience: string,
   isRevoked: (ucan: Ucan) => Promise<boolean>,
   requiredCapabilities: { capability: Capability; rootIssuer: string }[],
-  semantics: CapabilitySemantics = equalCanDelegate,
+  semantics: DelegationSemantics = equalCanDelegate,
   checkFacts: (facts: Fact[]) => boolean = () => true,
 ): Promise<Result<Verification[], Error[]>> {
   // type-check arguments

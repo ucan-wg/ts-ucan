@@ -1,6 +1,6 @@
 import { Ability, isAbility } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
-import { CapabilitySemantics, DelegatedCapability, DelegatedOwnership, delegationChains, rootIssuer } from "../../src/attenuation"
+import { DelegationSemantics, DelegatedCapability, DelegatedOwnership, delegationChains, rootIssuer } from "../../src/attenuation"
 import { SUPERUSER } from "../../src/capability/super-user"
 import { Ucan } from "../../src/types"
 import { ResourcePointer } from "../../src/capability/resource-pointer"
@@ -72,7 +72,7 @@ function tryParseWnfsPublicResource(pointer: ResourcePointer): WnfsPublicResourc
   }
 }
 
-export const wnfsPublicSemantics: CapabilitySemantics = {
+export const wnfsPublicSemantics: DelegationSemantics = {
 
   canDelegateResource(parentResource, childResource) {
     const parent = tryParseWnfsPublicResource(parentResource)
@@ -157,7 +157,7 @@ function tryParseWnfsPrivateResource(pointer: ResourcePointer): WnfsPrivateResou
   }
 }
 
-const wnfsPrivateSemantics: CapabilitySemantics = {
+const wnfsPrivateSemantics: DelegationSemantics = {
 
   canDelegateResource(parentResource, childResource) {
     const parent = tryParseWnfsPrivateResource(parentResource)

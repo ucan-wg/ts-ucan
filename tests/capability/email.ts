@@ -1,5 +1,5 @@
 import { Ucan } from "../../src/types"
-import { CapabilitySemantics, delegationChains, rootIssuer } from "../../src/attenuation"
+import { DelegationSemantics, delegationChains, rootIssuer } from "../../src/attenuation"
 import { Ability } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
 import { SUPERUSER } from "../../src/capability/super-user"
@@ -22,7 +22,7 @@ export interface EmailCapability {
 export const SEND_ABILITY: Ability = { namespace: "msg", segments: [ "SEND" ] }
 
 
-export const EMAIL_SEMANTICS: CapabilitySemantics = {
+export const EMAIL_SEMANTICS: DelegationSemantics = {
 
   canDelegateResource(parentResource, resource) {
     if (parentResource.scheme !== "email") {

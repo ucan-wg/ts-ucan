@@ -1,5 +1,5 @@
 import * as token from "./token.js"
-import { capabilityCanBeDelegated, CapabilitySemantics, DelegationChain, delegationChains, rootIssuer } from "./attenuation.js"
+import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegationChains, rootIssuer } from "./attenuation.js"
 import { Ucan } from "./types.js"
 import { Capability } from "./capability/index.js"
 
@@ -14,14 +14,14 @@ export interface IndexByAudience {
 export class Store {
 
   private index: IndexByAudience
-  private knownSemantics: CapabilitySemantics
+  private knownSemantics: DelegationSemantics
 
-  constructor(knownSemantics: CapabilitySemantics, index: IndexByAudience) {
+  constructor(knownSemantics: DelegationSemantics, index: IndexByAudience) {
     this.index = index
     this.knownSemantics = knownSemantics
   }
 
-  static async fromTokens(knownSemantics: CapabilitySemantics, tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
+  static async fromTokens(knownSemantics: DelegationSemantics, tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
     const store = new Store(knownSemantics, {})
     for await (const encodedUcan of tokens) {
       const ucan = await token.validate(encodedUcan)

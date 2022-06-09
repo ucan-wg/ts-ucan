@@ -3,7 +3,7 @@ import * as util from "./util.js"
 
 import { Keypair, Fact, UcanPayload, isKeypair, Ucan } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
-import { capabilityCanBeDelegated, CapabilitySemantics, DelegationChain } from "./attenuation.js"
+import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain } from "./attenuation.js"
 import { Store } from "./store.js"
 import { publicKeyBytesToDid } from "./did/transformers.js"
 
@@ -188,7 +188,7 @@ export class Builder<State extends Partial<BuildableState>> {
   /**
    * Delegate capabilities from a given proof to the audience of the UCAN you're building.
    *
-   * @param semantics The semantics for how delgation works for given capability.
+   * @param semantics The rules for which delegations of capabilities are allowed.
    * @param requiredCapability The capability you want to delegate.
    *
    * Then, one of
@@ -200,8 +200,8 @@ export class Builder<State extends Partial<BuildableState>> {
    * @throws If the builder hasn't set an issuer and expiration yet
    */
   delegateCapability(requiredCapability: Capability, store: Store): State extends CapabilityLookupCapableState ? Builder<State> : never
-  delegateCapability(requiredCapability: Capability, proof: DelegationChain, semantics: CapabilitySemantics): State extends CapabilityLookupCapableState ? Builder<State> : never
-  delegateCapability(requiredCapability: Capability, storeOrProof: Store | DelegationChain, semantics?: CapabilitySemantics): Builder<State> {
+  delegateCapability(requiredCapability: Capability, proof: DelegationChain, semantics: DelegationSemantics): State extends CapabilityLookupCapableState ? Builder<State> : never
+  delegateCapability(requiredCapability: Capability, storeOrProof: Store | DelegationChain, semantics?: DelegationSemantics): Builder<State> {
     if (!isCapability(requiredCapability)) {
       throw new TypeError(`Expected 'requiredCapability' as a second argument, but got ${requiredCapability}`)
     }
