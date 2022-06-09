@@ -122,12 +122,12 @@ const ucan = await ucans.build({
       can: { namespace: "wnfs", segments: [ "OVERWRITE" ] }
     },
     {
-      with: { scheme: "wnfs", hierPart: "//boris.fission.name/private/4tZA6S61BSXygmJGGW885odfQwpnR2UgmCaS5CfCuWtEKQdtkRnvKVdZ4q6wBXYTjhewomJWPL2ui3hJqaSodFnKyWiPZWLwzp1h7wLtaVBQqSW4ZFgyYaJScVkBs32BThn6BZBJTmayeoA9hm8XrhTX4CGX5CVCwqvEUvHTSzAwdaR" },
+      with: { scheme: "wnfs", hierPart: "//boris.fission.name/private/6m-mLXYuXi5m6vxgRTfJ7k_xzbmpk7LeD3qYt0TM1M0" },
       can: { namespace: "wnfs", segments: [ "APPEND" ] }
     },
     {
       with: { scheme: "mailto", hierPart: "boris@fission.codes" },
-      can: { namespace: "wnfs", segments: [ "SEND" ] }
+      can: { namespace: "msg", segments: [ "SEND" ] }
     }
   ]
 })
@@ -140,103 +140,93 @@ const ucan = await ucans.sign(payload, keyType, signingFn)
 
 
 
-## Validating
+## Verifying UCAN Invocations
+
+Using a UCAN to authorize an action is called "invocation".
+
+To verify invocations, you need to use the `verify` function.
 
 ```ts
 import * as ucans from "ucans"
 
+const serviceDID = "did:key:zabcde..."
+
+// Generate a UCAN on one machine
 const ucan = ucans.build({ ... })
 
-ucans.isExpired(ucan)
-ucans.isTooEarly(ucan)
-ucans.validate(ucans.encode(ucan)) // checks signature, issuer key type, and the above.
+// encode the UCAN to send it over to another machine
+const encoded = ucans.encode(ucan)
+
+// verify an invocation of a UCAN on another machine (in this example a service)
+const result = await ucans.verify(
+  encoded,
+  serviceDID,
+  // A callback for figuring out whether a UCAN is known to be revoked
+  async function isRevoked(ucan) {
+    return false // as a stub. Should look up the UCAN CID in a DB.
+  },
+  // required capabilities
+  [
+    {
+      capability: {
+        with: { scheme: "mailto", hierPart: "boris@fission.codes" },
+        can: { namespace: "msg", segments: [ "SEND" ] }
+      },
+      rootIssuer: borisDID, // check against a known owner of the boris@fission.codes email address
+    }
+  ],
+)
+
+if (result.ok) {
+  // The UCAN authorized the user
+} else {
+  // Unauthorized
+}
 ```
 
 
 ## Capabilities
 
+UCAN capabilities can have arbitrary semantics for delegation.
+These semantics can be configured via a record of two functions:
+- `canDelegateResource(parent: ResourcePointer, child: ResourcePointer): boolean` and
+- `canDelegateAbility(parent: Ability, child: Ability): boolean`.
+Which specify exactly which delegations are valid.
+
+(This doesn't support rights amplification yet, where multiple capabilities
+may result in a delegation being possible. Please talk to us with your use-case
+or ideas for how a good API for that.)
+
 ```ts
 import * as ucans from "ucans"
 
-// Utility functions to create capabilities
-const ucan = ucans.build({
-  audience: "did:key:zabcde...",
-  issuer: keypair,
-  capabilities: [
-    ucans.capability.my("resource"),
-    ucans.capability.parse({
-      with: "wnfs://boris.fission.name/public/photos/",
-      can: "wnfs/OVERWRITE"
-    }),
-    {
-      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/vacation/"),
-      can: ucans.capability.ability.parse("wnfs/REVISE")
-    },
-    {
-      with: { scheme: "wnfs", hierPart: "//boris.fission.name/public/photos/vacation/" },
-      can: { namespace: "wnfs", segments: [ "REVISE" ] }
+// Capability semantics for path-like capabilities (e.g. "path:/home/abc/")
+const PATH_SEMANTICS = {
+  canDelegateResource: (parentRes, childRes) => {
+    if (parentRes.with.scheme !== "path" || childRes.with.scheme !== "path") {
+      // If this is not about the "path" capability, then
+      // just use the normal equality delegation
+      return ucans.equalCanDelegate.canDelegateResource(parentRes, childRes)
     }
-  ]
-})
-
-// Capability semantics
-const SEMANTICS = {
-  // wether or not to use the default capability structure
-  // (this would parse a regular capability into a custom one)
-  tryParsing: a => a,
-
-  // can a given child capability be delegated from a parent capability?
-  tryDelegating: (parentCap, childCap) => {
-    if (childCap.with.scheme !== "wnfs") return null
 
     // we've got access to everything
-    if (parentCap.with.hierPart === ucans.capability.superUser.SUPERUSER) return childCap
+    if (parentRes.hierPart === ucans.capability.superUser.SUPERUSER) {
+      return true
+    }
 
     // path must be the same or a path below
-    if (childCap.with.hierPart.startsWith(parentCap.with.hierPart)) return childCap
+    if (`${childRes.hierPart}/`.startsWith(`${parentRes.hierPart}/`)) {
+      return true
+    }
 
     // 🚨 cannot delegate
-    return null
-  }
-}
-
-// Capability checking
-const nowInSeconds = Math.floor(Date.now() / 1000)
-const result = ucans.hasCapability(
-  SEMANTICS,
-  {
-    info: {
-      originator: keypair.did(),  // capability must have been originated from this issuer
-      expiresAt: nowInSeconds,    // ucan must not have been expired before this timestamp
-      notBefore: nowInSeconds     // optional
-    },
-    capability: {
-      with: ucans.capability.resourcePointer.parse("wnfs://boris.fission.name/public/photos/vacation/"),
-      can: ucans.capability.ability.parse("wnfs/REVISE")
-    }
+    return false
   },
-  ucans.Chained.fromToken(ucans.encode(ucan))
-)
 
-if (result === false) log("UCAN does not have this capability 🚨")
-else log("UCAN has the capability ✅ Info:", result.info, "Capability:", result.capability)
-
-// Comparing capabilities
-const a = {
-  with: { scheme: "scheme", hierPart: "hierPart" },
-  can: { namespace: "namespace", segments: [ "a", "B" ] }
+  // we're reusing equalCanDelegate's semantics for ability delegation
+  canDelegateAbility: equalCanDelegate.canDelegateAbility
 }
-
-const b = {
-  with: { scheme: "SCHEME", hierPart: "hierPart" },
-  can: { namespace: "NAMESPACE", segments: [ "A", "b" ] }
-}
-
-ucans.capability.isEqual(a, b)
-ucans.capability.resourcePointer.isEqual(a.with, b.with)
-ucans.capability.ability.isEqual(a.can, b.can)
 ```
-
 
 
 ## Sponsors
