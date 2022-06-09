@@ -14,18 +14,11 @@ export interface CapabilitySemantics {
   canDelegateAbility(parentAbility: Ability, childAbility: Ability): boolean
 }
 
-function canDelegate(
-  semantics: CapabilitySemantics,
-  parentCapability: Capability,
-  childCapability: Capability,
-): boolean {
-  return semantics.canDelegateResource(parentCapability.with, childCapability.with)
-    && semantics.canDelegateAbility(parentCapability.can, childCapability.can)
-}
 
 export type DelegationChain
   = DelegatedCapability
   | DelegatedOwnership
+
 
 export interface DelegatedCapability {
   capability: Capability
@@ -33,6 +26,7 @@ export interface DelegatedCapability {
   // will probably become an array in the future due to rights amplification
   chainStep?: DelegationChain
 }
+
 export interface DelegatedOwnership {
   ownershipDID: string
   scope: OwnershipScope
@@ -40,12 +34,31 @@ export interface DelegatedOwnership {
   chainStep?: DelegatedOwnership
 }
 
+
 export type OwnershipScope
   = Superuser
   | { scheme: string; ability: Ability }
 
 
+
 // FUNCTIONS
+
+
+export async function* delegationChains(
+  semantics: CapabilitySemantics,
+  ucan: Ucan,
+  isRevoked: (ucan: Ucan) => Promise<boolean> = async () => false
+): AsyncIterable<DelegationChain | Error> {
+
+  if (await isRevoked(ucan)) {
+    yield new Error(`UCAN Revoked: ${token.encode(ucan)}`)
+    return
+  }
+
+  yield* capabilitiesFromParenthood(ucan)
+  yield* capabilitiesFromDelegation(semantics, ucan, isRevoked)
+}
+
 
 export function rootIssuer(delegationChain: DelegationChain): string {
   if ("capability" in delegationChain) {
@@ -54,6 +67,46 @@ export function rootIssuer(delegationChain: DelegationChain): string {
       : rootIssuer(delegationChain.chainStep)
   }
   return delegationChain.ownershipDID
+}
+
+
+export const equalCanDelegate: CapabilitySemantics = {
+  canDelegateResource(parentResource, childResource) {
+    if (parentResource.scheme !== childResource.scheme) {
+      return false
+    }
+
+    if (parentResource.hierPart === SUPERUSER) {
+      return true
+    }
+    if (childResource.hierPart === SUPERUSER) {
+      return false
+    }
+
+    return parentResource.hierPart === childResource.hierPart
+  },
+
+  canDelegateAbility(parentAbility, childAbility) {
+    if (parentAbility === SUPERUSER) {
+      return true
+    }
+    if (childAbility === SUPERUSER) {
+      return false
+    }
+
+    if (parentAbility.namespace !== childAbility.namespace) {
+      return false
+    }
+
+    // Array equality
+    if (parentAbility.segments.length !== childAbility.segments.length) {
+      return false
+    }
+    return parentAbility.segments.reduce(
+      (acc, v, i) => acc && childAbility.segments[ i ] === v,
+      true as boolean
+    )
+  },
 }
 
 
@@ -98,20 +151,10 @@ export function ownershipCanBeDelegated(
     && semantics.canDelegateAbility(parentScope.ability, scope.ability)
 }
 
-export async function* delegationChains(
-  semantics: CapabilitySemantics,
-  ucan: Ucan,
-  isRevoked: (ucan: Ucan) => Promise<boolean> = async () => false
-): AsyncIterable<DelegationChain | Error> {
 
-  if (await isRevoked(ucan)) {
-    yield new Error(`UCAN Revoked: ${token.encode(ucan)}`)
-    return
-  }
 
-  yield* capabilitiesFromParenthood(ucan)
-  yield* capabilitiesFromDelegation(semantics, ucan, isRevoked)
-}
+// ㊙️ Internal
+
 
 function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
   for (const capability of ucan.payload.att) {
@@ -140,6 +183,7 @@ function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
     }
   }
 }
+
 
 async function* capabilitiesFromDelegation(
   semantics: CapabilitySemantics,
@@ -188,6 +232,7 @@ async function* capabilitiesFromDelegation(
   }
 }
 
+
 async function* handleAsDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
@@ -226,6 +271,7 @@ async function* handleAsDelegation(
   }
 }
 
+
 async function* handlePrfDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
@@ -258,6 +304,7 @@ async function* handlePrfDelegation(
   }
 }
 
+
 async function* handleNormalDelegation(
   semantics: CapabilitySemantics,
   capability: Capability,
@@ -281,41 +328,13 @@ async function* handleNormalDelegation(
   }
 }
 
-export const equalCanDelegate: CapabilitySemantics = {
-  canDelegateResource(parentResource, childResource) {
-    if (parentResource.scheme !== childResource.scheme) {
-      return false
-    }
 
-    if (parentResource.hierPart === SUPERUSER) {
-      return true
-    }
-    if (childResource.hierPart === SUPERUSER) {
-      return false
-    }
-
-    return parentResource.hierPart === childResource.hierPart
-  },
-
-  canDelegateAbility(parentAbility, childAbility) {
-    if (parentAbility === SUPERUSER) {
-      return true
-    }
-    if (childAbility === SUPERUSER) {
-      return false
-    }
-
-    if (parentAbility.namespace !== childAbility.namespace) {
-      return false
-    }
-
-    // Array equality
-    if (parentAbility.segments.length !== childAbility.segments.length) {
-      return false
-    }
-    return parentAbility.segments.reduce(
-      (acc, v, i) => acc && childAbility.segments[ i ] === v,
-      true as boolean
-    )
-  },
+function canDelegate(
+  semantics: CapabilitySemantics,
+  parentCapability: Capability,
+  childCapability: Capability,
+): boolean {
+  return semantics.canDelegateResource(parentCapability.with, childCapability.with)
+    && semantics.canDelegateAbility(parentCapability.can, childCapability.can)
 }
+
