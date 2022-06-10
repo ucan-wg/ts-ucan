@@ -12,44 +12,50 @@ const ok: <T, E>(k: T) => Result<T, E> = k => ({ ok: true, value: k })
 const err: <T, E>(e: E) => Result<T, E> = e => ({ ok: false, error: e })
 
 
+export interface VerifyOptions {
+  /**
+   * the DID of the callee of this function. The expected audience of the outermost level of the UCAN.
+   * NOTE: This DID should not be hardcoded in production calls to this function.
+   */
+  audience: string
+  /**
+   * an async predicate on UCANs to figure out whether they've been revoked or not.
+   * Usually that means checking whether the hash of the UCAN is in a list of revoked UCANs.
+   */
+  isRevoked: (ucan: Ucan) => Promise<boolean>
+  /**
+   * a non-empty list of capabilities required for this UCAN invocation. The root issuer and capability
+   * should be derived from something like your HTTP request parameters. They identify the resource
+   * that's access-controlled.
+   */
+  requiredCapabilities: { capability: Capability; rootIssuer: string }[]
+  /**
+   * an optional record of functions that specify what the rules for delegating capabilities are.
+   * If not provided, the default semantics will be `equalCanDelegate`.
+   */
+  semantics?: DelegationSemantics
+  /**
+   * an optional function that's given the list of facts in the root UCAN and returns a boolean indicating
+   * whether the facts include everything you expect for the UCAN invocation to check.
+   * By default this will ignore all facts in the UCAN and just return true.
+   */
+  checkFacts?: (facts: Fact[]) => boolean
+}
+
+
 /**
  * Verify a UCAN for an invocation.
  *
- * @param ucan
- *  a UCAN to verify for invocation in JWT format. (starts with 'eyJ...' and has two '.' in it)
+ * @param ucan a UCAN to verify for invocation in JWT format. (starts with 'eyJ...' and has two '.' in it)
  *
- * @param audience
- *  the DID of the callee of this function. The expected audience of the outermost level of the UCAN.
- *  NOTE: This DID should not be hardcoded in production calls to this function.
- *
- * @param isRevoked
- *  an async predicate on UCANs to figure out whether they've been revoked or not.
- *  Usually that means checking whether the hash of the UCAN is in a list of revoked UCANs.
- *
- * @param requiredCapabilities
- *  a non-empty list of capabilities required for this UCAN invocation. The root issuer and capability
- *  should be derived from something like your HTTP request parameters. They identify the resource
- *  that's access-controlled.
- *
- * @param semantics
- *  an optional record of functions that specify what the rules for delegating capabilities are.
- *  If not provided, the default semantics will be `equalCanDelegate`.
- *
- * @param checkFacts
- *  an optional function that's given the list of facts in the root UCAN and returns a boolean indicating
- *  whether the facts include everything you expect for the UCAN invocation to check.
- *  By default this will ignore all facts in the UCAN and just return true.
+ * @param options required and optional verification options see {@link VerifyOptions}
  *
  * @throws TypeError if the passed arguments don't match what is expected
  */
-export async function verify(
-  ucan: string,
-  audience: string,
-  isRevoked: (ucan: Ucan) => Promise<boolean>,
-  requiredCapabilities: { capability: Capability; rootIssuer: string }[],
-  semantics: DelegationSemantics = equalCanDelegate,
-  checkFacts: (facts: Fact[]) => boolean = () => true,
-): Promise<Result<Verification[], Error[]>> {
+export async function verify(ucan: string, options: VerifyOptions): Promise<Result<Verification[], Error[]>> {
+  const { audience, isRevoked, requiredCapabilities } = options
+  const semantics = options.semantics ?? equalCanDelegate
+  const checkFacts = options.checkFacts ?? (() => true)
   // type-check arguments
   if (typeof ucan !== "string") {
     throw new TypeError(`Expected an encoded UCAN string as first argument, but got ${ucan}`)

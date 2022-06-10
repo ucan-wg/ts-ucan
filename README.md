@@ -158,15 +158,13 @@ const ucan = ucans.build({ ... })
 const encoded = ucans.encode(ucan)
 
 // verify an invocation of a UCAN on another machine (in this example a service)
-const result = await ucans.verify(
-  encoded,
-  serviceDID,
+const result = await ucans.verify(encoded, {
+  // to make sure we're the intended recipient of this UCAN
+  audience: serviceDID,
   // A callback for figuring out whether a UCAN is known to be revoked
-  async function isRevoked(ucan) {
-    return false // as a stub. Should look up the UCAN CID in a DB.
-  },
-  // required capabilities
-  [
+  isRevoked: async ucan => false // as a stub. Should look up the UCAN CID in a DB.
+  // capabilities required for this invocation & which owner we expect for each capability
+  requiredCapabilities: [
     {
       capability: {
         with: { scheme: "mailto", hierPart: "boris@fission.codes" },
