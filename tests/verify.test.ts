@@ -31,8 +31,6 @@ describe("verify", () => {
     return token.encode(ucan)
   }
 
-  const nothingIsRevoked = async () => false
-
   const alicesEmail = {
     capability: emailCapability("alice@email.com"),
     rootIssuer: alice.did(),
@@ -43,7 +41,6 @@ describe("verify", () => {
 
     const result = await verify(ucan, {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -64,7 +61,6 @@ describe("verify", () => {
 
     const result = await verify(ucan, {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ {
         capability: {
           ...emailCapability("alice@email.com"),
@@ -82,7 +78,6 @@ describe("verify", () => {
 
     const result = await verify(ucan, {
       audience: bob.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -94,7 +89,6 @@ describe("verify", () => {
 
     const result = await verify(ucan, {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ {
         capability: emailCapability("alice@email.com"),
         // an invalid rootIssuer
@@ -113,7 +107,6 @@ describe("verify", () => {
 
     const result = await verify(ucan, {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -139,7 +132,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -176,7 +168,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -210,7 +201,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(faultyUcan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -236,7 +226,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -262,7 +251,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ],
     })
 
@@ -299,7 +287,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: "did:key:someone",
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -329,7 +316,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 
@@ -355,7 +341,6 @@ describe("verify", () => {
 
     const result = await verify(token.encode(ucan), {
       audience: mallory.did(),
-      isRevoked: nothingIsRevoked,
       requiredCapabilities: [ alicesEmail ]
     })
 

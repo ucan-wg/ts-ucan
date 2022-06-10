@@ -19,21 +19,22 @@ export interface VerifyOptions {
    */
   audience: string
   /**
-   * an async predicate on UCANs to figure out whether they've been revoked or not.
-   * Usually that means checking whether the hash of the UCAN is in a list of revoked UCANs.
-   */
-  isRevoked: (ucan: Ucan) => Promise<boolean>
-  /**
    * a non-empty list of capabilities required for this UCAN invocation. The root issuer and capability
    * should be derived from something like your HTTP request parameters. They identify the resource
    * that's access-controlled.
    */
   requiredCapabilities: { capability: Capability; rootIssuer: string }[]
-  /**
+   /**
    * an optional record of functions that specify what the rules for delegating capabilities are.
    * If not provided, the default semantics will be `equalCanDelegate`.
    */
   semantics?: DelegationSemantics
+  /**
+   * an async predicate on UCANs to figure out whether they've been revoked or not.
+   * Usually that means checking whether the hash of the UCAN is in a list of revoked UCANs.
+   * If not provided, it will assume no UCAN to be revoked.
+   */
+   isRevoked?: (ucan: Ucan) => Promise<boolean>
   /**
    * an optional function that's given the list of facts in the root UCAN and returns a boolean indicating
    * whether the facts include everything you expect for the UCAN invocation to check.
@@ -53,8 +54,9 @@ export interface VerifyOptions {
  * @throws TypeError if the passed arguments don't match what is expected
  */
 export async function verify(ucan: string, options: VerifyOptions): Promise<Result<Verification[], Error[]>> {
-  const { audience, isRevoked, requiredCapabilities } = options
+  const { audience, requiredCapabilities } = options
   const semantics = options.semantics ?? equalCanDelegate
+  const isRevoked = options.isRevoked ?? (async () => false)
   const checkFacts = options.checkFacts ?? (() => true)
   // type-check arguments
   if (typeof ucan !== "string") {
