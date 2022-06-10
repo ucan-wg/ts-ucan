@@ -109,7 +109,7 @@ export type OwnershipScope
 
 /**
  * This computes all possible delegations from given UCAN with given
- * capabiltiy delegation semantics.
+ * capability delegation semantics.
  * 
  * For each entry in the attenuations array of the UCAN there will be at least
  * one delegation chain.
