@@ -32,10 +32,10 @@ export function isResourcePointer(obj: unknown): obj is ResourcePointer {
 // 🌸
 
 
-export function as(identifier: string): ResourcePointer {
+export function as(did: string, resource: Superuser | string): ResourcePointer {
   return {
     scheme: "as",
-    hierPart: identifier
+    hierPart: `${did}:${resource}`
   }
 }
 

@@ -1,272 +1,419 @@
-// https://github.com/ucan-wg/spec/blob/dd4ac83f893cef109f5a26b07970b2484f23aabf/README.md#325-attenuation-scope
-import * as capability from "./capability/index.js"
-import * as util from "./util.js"
+import * as token from "./token.js"
 import { Capability } from "./capability/index.js"
-import { Chained } from "./chained.js"
 import { Ucan } from "./types.js"
+import { ResourcePointer } from "./capability/resource-pointer.js"
+import { Ability } from "./capability/ability.js"
+import { SUPERUSER, Superuser } from "./capability/super-user.js"
 
 
 // TYPES
 
 
-export interface CapabilitySemantics<A> {
+/**
+ * UCAN capabilities can have arbitrary semantics for delegation.
+ * These semantics can be configured via this record of functions.
+ * 
+ * In most cases you may just want to use `equalCanDelegate` as your semantics,
+ * but sometimes you want e.g. path behavior for a file-system-like resource:
+ * `path:/parent/` should be able to delegate access to `path:/parent/child/`.
+ */
+export interface DelegationSemantics {
   /**
-   * Try to parse a capability into a representation used for
-   * delegation & returning in the `capabilities` call.
-   *
-   * If the capability doesn't seem to match the format expected
-   * for the capabilities with the semantics currently defined,
-   * return `null`.
+   * Whether a parent resource can delegate a child resource.
+   * 
+   * An implementation may for example decide to return true for
+   * `canDelegateResource(resourcePointer.parse("path:/parent/"), resourcePointer.parse("path:/parent/child/"))`
    */
-  tryParsing(cap: Capability): A | null
-
+  canDelegateResource(parentResource: ResourcePointer, childResource: ResourcePointer): boolean
   /**
-   * This figures out whether a given `childCap` can be delegated from `parentCap`.
-   * There are three possible results with three return types respectively:
-   * - `A`: The delegation is possible and results in the rights returned.
-   * - `null`: The capabilities from `parentCap` and `childCap` are unrelated and can't be compared nor delegated.
-   * - `CapabilityEscalation<A>`: It's clear that `childCap` is meant to be delegated from `parentCap`, but there's a rights escalation.
+   * Whether a parent ability can delegate a child ability.
+   * 
+   * An implementation may for example decide to return true for
+   * `canDelegateAbility(ability.parse("crud/UPDATE"), ability.parse("crud/CREATE"))`
    */
-  tryDelegating(parentCap: A, childCap: A): A | null | CapabilityEscalation<A>
-}
-
-export type CapabilityResult<A>
-  = CapabilityWithInfo<A>
-  | CapabilityEscalation<A>
-
-export interface CapabilityInfo {
-  originator: string // DID
-  expiresAt: number
-  notBefore?: number
-}
-
-export interface CapabilityWithInfo<A> {
-  info: CapabilityInfo
-  capability: A
-}
-
-export interface CapabilityEscalation<A> {
-  escalation: string // reason
-  capability: A // the capability that escalated rights
+  canDelegateAbility(parentAbility: Ability, childAbility: Ability): boolean
 }
 
 
+/**
+ * A delegation chain for a delegated capability or delegated ownership.
+ * 
+ * This type represents a valid path of delegations through a UCAN.
+ * 
+ * It can be cached as a sort of "witness" that a UCAN actually delegates a particular capability.
+ *
+ * Or it can be scanned to look for UCANs that may have become invalid due to revocation.
+ */
+export type DelegationChain
+  = DelegatedCapability
+  | DelegatedOwnership
 
-// TYPE CHECKING
 
+/**
+ * A delegation chain that ends with a concrete capability.
+ */
+export interface DelegatedCapability {
+  /**
+   * The capability that the end of the chain grants.
+   */
+  capability: Capability
+  /**
+   * The specific UCAN in the chain witnessing the delegated capability.
+   */
+  ucan: Ucan
+  // will probably become an array in the future due to rights amplification
+  /**
+   * The rest of the delegation chain. This may include entries
+   * for `DelegatedOwnership`.
+   */
+  chainStep?: DelegationChain
+}
 
-export function isCapabilityEscalation<A>(obj: unknown): obj is CapabilityEscalation<A> {
-  return util.isRecord(obj)
-    && util.hasProp(obj, "escalation") && typeof obj.escalation === "string"
-    && util.hasProp(obj, "capability")
+/**
+ * A delegation chain that ends with delegated ownership.
+ * 
+ * This is ownership over a specific DID at a certain resource and ability scope.
+ */
+export interface DelegatedOwnership {
+  /**
+   * The DID that ownership is delegated for.
+   */
+  ownershipDID: string
+  /**
+   * The kinds of capabilites that can be delegated from the ownership.
+   */
+  scope: OwnershipScope
+  /**
+   * The specific UCAN in the chain witnessing the delegated ownership.
+   */
+  ucan: Ucan
+  /**
+   * The rest of the ownership delegation chain.
+   */
+  chainStep?: DelegatedOwnership
 }
 
 
-
-// PARSING
-
-
-function parseCapabilityInfo(ucan: Ucan<never>): CapabilityInfo {
-  return {
-    originator: ucan.payload.iss,
-    expiresAt: ucan.payload.exp,
-    ...(ucan.payload.nbf != null ? { notBefore: ucan.payload.nbf } : {}),
-  }
-}
+/**
+ * This describes the scope of capabilities that are allowed to be delegated
+ * from delegated ownership.
+ */
+export type OwnershipScope
+  = Superuser
+  | { scheme: string; ability: Ability }
 
 
 
 // FUNCTIONS
 
 
-export function canDelegate<A>(semantics: CapabilitySemantics<A>, capability: A, ucan: Chained): boolean {
-  for (const cap of capabilities(ucan, semantics)) {
-    if (isCapabilityEscalation(cap)) {
-      continue
+/**
+ * This computes all possible delegations from given UCAN with given
+ * capability delegation semantics.
+ * 
+ * For each entry in the attenuations array of the UCAN there will be at least
+ * one delegation chain.
+ * 
+ * These delegation chains are computed lazily, so that if parts of the UCAN have
+ * been revoked or can't be loaded, this doesn't keep this function from figuring
+ * out different ways of delegating a capability from the attenuations.
+ * It also makes it possible to return early if a valid delegation chain has been found.
+ */
+export async function* delegationChains(
+  semantics: DelegationSemantics,
+  ucan: Ucan,
+  isRevoked: (ucan: Ucan) => Promise<boolean> = async () => false
+): AsyncIterable<DelegationChain | Error> {
+
+  if (await isRevoked(ucan)) {
+    yield new Error(`UCAN Revoked: ${token.encode(ucan)}`)
+    return
+  }
+
+  yield* capabilitiesFromParenthood(ucan)
+  yield* capabilitiesFromDelegation(semantics, ucan, isRevoked)
+}
+
+
+/**
+ * Figures out the implied root issuer from a delegation chain.
+ * 
+ * For a given delegation chain this will give you the DID of who
+ * "started" the chain, so who claims to be the "owner" of said capability.
+ */
+export function rootIssuer(delegationChain: DelegationChain): string {
+  if ("capability" in delegationChain) {
+    return delegationChain.chainStep == null
+      ? delegationChain.ucan.payload.iss
+      : rootIssuer(delegationChain.chainStep)
+  }
+  return delegationChain.ownershipDID
+}
+
+
+/**
+ * The default delegation semantics.
+ * This will just allow equal capabilities to be delegated,
+ * except that it also accounts for superuser abilities.
+ */
+export const equalCanDelegate: DelegationSemantics = {
+  canDelegateResource(parentResource, childResource) {
+    if (parentResource.scheme !== childResource.scheme) {
+      return false
     }
 
-    const delegated = semantics.tryDelegating(cap.capability, capability)
+    return parentResource.hierPart === childResource.hierPart
+  },
 
-    if (isCapabilityEscalation(delegated)) {
-      continue
-    }
-
-    if (delegated != null) {
+  canDelegateAbility(parentAbility, childAbility) {
+    if (parentAbility === SUPERUSER) {
       return true
     }
-  }
+    if (childAbility === SUPERUSER) {
+      return false
+    }
 
-  return false
+    if (parentAbility.namespace !== childAbility.namespace) {
+      return false
+    }
+
+    // Array equality
+    if (parentAbility.segments.length !== childAbility.segments.length) {
+      return false
+    }
+    return parentAbility.segments.reduce(
+      (acc, v, i) => acc && childAbility.segments[ i ] === v,
+      true as boolean
+    )
+  },
 }
 
-/**
- * Iterate through the capabilities of a UCAN chain.
- */
-export function capabilities<A>(
-  ucan: Chained,
-  semantics: CapabilitySemantics<A>,
-): Iterable<CapabilityResult<A>> {
 
-  function* findParsingCaps(ucan: Ucan<never>): Iterable<CapabilityWithInfo<A>> {
-    const capInfo = parseCapabilityInfo(ucan)
-    for (const cap of ucan.payload.att) {
-      const parsedCap = semantics.tryParsing(cap)
-      if (parsedCap != null) yield { info: capInfo, capability: parsedCap }
-    }
+export function capabilityCanBeDelegated(
+  semantics: DelegationSemantics,
+  capability: Capability,
+  fromDelegationChain: DelegationChain,
+): boolean {
+  if ("capability" in fromDelegationChain) {
+    return canDelegate(semantics, fromDelegationChain.capability, capability)
+  }
+  const ownershipScope = fromDelegationChain.scope
+  if (ownershipScope === SUPERUSER) {
+    return true
+  }
+  return ownershipScope.scheme == capability.with.scheme
+    && semantics.canDelegateAbility(ownershipScope.ability, capability.can)
+}
+
+
+export function ownershipCanBeDelegated(
+  semantics: DelegationSemantics,
+  did: string,
+  scope: OwnershipScope,
+  fromDelegationChain: DelegatedOwnership
+): boolean {
+  if (did !== fromDelegationChain.ownershipDID) {
+    return false
   }
 
-  const delegate = (ucan: Ucan<never>, capabilitiesInProofs: () => Iterable<() => Iterable<CapabilityResult<A>>>) => {
-    return function* () {
-      for (const parsedChildCap of findParsingCaps(ucan)) {
-        let isCoveredByProof = false
-        let proofIndex = 0
+  const parentScope = fromDelegationChain.scope
 
-        for (const capabilitiesInProof of capabilitiesInProofs()) {
-          for (const parsedParentCap of capabilitiesInProof()) {
-            // pass through capability escalations from parents
-            if (isCapabilityEscalation(parsedParentCap)) {
-              yield parsedParentCap
+  // parent OwnershipScope can delegate child OwnershipScope
 
-            } else if (
-              capability.isCapability(parsedChildCap.capability) &&
-              parsedChildCap.capability.with.scheme.toLowerCase() === "prf" &&
-              (
-                parsedChildCap.capability.with.hierPart === capability.superUser.SUPERUSER ||
-                parsedChildCap.capability.with.hierPart === `${proofIndex}`
-              )
-            ) {
-              yield parsedParentCap
+  if (parentScope === SUPERUSER) {
+    return true
+  }
+  if (scope === SUPERUSER) {
+    return false
+  }
+  return parentScope.scheme === scope.scheme
+    && semantics.canDelegateAbility(parentScope.ability, scope.ability)
+}
 
-            } else if (
-              capability.isCapability(parsedParentCap.capability) &&
-              (
-                parsedParentCap.capability.with.scheme.toLowerCase() === "my" ||
-                parsedParentCap.capability.with.scheme.toLowerCase() === "as"
-              )
-            ) {
-              yield {
-                info: parsedParentCap.info,
-                capability: parsedChildCap.capability
-              }
 
-            } else {
-              // try figuring out whether we can delegate the capabilities from this to the parent
-              const delegated = semantics.tryDelegating(parsedParentCap.capability, parsedChildCap.capability)
-              // if the capabilities *are* related, then this will be non-null
-              // otherwise we just continue looking
-              if (delegated != null) {
-                // we infer that the capability was meant to be delegated
-                isCoveredByProof = true
-                // it's still possible that that delegation was invalid, i.e. an escalation, though
-                if (isCapabilityEscalation(delegated)) {
-                  yield delegated // which is an escalation
-                } else {
-                  yield {
-                    info: delegateCapabilityInfo(parsedChildCap.info, parsedParentCap.info),
-                    capability: delegated
-                  }
-                }
-              }
-            }
+
+// ㊙️ Internal
+
+
+function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
+  for (const capability of ucan.payload.att) {
+    switch (capability.with.scheme.toLowerCase()) {
+      // If it's a "my" capability, it'll indicate an ownership delegation
+      case "my": {
+        const scope = capability.with.hierPart === SUPERUSER
+          ? SUPERUSER
+          : { scheme: capability.with.hierPart, ability: capability.can }
+
+        yield {
+          ownershipDID: ucan.payload.iss,
+          scope,
+          ucan,
+        }
+        break
+      }
+      // if it's another known capability, we can ignore them
+      // (they're not introduced by parenthood)
+      case "as":
+      case "prf":
+        break
+      // otherwise we assume it's a normal parenthood capability introduction
+      default:
+        yield { capability, ucan }
+    }
+  }
+}
+
+
+async function* capabilitiesFromDelegation(
+  semantics: DelegationSemantics,
+  ucan: Ucan,
+  isRevoked: (ucan: Ucan) => Promise<boolean>
+): AsyncIterable<DelegationChain | Error> {
+
+  let proofIndex = 0
+
+  for await (const proof of token.validateProofs(ucan)) {
+    if (proof instanceof Error) {
+      yield proof
+      continue
+    }
+
+    for (const capability of ucan.payload.att) {
+      try {
+        switch (capability.with.scheme.toLowerCase()) {
+          case "my": continue // cannot be delegated, only introduced by parenthood.
+          case "as": {
+            yield* handleAsDelegation(semantics, capability, ucan, proof, isRevoked)
+            break
           }
-
-          proofIndex++
+          case "prf": {
+            yield* handlePrfDelegation(semantics, capability, ucan, proof, proofIndex, isRevoked)
+            break
+          }
+          default: {
+            yield* handleNormalDelegation(semantics, capability, ucan, proof, isRevoked)
+          }
         }
-
-        // If a capability can't be considered to be delegated by any of its proofs
-        // (or if there are no proofs),
-        // then we root its origin in the UCAN we're looking at.
-        if (!isCoveredByProof) {
-          yield parsedChildCap
-        }
-      }
-    }
-  }
-
-  return ucan.reduce(delegate)()
-}
-
-/**
- * Build a `CapabilityInfo` object based on a child and parent `CapabilityInfo`.
- * It will take the earliest expiry timestamp and the latest `notBefore` timestamp.
- * The originator will always be that of the given parent info.
- */
-function delegateCapabilityInfo(
-  childInfo: CapabilityInfo,
-  parentInfo: CapabilityInfo
-): CapabilityInfo {
-  let notBefore = {}
-  if (childInfo.notBefore != null && parentInfo.notBefore != null) {
-    notBefore = { notBefore: Math.max(childInfo.notBefore, parentInfo.notBefore) }
-  } else if (parentInfo.notBefore != null) {
-    notBefore = { notBefore: parentInfo.notBefore }
-  } else {
-    notBefore = { notBefore: childInfo.notBefore }
-  }
-  return {
-    originator: parentInfo.originator,
-    expiresAt: Math.min(childInfo.expiresAt, parentInfo.expiresAt),
-    ...notBefore,
-  }
-}
-
-/**
- * Check if a UCAN chain has a specific `Capability`.
- *
- * This check depends on the given capability info.
- * We need to check the originator of the capability,
- * otherwise anyone could pretend to have these rights.
- */
-export function hasCapability<Cap>(
-  semantics: CapabilitySemantics<Cap>,
-  capability: CapabilityWithInfo<Cap>,
-  ucan: Chained
-): CapabilityWithInfo<Cap> | false {
-  for (const cap of capabilities(ucan, semantics)) {
-    if (isCapabilityEscalation(cap)) {
-      continue
-    }
-
-    const delegatedCapability = semantics.tryDelegating(cap.capability, capability.capability)
-
-    // Whether we can delegate said capability
-    if (isCapabilityEscalation(delegatedCapability)) {
-      continue
-    }
-
-    // Whether delegation works is unknown
-    if (delegatedCapability == null) {
-      continue
-    }
-
-    // check that the originator is who you'd expect
-    if (cap.info.originator !== capability.info.originator) {
-      continue
-    }
-
-    // make sure the capability didn't expire before we expect it
-    if (cap.info.expiresAt < capability.info.expiresAt) {
-      continue
-    }
-
-    if (cap.info.notBefore != null) {
-      // if there's a min timestamp but we require it to be limitless
-      if (capability.info.notBefore == null) {
-        continue
-      }
-
-      // if the min timestamp is after the time we need it to be
-      if (cap.info.notBefore > capability.info.notBefore) {
-        continue
+      } catch (e) {
+        yield error(e)
       }
     }
 
-    // All checks went through, we're good to go
-    return {
-      info: delegateCapabilityInfo(capability.info, cap.info),
-      capability: delegatedCapability,
-    }
+    proofIndex++
   }
 
-  return false
+  function error(e: unknown): Error {
+    if (e instanceof Error) {
+      return e
+    } else {
+      return new Error(`Error during capability delegation checking: ${e}`)
+    }
+  }
 }
+
+
+async function* handleAsDelegation(
+  semantics: DelegationSemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+  isRevoked: (ucan: Ucan) => Promise<boolean>
+): AsyncIterable<DelegatedOwnership | Error> {
+  const split = capability.with.hierPart.split(":")
+  const scheme = split[ split.length - 1 ]
+  const ownershipDID = split.slice(0, -1).join(":")
+  const scope = scheme === SUPERUSER
+    ? SUPERUSER
+    : { scheme, ability: capability.can }
+
+  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!("ownershipDID" in delegationChain)) {
+      continue
+    }
+    if (ownershipCanBeDelegated(
+      semantics,
+      ownershipDID,
+      scope,
+      delegationChain
+    )) {
+      yield {
+        ownershipDID,
+        scope,
+        ucan,
+        chainStep: delegationChain
+      }
+    }
+  }
+}
+
+
+async function* handlePrfDelegation(
+  semantics: DelegationSemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+  proofIndex: number,
+  isRevoked: (ucan: Ucan) => Promise<boolean>
+): AsyncIterable<DelegatedCapability | Error> {
+  if (
+    capability.with.hierPart !== SUPERUSER
+    && parseInt(capability.with.hierPart, 10) !== proofIndex
+  ) {
+    // if it's something like prf:2, we need to make sure that
+    // we only process the delegation if proofIndex === 2
+    return
+  }
+  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!("capability" in delegationChain)) {
+      continue
+    }
+    yield {
+      capability: delegationChain.capability,
+      ucan,
+      chainStep: delegationChain
+    }
+  }
+}
+
+
+async function* handleNormalDelegation(
+  semantics: DelegationSemantics,
+  capability: Capability,
+  ucan: Ucan,
+  proof: Ucan,
+  isRevoked: (ucan: Ucan) => Promise<boolean>
+): AsyncIterable<DelegatedCapability | Error> {
+  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+    if (delegationChain instanceof Error) {
+      yield delegationChain
+      continue
+    }
+    if (!capabilityCanBeDelegated(semantics, capability, delegationChain)) {
+      continue
+    }
+    yield {
+      capability,
+      ucan,
+      chainStep: delegationChain
+    }
+  }
+}
+
+
+function canDelegate(
+  semantics: DelegationSemantics,
+  parentCapability: Capability,
+  childCapability: Capability,
+): boolean {
+  return semantics.canDelegateResource(parentCapability.with, childCapability.with)
+    && semantics.canDelegateAbility(parentCapability.can, childCapability.can)
+}
+

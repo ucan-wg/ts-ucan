@@ -1,7 +1,11 @@
+import * as token from "../src/token"
 import { Store } from "../src/store"
 import { Builder } from "../src/builder"
 import { alice, bob, mallory } from "./fixtures"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
+import { Ucan } from "../src/types"
+import { equalCanDelegate } from "../src/attenuation"
+import { all } from "../src/util"
 
 
 describe("Store.add", () => {
@@ -13,9 +17,11 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([])
-    store.add(ucan)
-    expect(store.findByAudience(ucan.audience(), find => find === ucan)).toEqual(ucan)
+    const encoded = token.encode(ucan)
+
+    const store = await Store.fromTokens(equalCanDelegate, [])
+    await store.add(ucan)
+    expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
   })
 
   it("makes added items retrievable with findByAudience among multiple others", async () => {
@@ -31,10 +37,11 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([])
-    store.add(ucan2)
-    store.add(ucan)
-    expect(store.findByAudience(ucan.audience(), find => find === ucan)).toEqual(ucan)
+    const encoded = token.encode(ucan)
+    const store = await Store.fromTokens(equalCanDelegate, [])
+    await store.add(ucan2)
+    await store.add(ucan)
+    expect(encodeOrNull(store.findByAudience(ucan.payload.aud, find => token.encode(find) === encoded))).toEqual(encoded)
   })
 
   it("doesn't add items twice", async () => {
@@ -44,10 +51,10 @@ describe("Store.add", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([])
-    store.add(ucan)
-    store.add(ucan)
-    expect(store.getByAudience(ucan.audience())).toEqual([ ucan ])
+    const store = await Store.fromTokens(equalCanDelegate, [])
+    await store.add(ucan)
+    await store.add(ucan)
+    expect(store.getByAudience(ucan.payload.aud)).toEqual([ ucan ])
   })
 
 })
@@ -67,10 +74,10 @@ describe("Store.findByAudience", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ ucanBob, ucanAlice ].map(ucan => ucan.encoded()))
+    const store = await Store.fromTokens(equalCanDelegate, [ ucanBob, ucanAlice ].map(ucan => token.encode(ucan)))
     expect(store.findByAudience(mallory.did(), () => true)).toEqual(null)
-    expect(store.findByAudience(bob.did(), () => true)?.encoded()).toEqual(ucanBob.encoded())
-    expect(store.findByAudience(alice.did(), () => true)?.encoded()).toEqual(ucanAlice.encoded())
+    expect(encodeOrNull(store.findByAudience(bob.did(), () => true))).toEqual(token.encode(ucanBob))
+    expect(encodeOrNull(store.findByAudience(alice.did(), () => true))).toEqual(token.encode(ucanAlice))
   })
 
 })
@@ -85,20 +92,19 @@ describe("Store.findWithCapability", () => {
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
-    const store = await Store.fromTokens([ ucan.encoded() ])
+    const store = await Store.fromTokens(wnfsPublicSemantics, [ token.encode(ucan) ])
 
-    const result = store.findWithCapability(bob.did(), wnfsPublicSemantics, {
-      user: "alice.fission.name",
-      publicPath: [ "Apps" ],
-      ability: "OVERWRITE",
-    }, () => true)
+    const results = all(store.findWithCapability(
+      bob.did(),
+      wnfsCapability("alice.fission.name/public/Apps", "OVERWRITE"),
+      alice.did()
+    ))
 
-    if (!result.success) {
-      expect(result.success).toEqual(true)
-      throw new Error(`Unexpected result ${JSON.stringify(result)}`)
+    if (!("capability" in results[0])) {
+      throw "no capability"
     }
 
-    expect(result.ucan.encoded()).toEqual(ucan.encoded())
+    expect(encodeOrNull(results[0]?.ucan)).toEqual(token.encode(ucan))
   })
 
   it("reports an error if the capability can't be found with given audience", async () => {
@@ -115,15 +121,22 @@ describe("Store.findWithCapability", () => {
       .withLifetimeInSeconds(30)
       .build()
 
-    const store = await Store.fromTokens([ ucanAlice.encoded(), ucanBob.encoded() ])
+    const store = await Store.fromTokens(wnfsPublicSemantics, [ token.encode(ucanAlice), token.encode(ucanBob) ])
 
-    const result = store.findWithCapability(alice.did(), wnfsPublicSemantics, {
-      user: "alice.fission.name",
-      publicPath: [ "Apps" ],
-      ability: "OVERWRITE",
-    }, () => true)
+    const results = all(store.findWithCapability(
+      alice.did(),
+      wnfsCapability("alice.fission.name/public/Apps", "OVERWRITE"),
+      alice.did()
+    ))
 
-    expect(result.success).toEqual(false)
+    expect(results).toEqual([])
   })
 
 })
+
+function encodeOrNull(ucan: Ucan<unknown> | null): string {
+  if (ucan == null) {
+    return "null"
+  }
+  return token.encode(ucan)
+}

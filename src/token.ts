@@ -1,5 +1,6 @@
 import * as uint8arrays from "uint8arrays"
 
+import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
 import * as did from "./did.js"
 import * as util from "./util.js"
@@ -15,7 +16,7 @@ import { verifySignatureUtf8 } from "./did/validation.js"
 
 
 const TYPE = "JWT"
-const VERSION = "0.8.1"
+const VERSION = { major: 0, minor: 8, patch: 1 }
 
 
 
@@ -145,15 +146,19 @@ export async function sign(
   const encodedPayload = encodePayload(payload)
 
   // Sign
-  const toSign = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
+  const signedData = `${encodedHeader}.${encodedPayload}`
+  const toSign = uint8arrays.fromString(signedData, "utf8")
   const sig = await signFn(toSign)
 
   // 📦
-  return {
+  // we freeze the object to make it more unlikely
+  // for signedData & header/payload to get out of sync
+  return Object.freeze({
     header,
     payload,
+    signedData,
     signature: uint8arrays.toString(sig, "base64url")
-  }
+  })
 }
 
 /**
@@ -180,13 +185,8 @@ export async function signWithKeypair(
  *
  * @param ucan The UCAN to encode
  */
-export function encode(ucan: Ucan): string {
-  const encodedHeader = encodeHeader(ucan.header)
-  const encodedPayload = encodePayload(ucan.payload)
-
-  return encodedHeader + "." +
-    encodedPayload + "." +
-    ucan.signature
+export function encode(ucan: Ucan<unknown>): string {
+  return `${ucan.signedData}.${ucan.signature}`
 }
 
 /**
@@ -196,8 +196,12 @@ export function encode(ucan: Ucan): string {
  * @returns The header of a UCAN encoded as url-safe base64 JSON
  */
 export function encodeHeader(header: UcanHeader): string {
+  const headerFormatted = {
+    ...header,
+    ucv: semver.format(header.ucv)
+  }
   return uint8arrays.toString(
-    uint8arrays.fromString(JSON.stringify(header), "utf8"),
+    uint8arrays.fromString(JSON.stringify(headerFormatted), "utf8"),
     "base64url"
   )
 }
@@ -338,7 +342,8 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
     }
   }
 
-  const ucan: Ucan = { header, payload, signature }
+  const signedData = `${encodedHeader}.${encodedPayload}`
+  const ucan: Ucan = { header, payload, signedData, signature }
 
   if (checkIsExpired && isExpired(ucan)) {
     throw new Error(`Invalid UCAN: ${encodedUcan}: Expired.`)
@@ -349,6 +354,74 @@ export async function validate(encodedUcan: string, options?: ValidateOptions): 
   }
 
   return ucan
+}
+
+/**
+ * Proof validation options.
+ */
+export interface ValidateProofsOptions {
+  /**
+   * Whether to check if the ucan's issuer matches its proofs audiences.
+   */
+  checkAddressing?: boolean
+  /**
+   * Whether to check if a ucan's time bounds are a subset of its proofs time bounds.
+   */
+  checkTimeBoundsSubset?: boolean
+  /**
+   * Whether to check if a ucan's version is bigger or equal to its proofs version.
+   */
+  checkVersionMonotonic?: boolean
+}
+
+/**
+ * Iterates over all proofs and parses & validates them at the same time.
+ * 
+ * If there's an audience/issuer mismatch, the iterated item will contain an `Error`.
+ * Otherwise the iterated out will contain a `Ucan`.
+ * 
+ * @param ucan a parsed UCAN
+ * @param options optional ValidateOptions to use for validating each proof
+ * @return an async iterator of the given ucan's proofs parsed & validated, or an `Error`
+ *         for each proof that couldn't be validated or parsed.
+ */
+export async function* validateProofs(
+  ucan: Ucan,
+  options?: ValidateOptions & ValidateProofsOptions
+): AsyncIterable<Ucan | Error> {
+  const checkAddressing = options?.checkAddressing ?? true
+  const checkTimeBoundsSubset = options?.checkTimeBoundsSubset ?? true
+  const checkVersionMonotonic = options?.checkVersionMonotonic ?? true
+
+  for (const prf of ucan.payload.prf) {
+    try {
+      const proof = await validate(prf, options)
+
+      if (checkAddressing && ucan.payload.iss !== proof.payload.aud) {
+        throw new Error(`Invalid Proof: Issuer ${ucan.payload.iss} doesn't match parent's audience ${proof.payload.aud}`)
+      }
+
+      if (checkTimeBoundsSubset && proof.payload.nbf != null && ucan.payload.exp > proof.payload.nbf) {
+        throw new Error(`Invalid Proof: 'Not before' (${proof.payload.nbf}) is after parent's expiration (${ucan.payload.exp})`)
+      }
+
+      if (checkTimeBoundsSubset && ucan.payload.nbf != null && ucan.payload.nbf > proof.payload.exp) {
+        throw new Error(`Invalid Proof: Expiration (${proof.payload.exp}) is before parent's 'not before' (${ucan.payload.nbf})`)
+      }
+
+      if (checkVersionMonotonic && semver.lt(ucan.header.ucv, proof.header.ucv)) {
+        throw new Error(`Invalid Proof: Version (${proof.header.ucv}) is higher than parent's version (${ucan.header.ucv})`)
+      }
+
+      yield proof
+    } catch (e) {
+      if (e instanceof Error) {
+        yield e
+      } else {
+        yield new Error(`Error when trying to parse UCAN proof: ${e}`)
+      }
+    }
+  }
 }
 
 /**

@@ -1,3 +1,5 @@
+import * as semver from "./semver.js"
+import { SemVer } from "./semver.js"
 import { SupportedEncodings } from "uint8arrays/util/bases.js"
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import * as util from "./util.js"
@@ -9,6 +11,8 @@ import * as util from "./util.js"
 export type Ucan<Prf = string> = {
   header: UcanHeader
   payload: UcanPayload<Prf>
+  // We need to keep the encoded version around to preserve the signature
+  signedData: string
   signature: string
 }
 
@@ -25,7 +29,7 @@ export interface UcanParts<Prf = string> {
 export type UcanHeader = {
   alg: string
   typ: string
-  ucv: string
+  ucv: SemVer
 }
 
 export type UcanPayload<Prf = string> = {
@@ -110,7 +114,7 @@ export function isUcanHeader(obj: unknown): obj is UcanHeader {
   return util.isRecord(obj)
     && util.hasProp(obj, "alg") && typeof obj.alg === "string"
     && util.hasProp(obj, "typ") && typeof obj.typ === "string"
-    && util.hasProp(obj, "ucv") && typeof obj.ucv === "string"
+    && util.hasProp(obj, "ucv") && semver.isSemVer(obj.ucv)
 }
 
 export function isUcanPayload(obj: unknown): obj is UcanPayload {

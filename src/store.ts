@@ -1,71 +1,92 @@
-import { Chained } from "./chained.js"
-import { capabilities, CapabilityInfo, CapabilitySemantics, isCapabilityEscalation } from "./attenuation.js"
+import * as token from "./token.js"
+import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegationChains, rootIssuer } from "./attenuation.js"
+import { Ucan } from "./types.js"
+import { Capability } from "./capability/index.js"
 
 
 export interface IndexByAudience {
-  [ audienceDID: string ]: Chained[]
+  [ audienceDID: string ]: Array<{
+    processedUcan: Ucan
+    capabilities: DelegationChain[]
+  }>
 }
 
 export class Store {
 
   private index: IndexByAudience
+  private knownSemantics: DelegationSemantics
 
-  constructor(index: IndexByAudience) {
+  constructor(knownSemantics: DelegationSemantics, index: IndexByAudience) {
     this.index = index
+    this.knownSemantics = knownSemantics
   }
 
-  static async fromTokens(tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
-    const store = new Store({})
-    for await (const token of tokens) {
-      store.add(await Chained.fromToken(token))
+  static async fromTokens(knownSemantics: DelegationSemantics, tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
+    const store = new Store(knownSemantics, {})
+    for await (const encodedUcan of tokens) {
+      const ucan = await token.validate(encodedUcan)
+      await store.add(ucan)
     }
     return store
   }
 
-  add(ucan: Chained): void {
-    const audience = ucan.audience()
+  async add(ucan: Ucan): Promise<void> {
+    const audience = ucan.payload.aud
     const byAudience = this.index[ audience ] ?? []
-    if (byAudience.find(storedUcan => storedUcan.encoded() === ucan.encoded()) != null) {
+    const encoded = token.encode(ucan)
+    
+    if (byAudience.find(stored => token.encode(stored.processedUcan) === encoded) != null) {
       return
     }
-    byAudience.push(ucan)
+
+    const chains = []
+    for await (const delegationChain of delegationChains(this.knownSemantics, ucan)) {
+      if (delegationChain instanceof Error) {
+        console.warn(`Delegation chain error while storing UCAN:`, delegationChain)
+        continue
+      }
+      chains.push(delegationChain)
+    }
+
+    // Also do this *after* the all awaits to prevent races.
+    if (byAudience.find(stored => token.encode(stored.processedUcan) === encoded) != null) {
+      return
+    }
+
+    byAudience.push({
+      processedUcan: ucan,
+      capabilities: chains
+    })
     this.index[ audience ] = byAudience
   }
 
-  getByAudience(audience: string): Chained[] {
-    return [ ...(this.index[ audience ] ?? []) ]
+  getByAudience(audience: string): Ucan[] {
+    return (this.index[ audience ] ?? []).map(elem => elem.processedUcan)
   }
 
-  findByAudience(audience: string, predicate: (ucan: Chained) => boolean): Chained | null {
-    return this.index[ audience ]?.find(ucan => predicate(ucan)) ?? null
+  findByAudience(audience: string, predicate: (ucan: Ucan) => boolean): Ucan | null {
+    return this.index[ audience ]?.find(elem => predicate(elem.processedUcan))?.processedUcan ?? null
   }
 
-  findWithCapability<A>(
+  *findWithCapability(
     audience: string,
-    semantics: CapabilitySemantics<A>,
-    requirementsCap: A,
-    requirementsInfo: (info: CapabilityInfo) => boolean,
-  ): { success: true; ucan: Chained } | FindFailure {
-    const ucans = this.index[ audience ]
+    requiredCapability: Capability,
+    requiredIssuer: string,
+  ): Iterable<DelegationChain> {
+    const cache = this.index[ audience ]
 
-    if (ucans == null) {
-      return { success: false, reason: `Couldn't find any UCAN for audience ${audience}` }
+    if (cache == null) {
+      return
     }
 
-    for (const ucan of ucans) {
-      for (const result of capabilities(ucan, semantics)) {
-        if (isCapabilityEscalation(result)) continue
-        const { info, capability } = result
-        if (!requirementsInfo(info)) continue
-        const delegated = semantics.tryDelegating(capability, requirementsCap)
-        if (isCapabilityEscalation(delegated) || delegated == null) continue
-        return { success: true, ucan }
+    for (const cacheElement of cache) {
+      for (const delegationChain of cacheElement.capabilities) {
+        if (capabilityCanBeDelegated(this.knownSemantics, requiredCapability, delegationChain)
+          && rootIssuer(delegationChain) === requiredIssuer) {
+            yield delegationChain
+        }
       }
     }
-
-    return { success: false, reason: `Couldn't find a UCAN with required capabilities` }
   }
 
 }
-
-type FindFailure = { success: false; reason: string }
