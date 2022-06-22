@@ -19,7 +19,7 @@ export const generateKeypair = async (
 }
 
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
-  const buf = await webcrypto.subtle.exportKey("spki", key)
+  const buf = await webcrypto.subtle.exportKey("raw", key)
   return new Uint8Array(buf)
 }
 
@@ -28,7 +28,7 @@ export const importKey = async (
   namedCurve: NamedCurve
 ): Promise<CryptoKey> => {
   return await webcrypto.subtle.importKey(
-    "spki",
+    "raw",
     key.buffer,
     { name: ALG, namedCurve },
     true,

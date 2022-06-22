@@ -24,6 +24,13 @@ describe("publicKeyToDid", () => {
     expect(result).toEqual(expectedDid)
   })
 
+  it("handles NIST P-256 Keys", async () => {
+    const pubkey = "BEgg6smRlRQXKqzJHu0w5/nHcy7zYNxFXwTKUyyCOoDMztUvQn5VZg668v4MecHGUZTeHkaZhSraK7RtJuXfWp4="
+    const expectedDid = "did:key:zDnaeVHXWgKUpJFc8AUfRDuRWfsAQejmZu5HrERh41iGumZVu"
+    const result = did.publicKeyToDid(pubkey, "p256")
+    expect(result).toEqual(expectedDid)
+  })
+
 })
 
 describe("didToPublicKey", () => {
@@ -58,6 +65,14 @@ describe("didToPublicKey", () => {
     const { publicKey, type } = did.didToPublicKey(toDecode)
     expect(publicKey).toEqual(expectedKey)
     expect(type).toEqual("bls12-381")
+  })
+
+  it("handles NIST P-256 Keys", async () => {
+    const toDecode = "did:key:zDnaeVHXWgKUpJFc8AUfRDuRWfsAQejmZu5HrERh41iGumZVu"
+    const expectedKey = "BEgg6smRlRQXKqzJHu0w5/nHcy7zYNxFXwTKUyyCOoDMztUvQn5VZg668v4MecHGUZTeHkaZhSraK7RtJuXfWp4="
+    const { publicKey, type } = did.didToPublicKey(toDecode)
+    expect(publicKey).toEqual(expectedKey)
+    expect(type).toEqual("p256")
   })
 
 })

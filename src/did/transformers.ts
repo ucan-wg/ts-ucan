@@ -1,5 +1,6 @@
 import * as uint8arrays from "uint8arrays"
 
+import * as compression from "./pubkey-compress.js"
 import * as rsa from "../crypto/rsa.js"
 import { BASE58_DID_PREFIX, RSA_DID_PREFIX_OLD, magicBytes, parseMagicBytes, hasPrefix } from "./prefix.js"
 import { KeyType, Encodings } from "../types.js"
@@ -91,6 +92,11 @@ export function publicKeyBytesToDid(
     // For RSA that is "SubjectPublicKeyInfo", because that's what the WebCrypto API understands.
     // But DIDs assume that all public keys are encoded as "RSAPublicKey".
     publicKeyBytes = rsa.convertSubjectPublicKeyInfoToRSAPublicKey(publicKeyBytes)
+  }
+
+  // @TODO: Add in public key compression for P-384 & P-521
+  if(type === "p256") {
+    publicKeyBytes = compression.compressNistP256Pubkey(publicKeyBytes)
   }
 
   const prefixedBytes = uint8arrays.concat([ prefix, publicKeyBytes ])
