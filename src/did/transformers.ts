@@ -94,7 +94,6 @@ export function publicKeyBytesToDid(
     publicKeyBytes = rsa.convertSubjectPublicKeyInfoToRSAPublicKey(publicKeyBytes)
   }
 
-  // @TODO: Add in public key compression for P-384 & P-521
   if(type === "p256") {
     publicKeyBytes = compression.compressNistP256Pubkey(publicKeyBytes)
   }

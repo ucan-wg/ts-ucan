@@ -66,10 +66,6 @@ export const toKeyType = (namedCurve: NamedCurve): KeyType => {
   switch (namedCurve) {
     case "P-256":
       return "p256"
-    case "P-384":
-      return "p384"
-    case "P-521":
-      return "p521"
     default:
       throw new Error(`Unsupported namedCurve: ${namedCurve}`)
   }

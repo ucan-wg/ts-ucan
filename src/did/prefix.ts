@@ -35,10 +35,6 @@ export function magicBytes(keyType: KeyType): Uint8Array | null {
       return EDWARDS_DID_PREFIX
     case "p256":
       return P256_DID_PREFIX
-    case "p384":
-      return P384_DID_PREFIX
-    case "p521":
-      return P521_DID_PREFIX
     case "rsa":
       return RSA_DID_PREFIX
     case "bls12-381":
@@ -79,22 +75,6 @@ export const parseMagicBytes = (
     return {
       keyBytes,
       type: "p256",
-    }
-
-    // EC P-384
-  } else if (hasPrefix(prefixedKey, P384_DID_PREFIX)) {
-    // @TODO add public key decompression
-    return {
-      keyBytes: prefixedKey.slice(P384_DID_PREFIX.byteLength),
-      type: "p384",
-    }
-
-    // EC P-521
-  } else if (hasPrefix(prefixedKey, P521_DID_PREFIX)) {
-    // @TODO add public key decompression
-    return {
-      keyBytes: prefixedKey.slice(P521_DID_PREFIX.byteLength),
-      type: "p521",
     }
 
     // EDWARDS
