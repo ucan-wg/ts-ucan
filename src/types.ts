@@ -85,6 +85,14 @@ export type KeyType =
 // https://developer.mozilla.org/en-US/docs/Web/API/EcKeyGenParams
 export type NamedCurve = "P-256"
 
+export type PublicKeyJwk = {
+  kty: string
+  crv: string
+  x: string
+  y: string
+}
+
+export type PrivateKeyJwk = PublicKeyJwk & { d: string }
 
 
 // MISC

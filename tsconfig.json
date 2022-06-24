@@ -4,7 +4,8 @@
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/**/*"
