@@ -79,14 +79,20 @@ export interface Keypair {
 export type KeyType =
   | "rsa"
   | "p256"
-  | "p384"
-  | "p521"
   | "ed25519"
   | "bls12-381"
 
 // https://developer.mozilla.org/en-US/docs/Web/API/EcKeyGenParams
-export type NamedCurve = "P-256" | "P-384" | "P-521"
+export type NamedCurve = "P-256"
 
+export type PublicKeyJwk = {
+  kty: string
+  crv: string
+  x: string
+  y: string
+}
+
+export type PrivateKeyJwk = PublicKeyJwk & { d: string }
 
 
 // MISC

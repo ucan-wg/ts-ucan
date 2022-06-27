@@ -25,12 +25,6 @@ export async function verifySignature(data: Uint8Array, signature: Uint8Array, d
       case "p256":
         return await ecdsa.verify(data, signature, publicKey, "P-256")
 
-      case "p384":
-        return await ecdsa.verify(data, signature, publicKey, "P-384")
-
-      case "p521":
-        return await ecdsa.verify(data, signature, publicKey, "P-521")
-
       default: return false
     }
 

@@ -1,5 +1,5 @@
 import { webcrypto } from "one-webcrypto"
-import { NamedCurve, KeyType } from "../types.js"
+import { NamedCurve, KeyType, PrivateKeyJwk } from "../types.js"
 
 export const ALG = "ECDSA"
 export const DEFAULT_CURVE = "P-256"
@@ -18,8 +18,38 @@ export const generateKeypair = async (
   )
 }
 
+export const importKeypairJwk = async (
+  privKeyJwk: PrivateKeyJwk,
+  namedCurve: NamedCurve = DEFAULT_CURVE,
+  exportable = false
+): Promise<CryptoKeyPair> => {
+  const privateKey = await webcrypto.subtle.importKey(
+    "jwk",
+    privKeyJwk,
+    {
+      name: ALG,
+      namedCurve,
+    },
+    exportable,
+    ["sign" ]
+  )
+  const { kty, crv, x, y} = privKeyJwk
+  const pubKeyJwk = { kty, crv, x, y}
+  const publicKey = await webcrypto.subtle.importKey(
+    "jwk",
+    pubKeyJwk,
+    {
+      name: ALG,
+      namedCurve,
+    },
+    true,
+    [ "verify" ]
+  )
+  return { privateKey, publicKey }
+}
+
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
-  const buf = await webcrypto.subtle.exportKey("spki", key)
+  const buf = await webcrypto.subtle.exportKey("raw", key)
   return new Uint8Array(buf)
 }
 
@@ -28,7 +58,7 @@ export const importKey = async (
   namedCurve: NamedCurve
 ): Promise<CryptoKey> => {
   return await webcrypto.subtle.importKey(
-    "spki",
+    "raw",
     key.buffer,
     { name: ALG, namedCurve },
     true,
@@ -66,10 +96,6 @@ export const toKeyType = (namedCurve: NamedCurve): KeyType => {
   switch (namedCurve) {
     case "P-256":
       return "p256"
-    case "P-384":
-      return "p384"
-    case "P-521":
-      return "p521"
     default:
       throw new Error(`Unsupported namedCurve: ${namedCurve}`)
   }

@@ -1,4 +1,5 @@
 import * as uint8arrays from "uint8arrays"
+import * as compression from "./pubkey-compress.js"
 import { KeyType } from "../types.js"
 
 // Each prefix is varint-encoded. So e.g. 0x1205 gets varint-encoded to 0x8524
@@ -34,10 +35,6 @@ export function magicBytes(keyType: KeyType): Uint8Array | null {
       return EDWARDS_DID_PREFIX
     case "p256":
       return P256_DID_PREFIX
-    case "p384":
-      return P384_DID_PREFIX
-    case "p521":
-      return P521_DID_PREFIX
     case "rsa":
       return RSA_DID_PREFIX
     case "bls12-381":
@@ -73,23 +70,11 @@ export const parseMagicBytes = (
 
     // EC P-256
   } else if (hasPrefix(prefixedKey, P256_DID_PREFIX)) {
+    const compressedKey = prefixedKey.slice(P256_DID_PREFIX.byteLength)
+    const keyBytes = compression.decompressNistP256Pubkey(compressedKey)
     return {
-      keyBytes: prefixedKey.slice(P256_DID_PREFIX.byteLength),
+      keyBytes,
       type: "p256",
-    }
-
-    // EC P-384
-  } else if (hasPrefix(prefixedKey, P384_DID_PREFIX)) {
-    return {
-      keyBytes: prefixedKey.slice(P384_DID_PREFIX.byteLength),
-      type: "p384",
-    }
-
-    // EC P-521
-  } else if (hasPrefix(prefixedKey, P521_DID_PREFIX)) {
-    return {
-      keyBytes: prefixedKey.slice(P521_DID_PREFIX.byteLength),
-      type: "p521",
     }
 
     // EDWARDS
