@@ -1,6 +1,6 @@
 import * as semver from "./semver.js"
 import { SemVer } from "./semver.js"
-import { SupportedEncodings } from "uint8arrays/util/bases.js"
+import { SupportedEncodings } from "uint8arrays/util/bases.js" // @IMPORT
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import * as util from "./util.js"
 
@@ -134,3 +134,10 @@ export function isUcanPayload(obj: unknown): obj is UcanPayload {
     && (!util.hasProp(obj, "fct") || Array.isArray(obj.fct) && obj.fct.every(util.isRecord))
     && util.hasProp(obj, "prf") && Array.isArray(obj.prf) && obj.prf.every(str => typeof str === "string")
 }
+
+
+
+// @TODO Sort these
+
+export type DidSignatureCheck = (did: string, signature: Uint8Array) => Promise<boolean>
+export type DidToJwtAlg = (did: string) => string

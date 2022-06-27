@@ -1,12 +1,11 @@
-import * as uint8arrays from "uint8arrays"
+import * as uint8arrays from "uint8arrays" // @IMPORT
 
 import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
-import * as did from "./did.js"
 import * as util from "./util.js"
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
-import { Fact, KeyType, Keypair } from "./types.js"
+import { Fact, KeyType, Keypair, Didable } from "./types.js"
 import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types.js"
 import { handleCompatibility } from "./compatibility.js"
 import { verifySignatureUtf8 } from "./did/validation.js"
@@ -46,7 +45,7 @@ const VERSION = { major: 0, minor: 8, patch: 1 }
  */
 export async function build(params: {
   // from/to
-  issuer: Keypair
+  issuer: Keypair & Didable
   audience: string
 
   // capabilities
@@ -63,8 +62,7 @@ export async function build(params: {
   addNonce?: boolean
 }): Promise<Ucan> {
   const keypair = params.issuer
-  const didStr = did.publicKeyBytesToDid(keypair.publicKey, keypair.keyType)
-  const payload = buildPayload({ ...params, issuer: didStr })
+  const payload = buildPayload({ ...params, issuer: keypair.did() })
   return signWithKeypair(payload, keypair)
 }
 
@@ -136,6 +134,7 @@ export async function sign(
     ucv: VERSION,
   }
 
+  // @TODO what about this??
   // Issuer key type must match UCAN algorithm
   if (did.didToPublicKey(payload.iss).type !== keyType) {
     throw new Error("The issuer's key type must match the given key type.")

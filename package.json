@@ -12,58 +12,11 @@
   "engines": {
     "node": ">=15"
   },
-  "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "yarn run dist",
-    "dev": "tsc --watch --module commonjs --outDir ./dist/cjs/ --sourceMap",
-    "dist": "yarn run dist:prep && yarn run dist:src && yarn run dist:cjs && yarn run dist:esm && yarn run dist:types && yarn run dist:pkg",
-    "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
-    "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
-    "dist:pkg": "node ./scripts/package.js",
-    "dist:prep": "copyfiles --error tsconfig.json ./dist/",
-    "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
-    "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
-    "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
-    "prepare": "yarn build",
-    "publish-alpha": "yarn publish --tag alpha",
-    "publish-stable": "yarn publish --tag latest",
-    "test": "jest",
-    "test:watch": "jest --watch"
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
-    },
-    "./*.js": {
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js",
-      "types": "./dist/types/*.d.ts"
-    },
-    "./*": {
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js",
-      "types": "./dist/types/*.d.ts"
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "index.d.ts": [
-        "dist/types/index.d.ts"
-      ],
-      "*": [
-        "dist/types/*"
-      ]
-    }
-  },
-  "files": [
-    "dist",
-    "docs",
-    "CHANGELOG.md",
-    "LICENSE",
-    "README.md"
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
+  "scripts": { },
   "dependencies": {
     "@stablelib/ed25519": "^1.0.2",
     "big-integer": "^1.6.51",
