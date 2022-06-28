@@ -3,6 +3,7 @@ import * as uint8arrays from "uint8arrays" // @IMPORT
 import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
 import * as util from "./util.js"
+import * as plugins from './plugins.js'
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import { Fact, KeyType, Keypair, Didable } from "./types.js"
@@ -297,13 +298,12 @@ export function parse(encodedUcan: string): UcanParts {
 
 // VALIDATION
 
-
 /**
  * Validation options
  */
 export interface ValidateOptions {
-  checkIssuer: (did: string, jwtAlg: string) => boolean
-  checkSignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
+  checkIssuer?: boolean
+  checkSignature?: boolean
   checkIsExpired?: boolean
   checkIsTooEarly?: boolean
 }
@@ -320,13 +320,14 @@ export interface ValidateOptions {
  * @throws Error if the UCAN is invalid
  */
 export async function validate(encodedUcan: string, opts?: Partial<ValidateOptions>): Promise<Ucan> {
-  const { checkIssuer, checkSignature, checkIsExpired = true, checkIsTooEarly = true } = opts ?? {}
+  const { checkIssuer = true, checkSignature = true, checkIsExpired = true, checkIsTooEarly = true } = opts ?? {}
 
   const { header, payload } = parse(encodedUcan)
   const [ encodedHeader, encodedPayload, signature ] = encodedUcan.split(".")
 
   if (checkIssuer) {
-    if (checkIssuer(payload.iss, header.alg)) {
+    const validIssuer = plugins.checkIssuer(payload.iss, header.alg)
+    if (!validIssuer) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Issuer key type does not match UCAN's \`alg\` property.`)
     }
   }
@@ -334,8 +335,8 @@ export async function validate(encodedUcan: string, opts?: Partial<ValidateOptio
   if (checkSignature) {
     const sigBytes = uint8arrays.fromString(signature, "utf8")
     const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
-    const valid = await checkSignature(payload.iss, data, sigBytes)
-    if (!valid) {
+    const validSig = await plugins.checkSignature(payload.iss, data, sigBytes)
+    if (!validSig) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Signature invalid.`)
     }
   }

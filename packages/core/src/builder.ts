@@ -84,7 +84,7 @@ export class Builder<State extends Partial<BuildableState>> {
    *
    * The UCAN must be signed with the private key of the issuer to be valid.
    */
-  issuedBy(issuer: Keypair): Builder<State & { issuer: Keypair }> {
+  issuedBy(issuer: Keypair & Didable): Builder<State & { issuer: Keypair & Didable }> {
     if (!isKeypair(issuer)) {
       throw new TypeError(`Expected a Keypair, but got ${issuer}`)
     }

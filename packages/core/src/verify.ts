@@ -24,9 +24,6 @@ export interface VerifyOptions {
    * that's access-controlled.
    */
   requiredCapabilities: { capability: Capability; rootIssuer: string }[]
-  // @TODO add comment & argument type checks (in code)
-  checkIssuer: (did: string, jwtAlg: string) => boolean
-  checkSignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
    /**
    * an optional record of functions that specify what the rules for delegating capabilities are.
    * If not provided, the default semantics will be `equalCanDelegate`.
@@ -89,7 +86,7 @@ export async function verify(ucan: string, options: VerifyOptions): Promise<Resu
 
   try {
     // Verify the UCAN
-    const decoded = await token.validate(ucan, { checkIssuer: options.checkIssuer, checkSignature: options.checkSignature })
+    const decoded = await token.validate(ucan)
 
     // Check that it's addressed to us
     if (decoded.payload.aud !== audience) {

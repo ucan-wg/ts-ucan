@@ -56,10 +56,6 @@ export type Fact = Record<string, unknown>
 
 
 /** Unlike tslib's CryptoKeyPair, this requires the `privateKey` and `publicKey` fields */
-export interface AvailableCryptoKeyPair {
-  privateKey: CryptoKey
-  publicKey: CryptoKey
-}
 
 export interface Didable {
   publicKeyStr: (format?: Encodings) => string
@@ -76,24 +72,12 @@ export interface Keypair {
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 
+// @TODO get rid of this
 export type KeyType =
   | "rsa"
   | "p256"
   | "ed25519"
   | "bls12-381"
-
-// https://developer.mozilla.org/en-US/docs/Web/API/EcKeyGenParams
-export type NamedCurve = "P-256"
-
-export type PublicKeyJwk = {
-  kty: string
-  crv: string
-  x: string
-  y: string
-}
-
-export type PrivateKeyJwk = PublicKeyJwk & { d: string }
-
 
 // MISC
 
@@ -104,10 +88,6 @@ export type Encodings = SupportedEncodings
 
 // TYPE CHECKS
 
-
-export function isAvailableCryptoKeyPair(keypair: CryptoKeyPair): keypair is AvailableCryptoKeyPair {
-  return keypair.publicKey != null && keypair.privateKey != null
-}
 
 export function isKeypair(obj: unknown): obj is Keypair {
   return util.isRecord(obj)

@@ -19,7 +19,7 @@
     "dist": "yarn run dist:prep && yarn run dist:src && yarn run dist:cjs && yarn run dist:esm && yarn run dist:types && yarn run dist:pkg",
     "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
     "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
-    "dist:pkg": "node ./scripts/package.js",
+    "dist:pkg": "node ../../scripts/package.js",
     "dist:prep": "copyfiles --error tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
@@ -65,10 +65,8 @@
     "README.md"
   ],
   "dependencies": {
-    "@stablelib/ed25519": "^1.0.2",
-    "big-integer": "^1.6.51",
-    "one-webcrypto": "^1.0.3",
-    "uint8arrays": "^3.0.0"
+    "@ucans/core": "*",
+    "@ucans/defaults": "*"
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",

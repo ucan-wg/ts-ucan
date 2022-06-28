@@ -2,7 +2,7 @@ import * as uint8arrays from "uint8arrays"
 
 import * as capability from "../src/capability"
 import * as token from "../src/token"
-// import { verifySignatureUtf8 } from "../src/did"
+import { verifySignatureUtf8 } from "../src/did"
 import { alice, bob } from "./fixtures"
 
 
@@ -162,15 +162,14 @@ describe("token.validate", () => {
   })
 })
 
-// @TODO Move this??
-// describe("verifySignatureUtf8", () => {
+describe("verifySignatureUtf8", () => {
 
-//   it("works with an example", async () => {
-//     const [ header, payload, signature ] = token.encode(await token.build({
-//       issuer: alice,
-//       audience: bob.did(),
-//     })).split(".")
-//     expect(await verifySignatureUtf8(`${header}.${payload}`, signature, alice.did())).toEqual(true)
-//   })
+  it("works with an example", async () => {
+    const [ header, payload, signature ] = token.encode(await token.build({
+      issuer: alice,
+      audience: bob.did(),
+    })).split(".")
+    expect(await verifySignatureUtf8(`${header}.${payload}`, signature, alice.did())).toEqual(true)
+  })
 
-// })
+})

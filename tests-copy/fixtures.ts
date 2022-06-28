@@ -1,5 +1,4 @@
-import { EdKeypair } from '@ucans/defaults'
-// import { EdKeypair } from "../src/keypair/ed25519"
+import { EdKeypair } from "../src/keypair/ed25519"
 
 
 /** did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi */

@@ -9,11 +9,6 @@ import { all } from "../../src/util"
 
 describe("wnfs public capability", () => {
 
-  // @TODO undo
-  it('passes', () => {
-    expect(true)
-  })
-
   it("works with a simple example", async () => {
     const { ucan } = await makeSimpleDelegation(
       [ wnfsCapability("//boris.fission.name/public/Apps/", "OVERWRITE") ],
