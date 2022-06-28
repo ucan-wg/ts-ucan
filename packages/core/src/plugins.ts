@@ -7,7 +7,7 @@ export type DidKeyPlugin = {
 }
 
 export type DidMethodPlugin = {
-  method: string
+  isMatch: (method: string, did: string) => boolean
   checkJwtAlg: (did: string, jwtAlg: string) => boolean
   checkSignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
 }
@@ -33,7 +33,7 @@ export const checkIssuer = (did: string, jwtAlg: string): boolean => {
     }
   } else {
     for (const didPlugin of plugins.methods) {
-      if(didMethod === didPlugin.method) {
+      if(didPlugin.isMatch(didMethod, did)) {
         return didPlugin.checkJwtAlg(did, jwtAlg)
       }
     }
@@ -55,7 +55,7 @@ export const checkSignature = async (did: string, data: Uint8Array, sig: Uint8Ar
     }
   } else {
     for (const didPlugin of plugins.methods) {
-      if(didMethod === didPlugin.method) {
+      if(didPlugin.isMatch(didMethod, did)) {
         return didPlugin.checkSignature(did, data, sig)
       }
     }

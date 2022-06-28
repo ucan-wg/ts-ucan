@@ -13,22 +13,34 @@ import { Encodings } from "@ucans/core"
 /**
  * Convert a DID (did:key) to a base64 public key.
  */
-export function didToPublicKey(did: string, encoding: Encodings = "base64pad"): {
-  publicKey: string
-  type: KeyType
-} {
-  const { publicKey, type } = didToPublicKeyBytes(did)
-  return {
-    publicKey: uint8arrays.toString(publicKey, encoding),
-    type
-  }
-}
+// export function didToPublicKey(did: string, encoding: Encodings = "base64pad"): {
+//   publicKey: string
+//   type: KeyType
+// } {
+//   const { publicKey, type } = didToPublicKeyBytes(did)
+//   return {
+//     publicKey: uint8arrays.toString(publicKey, encoding),
+//     type
+//   }
+// }
 
 /**
  * Convert a DID (did:key) to the public key into bytes in SubjectPublicKeyInfo (spki) format.
  *
  * For consumption e.g. in the WebCrypto API.
  */
+export function keyBytesFromDid(did: string, expectedPrefix: Uint8Array): Uint8Array {
+  if (!did.startsWith(BASE58_DID_PREFIX)) {
+    throw new Error("Please use a base58-encoded DID formatted `did:key:z...`")
+  }
+  const didWithoutPrefix = did.slice(BASE58_DID_PREFIX.length)
+  const bytes = uint8arrays.fromString(didWithoutPrefix, "base58btc")
+  if(!hasPrefix(bytes, expectedPrefix)) {
+    throw new Error(`Expected prefix: ${expectedPrefix}`)
+  }
+  return bytes.slice(expectedPrefix.length)
+}
+
 export function didToPublicKeyBytes(did: string): {
   publicKey: Uint8Array
   type: KeyType

@@ -1,9 +1,6 @@
-import { plugins } from '@ucans/defaults'
+import * as plugins from '@ucans/plugins'
 import { loadPlugins } from '../src/plugins'
 
 export const loadTestPlugins = () => {
-  loadPlugins({
-    keys: [plugins.edwards, plugins.rsa, plugins.rsaOld],
-    methods: [],
-  })
+  loadPlugins(plugins.defaults)
 }
