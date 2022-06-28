@@ -121,6 +121,7 @@ export function buildPayload(params: {
   }
 }
 
+// TODO remove keyType here?
 /**
  * Encloses a UCAN payload as to form a finalised UCAN.
  */
@@ -135,11 +136,10 @@ export async function sign(
     ucv: VERSION,
   }
 
-  // @TODO do we need to perform this??
   // Issuer key type must match UCAN algorithm
-  // if (signPlugins.checkJwtAlg(payload.iss, jwtAlgorithm(keyType))) {
-  //   throw new Error("The issuer's key type must match the given key type.")
-  // }
+  if (!plugins.checkIssuer(payload.iss, jwtAlgorithm(keyType))) {
+    throw new Error("The issuer's key type must match the given key type.")
+  }
 
   // Encode parts
   const encodedHeader = encodeHeader(header)
@@ -333,7 +333,7 @@ export async function validate(encodedUcan: string, opts?: Partial<ValidateOptio
   }
 
   if (checkSignature) {
-    const sigBytes = uint8arrays.fromString(signature, "utf8")
+    const sigBytes = uint8arrays.fromString(signature, "base64url")
     const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
     const validSig = await plugins.checkSignature(payload.iss, data, sigBytes)
     if (!validSig) {

@@ -6,9 +6,12 @@ import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { Ucan } from "../src/types"
 import { equalCanDelegate } from "../src/attenuation"
 import { all } from "../src/util"
+import { loadTestPlugins } from "./setup.js"
 
 
 describe("Store.add", () => {
+
+  beforeAll(loadTestPlugins)
 
   it("makes added items retrievable with findByAudience", async () => {
     const ucan = await Builder.create()

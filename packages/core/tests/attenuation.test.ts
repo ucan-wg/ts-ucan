@@ -3,9 +3,12 @@ import { emailCapabilities, emailCapability } from "./capability/email"
 
 import { alice, bob, mallory } from "./fixtures"
 import { all } from "../src/util"
+import { loadTestPlugins } from "./setup.js"
 
 
 describe("attenuation.emailCapabilities", () => {
+
+  beforeAll(loadTestPlugins)
 
   it("works with a simple example", async () => {
     // alice -> bob, bob -> mallory

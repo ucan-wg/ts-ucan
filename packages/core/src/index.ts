@@ -4,6 +4,7 @@ export * from "./store.js"
 export * from "./token.js"
 export * from "./types.js"
 export * from "./verify.js"
+export * from "./plugins.js"
 
 export * as capability from "./capability/index.js"
 

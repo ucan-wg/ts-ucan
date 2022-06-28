@@ -3,11 +3,14 @@ import { Capability } from "../../src/capability"
 import { wnfsCapability, wnfsPrivateCapabilities, wnfsPublicCapabilities } from "./wnfs"
 
 import { alice, bob, mallory } from "../fixtures"
+import { loadTestPlugins } from "../setup.js"
 import { all } from "../../src/util"
 
 
 
 describe("wnfs public capability", () => {
+
+  beforeAll(loadTestPlugins)
 
   // @TODO undo
   it('passes', () => {
@@ -71,6 +74,8 @@ describe("wnfs public capability", () => {
 })
 
 describe("wnfs private capability", () => {
+
+  beforeAll(loadTestPlugins)
 
   it("works with a simple example", async () => {
     const { ucan } = await makeSimpleDelegation(

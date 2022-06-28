@@ -3,6 +3,7 @@ import * as uint8arrays from "uint8arrays"
 import * as capability from "../src/capability"
 import * as token from "../src/token"
 // import { verifySignatureUtf8 } from "../src/did"
+import { loadTestPlugins } from "./setup.js"
 import { alice, bob } from "./fixtures"
 
 
@@ -10,6 +11,8 @@ import { alice, bob } from "./fixtures"
 
 
 describe("token.build", () => {
+
+  beforeAll(loadTestPlugins)
 
   it("can build payloads without nbf", () => {
     const payload = token.buildPayload({
@@ -53,6 +56,8 @@ describe("token.build", () => {
 
 describe("token.encodePayload", () => {
 
+  beforeAll(loadTestPlugins)
+
   it("encodes capabilities", () => {
     const encodedCaps = {
       with: "wnfs://boris.fission.name/public/photos/",
@@ -88,6 +93,9 @@ describe("token.encodePayload", () => {
 
 
 describe("token.validate", () => {
+
+  beforeAll(loadTestPlugins)
+
   async function makeUcan() {
     return await token.build({
       audience: bob.did(),

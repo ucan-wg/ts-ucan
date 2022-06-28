@@ -6,9 +6,12 @@ import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
 import { delegationChains } from "../src/attenuation"
 import { first } from "../src/util"
+import { loadTestPlugins } from "./setup.js"
 
 
 describe("Builder", () => {
+  
+  beforeAll(loadTestPlugins)
 
   it("builds with a simple example", async () => {
     const fact1 = { test: true }

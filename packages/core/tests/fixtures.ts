@@ -1,6 +1,4 @@
 import { EdKeypair } from '@ucans/defaults'
-// import { EdKeypair } from "../src/keypair/ed25519"
-
 
 /** did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi */
 export const alice = EdKeypair.fromSecretKey("U+bzp2GaFQHso587iSFWPSeCzbSfn/CbNHEz7ilKRZ1UQMmMS7qq4UhTzKn3X9Nj/4xgrwa+UqhMOeo4Ki8JUw==")

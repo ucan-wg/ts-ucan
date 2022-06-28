@@ -63,8 +63,8 @@ export const checkSignature = async (did: string, data: Uint8Array, sig: Uint8Ar
   throw new Error(`DID method not supported by plugins: ${did}`)
 }
 
-export const loadPlugins = (plugins: Plugins): void => {
-  plugins = plugins
+export const loadPlugins = (toLoad: Plugins): void => {
+  plugins = toLoad
 }
 
 export const hasPrefix = (
