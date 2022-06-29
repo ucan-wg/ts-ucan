@@ -1,11 +1,11 @@
 {
   "name": "@ucans/ucans",
   "version": "0.9.1",
-  "description": "Typescript implementation of UCANs",
+  "description": "Typescript implementation of UCANs with default plugins",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fission-suite/ucan"
+    "url": "https://github.com/ucan-wg/ts-ucan"
   },
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
@@ -23,7 +23,7 @@
     "dist:prep": "copyfiles --error tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
-    "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
+    "lint": "eslint src/**/*.ts src/*.ts",
     "prepare": "yarn build",
     "publish-alpha": "yarn publish --tag alpha",
     "publish-stable": "yarn publish --tag latest",

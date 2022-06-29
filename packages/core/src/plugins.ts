@@ -1,4 +1,4 @@
-import * as uint8arrays from 'uint8arrays'
+import * as uint8arrays from "uint8arrays"
 
 export type DidKeyPlugin = {
   prefix: Uint8Array
@@ -30,7 +30,7 @@ export const verifyIssuerAlg = (did: string, jwtAlg: string): boolean => {
     throw new Error("No plugins loaded")
   }
   const didMethod = parseDidMethod(did)
-  if(didMethod === 'key') {
+  if(didMethod === "key") {
     const bytes = parsePrefixedBytes(did)
     for (const keyPlugin of plugins.keys) {
       if(hasPrefix(bytes, keyPlugin.prefix)) {
@@ -52,7 +52,7 @@ export const verifySignature = async (did: string, data: Uint8Array, sig: Uint8A
     throw new Error("No plugins loaded")
   }
   const didMethod = parseDidMethod(did)
-  if(didMethod === 'key') {
+  if(didMethod === "key") {
     const bytes = parsePrefixedBytes(did)
     for (const keyPlugin of plugins.keys) {
       if(hasPrefix(bytes, keyPlugin.prefix)) {
@@ -70,12 +70,12 @@ export const verifySignature = async (did: string, data: Uint8Array, sig: Uint8A
   throw new Error(`DID method not supported by plugins: ${did}`)
 }
 
-export const didToPublicKeyBytes = (did: string): { publicKey: Uint8Array, jwtAlg: string } => {
+export const didToPublicKeyBytes = (did: string): { publicKey: Uint8Array; jwtAlg: string } => {
   if(plugins === null) {
     throw new Error("No plugins loaded")
   }
   const didMethod = parseDidMethod(did)
-  if(didMethod === 'key') {
+  if(didMethod === "key") {
     const bytes = parsePrefixedBytes(did)
     for (const keyPlugin of plugins.keys) {
       if(hasPrefix(bytes, keyPlugin.prefix)) {
@@ -123,8 +123,8 @@ const parsePrefixedBytes = (did: string): Uint8Array => {
 }
 
 const parseDidMethod = (did: string) => {
-  const parts = did.split(':')
-  if(parts[0] !== 'did') {
+  const parts = did.split(":")
+  if(parts[0] !== "did") {
     throw new Error(`Not a DID: ${did}`)
   }
   if(parts[1].length < 1) {

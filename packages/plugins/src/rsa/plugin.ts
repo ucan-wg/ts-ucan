@@ -1,10 +1,10 @@
-import { DidKeyPlugin } from '@ucans/core'
+import { DidKeyPlugin } from "@ucans/core"
 import * as crypto from "./crypto.js"
 import { RSA_DID_PREFIX, RSA_DID_PREFIX_OLD } from "../prefixes.js"
 
 export const rsaPlugin: DidKeyPlugin = {
   prefix: RSA_DID_PREFIX,
-  jwtAlg: 'RS256',
+  jwtAlg: "RS256",
   didToPublicKey: crypto.didToPublicKey,
   publicKeyToDid: crypto.publicKeyToDid,
   verifySignature: crypto.verify,
@@ -12,7 +12,7 @@ export const rsaPlugin: DidKeyPlugin = {
 
 export const rsaOldPlugin: DidKeyPlugin = {
   prefix: RSA_DID_PREFIX_OLD,
-  jwtAlg: 'RS256',
+  jwtAlg: "RS256",
   didToPublicKey: crypto.oldDidToPublicKey,
   publicKeyToDid: crypto.publicKeyToOldDid,
   verifySignature: crypto.verify,

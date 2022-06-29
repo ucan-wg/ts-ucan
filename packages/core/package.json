@@ -1,11 +1,11 @@
 {
   "name": "@ucans/core",
   "version": "0.9.1",
-  "description": "Typescript implementation of UCANs",
+  "description": "Core UCAN implementation",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fission-suite/ucan"
+    "url": "https://github.com/ucan-wg/ts-ucan"
   },
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
@@ -20,7 +20,7 @@
     "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
     "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
     "dist:pkg": "node ../../scripts/package.js",
-    "dist:prep": "copyfiles --error tsconfig.json ./dist/",
+    "dist:prep": "copyfiles --error ../../tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
     "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
@@ -64,6 +64,9 @@
     "LICENSE",
     "README.md"
   ],
+  "dependencies": {
+    "uint8arrays": "^3.0.0"
+  },
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "@types/node": "^17.0.23",

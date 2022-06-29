@@ -3,7 +3,7 @@ import * as uint8arrays from "uint8arrays" // @IMPORT
 import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
 import * as util from "./util.js"
-import * as plugins from './plugins.js'
+import * as plugins from "./plugins.js"
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import { Fact, Keypair, Didable } from "./types.js"

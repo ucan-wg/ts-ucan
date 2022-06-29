@@ -1,11 +1,11 @@
 {
   "name": "@ucans/plugins",
   "version": "0.9.1",
-  "description": "Typescript implementation of UCANs",
+  "description": "Default UCAN plugin set",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fission-suite/ucan"
+    "url": "https://github.com/ucan-wg/ts-ucan"
   },
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
