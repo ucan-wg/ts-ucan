@@ -7,6 +7,8 @@ import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
 
 export class EdKeypair implements Keypair, Didable, ExportableKey {
 
+  public jwtAlg = "EdDSA"
+
   private secretKey: Uint8Array
   private publicKey: Uint8Array
   private exportable: boolean

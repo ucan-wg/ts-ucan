@@ -6,7 +6,7 @@ import * as util from "./util.js"
 import * as plugins from './plugins.js'
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
-import { Fact, KeyType, Keypair, Didable } from "./types.js"
+import { Fact, Keypair, Didable } from "./types.js"
 import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types.js"
 import { handleCompatibility } from "./compatibility.js"
 
@@ -121,23 +121,22 @@ export function buildPayload(params: {
   }
 }
 
-// TODO remove keyType here?
 /**
  * Encloses a UCAN payload as to form a finalised UCAN.
  */
 export async function sign(
   payload: UcanPayload,
-  keyType: KeyType,
+  jwtAlg: string,
   signFn: (data: Uint8Array) => Promise<Uint8Array>
 ): Promise<Ucan> {
   const header: UcanHeader = {
-    alg: jwtAlgorithm(keyType),
+    alg: jwtAlg,
     typ: TYPE,
     ucv: VERSION,
   }
 
   // Issuer key type must match UCAN algorithm
-  if (!plugins.checkIssuer(payload.iss, jwtAlgorithm(keyType))) {
+  if (!plugins.checkIssuer(payload.iss, jwtAlg)) {
     throw new Error("The issuer's key type must match the given key type.")
   }
 
@@ -168,11 +167,9 @@ export async function signWithKeypair(
   payload: UcanPayload,
   keypair: Keypair,
 ): Promise<Ucan> {
-  // @TODO FIX THIS
   return sign(
     payload,
-    {} as any,
-    // keypair.keyType,
+    keypair.jwtAlg,
     data => keypair.sign(data),
   )
 }
@@ -440,21 +437,4 @@ export function isExpired(ucan: Ucan): boolean {
 export const isTooEarly = (ucan: Ucan): boolean => {
   if (ucan.payload.nbf == null) return false
   return ucan.payload.nbf > Math.floor(Date.now() / 1000)
-}
-
-
-
-// ㊙️
-
-
-/**
- * JWT algorithm to be used in a JWT header.
- */
-function jwtAlgorithm(keyType: KeyType): string {
-  switch (keyType) {
-    case "bls12-381": throw new Error(`Unknown KeyType "${keyType}"`)
-    case "ed25519": return "EdDSA"
-    case "rsa": return "RS256"
-    default: throw new Error(`Unknown KeyType "${keyType}"`)
-  }
 }

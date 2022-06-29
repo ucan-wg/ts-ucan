@@ -10,12 +10,6 @@ export type PublicKeyJwk = {
   y: string
 }
 
-export type KeyType =
-  | "rsa"
-  | "p256"
-  | "ed25519"
-  | "bls12-381"
-
 export type PrivateKeyJwk = PublicKeyJwk & { d: string }
 
 

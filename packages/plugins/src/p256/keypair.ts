@@ -12,6 +12,8 @@ import {
 
 export class EcdsaKeypair implements Keypair, Didable, ExportableKey {
 
+  public jwtAlg = "ES256"
+
   private publicKey: Uint8Array
   private keypair: AvailableCryptoKeyPair
   private exportable: boolean

@@ -66,15 +66,9 @@ export interface ExportableKey {
 }
 
 export interface Keypair {
+  jwtAlg: string
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
-
-// @TODO get rid of this
-export type KeyType =
-  | "rsa"
-  | "p256"
-  | "ed25519"
-  | "bls12-381"
 
 // MISC
 
@@ -88,8 +82,7 @@ export type Encodings = SupportedEncodings
 
 export function isKeypair(obj: unknown): obj is Keypair {
   return util.isRecord(obj)
-    && util.hasProp(obj, "publicKey") && obj.publicKey instanceof Uint8Array
-    && util.hasProp(obj, "keyType") && typeof obj.keyType === "string"
+    && util.hasProp(obj, "jwtAlg") && typeof obj.jwtAlg === "string"
     && util.hasProp(obj, "sign") && typeof obj.sign === "function"
 }
 

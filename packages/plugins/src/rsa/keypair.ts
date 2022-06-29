@@ -8,6 +8,8 @@ import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
 
 export class RsaKeypair implements Keypair, Didable, ExportableKey {
 
+  public jwtAlg = "RS256"
+
   private publicKey: Uint8Array
   private keypair: AvailableCryptoKeyPair
   private exportable: boolean

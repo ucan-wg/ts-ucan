@@ -77,14 +77,16 @@ export const hasPrefix = (
   return uint8arrays.equals(prefix, prefixedKey.subarray(0, prefix.byteLength))
 }
 
-// @TODO would be better to follow the actual varint spec here:
+const BASE58_DID_PREFIX = "did:key:z"
+
+// @TODO would be better to follow the actual varint spec here (instead of guess & check):
 // https://github.com/multiformats/unsigned-varint 
 const parsePrefixedBytes = (did: string): Uint8Array => {
-  if(!did.startsWith("did:key:z")) {
+  if(!did.startsWith(BASE58_DID_PREFIX)) {
     throw new Error(`Not a valid base58 formatted did:key: ${did}`)
   } 
   return uint8arrays.fromString(
-    did.replace("did:key:z", ""),
+    did.slice(BASE58_DID_PREFIX.length),
     "base58btc"
   )
 }
