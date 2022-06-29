@@ -1,8 +1,8 @@
 import * as fc from "fast-check"
 import * as uint8arrays from "uint8arrays"
-import * as did from "../src/did"
-import * as rsaCrypto from "../src/crypto/rsa"
-import RSAKeypair from "../src/keypair/rsa"
+import { rsaPlugin } from "../src/rsa/plugin.js"
+import * as rsaCrypto from "../src/rsa/crypto.js"
+import RSAKeypair from "../src/rsa/keypair.js"
 
 
 describe("rsa", () => {
@@ -15,12 +15,15 @@ describe("rsa", () => {
     keypair = await RSAKeypair.create()
   })
 
+  it("has the correct JWT alg", async () => {
+    expect(keypair.jwtAlg).toEqual("RS256")
+  })
+
   it("returns a publicKeyStr and did", () => {
-    const publicKey = keypair.publicKeyStr()
-    const keyDid = keypair.did()
-    const transformed = did.didToPublicKey(keyDid)
-    expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual("rsa")
+    const did = keypair.did()
+    const publicKey = rsaPlugin.didToPublicKey(did)
+    const didAgain = rsaPlugin.publicKeyToDid(publicKey)
+    expect(did).toEqual(didAgain)
   })
 
   it("signs data", async () => {
@@ -28,8 +31,9 @@ describe("rsa", () => {
   })
 
   it("can verify signature", async () => {
-    const isValid = await did.verifySignature(data, signature, keypair.did())
-    expect(isValid).toEqual(true)
+    const publicKey = rsaPlugin.didToPublicKey(keypair.did())
+    const isValid = await rsaPlugin.verifySignature(publicKey, data, signature)
+    expect(isValid).toBeTruthy()
   })
 
 })

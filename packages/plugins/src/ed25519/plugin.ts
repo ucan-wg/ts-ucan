@@ -9,7 +9,7 @@ export const ed25519Plugin: DidKeyPlugin = {
   jwtAlg: 'EdDSA',
   didToPublicKey: crypto.didToPublickey,
   publicKeyToDid: crypto.publicKeyToDid,
-  checkSignature: async (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => {
+  verifySignature: async (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => {
     return ed25519.verify(publicKey, data, sig)
   }
 }

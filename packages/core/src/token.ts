@@ -136,7 +136,7 @@ export async function sign(
   }
 
   // Issuer key type must match UCAN algorithm
-  if (!plugins.checkIssuer(payload.iss, jwtAlg)) {
+  if (!plugins.verifyIssuerAlg(payload.iss, jwtAlg)) {
     throw new Error("The issuer's key type must match the given key type.")
   }
 
@@ -325,7 +325,7 @@ export async function validate(encodedUcan: string, opts?: Partial<ValidateOptio
   const [ encodedHeader, encodedPayload, signature ] = encodedUcan.split(".")
 
   if (checkIssuer) {
-    const validIssuer = plugins.checkIssuer(payload.iss, header.alg)
+    const validIssuer = plugins.verifyIssuerAlg(payload.iss, header.alg)
     if (!validIssuer) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Issuer key type does not match UCAN's \`alg\` property.`)
     }
@@ -334,7 +334,7 @@ export async function validate(encodedUcan: string, opts?: Partial<ValidateOptio
   if (checkSignature) {
     const sigBytes = uint8arrays.fromString(signature, "base64url")
     const data = uint8arrays.fromString(`${encodedHeader}.${encodedPayload}`, "utf8")
-    const validSig = await plugins.checkSignature(payload.iss, data, sigBytes)
+    const validSig = await plugins.verifySignature(payload.iss, data, sigBytes)
     if (!validSig) {
       throw new Error(`Invalid UCAN: ${encodedUcan}: Signature invalid.`)
     }

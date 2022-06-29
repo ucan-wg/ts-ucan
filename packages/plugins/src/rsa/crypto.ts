@@ -1,6 +1,6 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
-import { RSA_DID_PREFIX } from "../prefixes"
+import { RSA_DID_PREFIX, RSA_DID_PREFIX_OLD } from "../prefixes"
 import { didFromKeyBytes, keyBytesFromDid } from "../util.js"
 
 export const RSA_ALG = "RSASSA-PKCS1-v1_5"
@@ -67,7 +67,7 @@ export const didToPublicKey = (did: string): Uint8Array => {
 }
 
 export const oldDidToPublicKey = (did: string): Uint8Array => {
-  return keyBytesFromDid(did, RSA_DID_PREFIX)
+  return keyBytesFromDid(did, RSA_DID_PREFIX_OLD)
 }
 
 export const publicKeyToDid = (pubkey: Uint8Array): string => {
@@ -80,7 +80,7 @@ export const publicKeyToDid = (pubkey: Uint8Array): string => {
 }
 
 export const publicKeyToOldDid = (pubkey: Uint8Array): string => {
-  return didFromKeyBytes(pubkey, RSA_DID_PREFIX)
+  return didFromKeyBytes(pubkey, RSA_DID_PREFIX_OLD)
 }
 
 

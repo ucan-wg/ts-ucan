@@ -5,13 +5,13 @@ export type DidKeyPlugin = {
   jwtAlg: string
   didToPublicKey: (did: string) => Uint8Array
   publicKeyToDid: (pubkey: Uint8Array) => string
-  checkSignature: (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
+  verifySignature: (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
 }
 
 export type DidMethodPlugin = {
   isMatch: (method: string, did: string) => boolean
   checkJwtAlg: (did: string, jwtAlg: string) => boolean
-  checkSignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
+  verifySignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
 }
 
 export type Plugins = {
@@ -21,7 +21,11 @@ export type Plugins = {
 
 let plugins: Plugins | null = null
 
-export const checkIssuer = (did: string, jwtAlg: string): boolean => {
+export const loadPlugins = (toLoad: Plugins): void => {
+  plugins = toLoad
+}
+
+export const verifyIssuerAlg = (did: string, jwtAlg: string): boolean => {
   if(plugins === null) {
     throw new Error("No plugins loaded")
   }
@@ -43,7 +47,7 @@ export const checkIssuer = (did: string, jwtAlg: string): boolean => {
   throw new Error(`DID method not supported by plugins: ${did}`)
 }
 
-export const checkSignature = async (did: string, data: Uint8Array, sig: Uint8Array): Promise<boolean> => {
+export const verifySignature = async (did: string, data: Uint8Array, sig: Uint8Array): Promise<boolean> => {
   if(plugins === null) {
     throw new Error("No plugins loaded")
   }
@@ -53,21 +57,48 @@ export const checkSignature = async (did: string, data: Uint8Array, sig: Uint8Ar
     for (const keyPlugin of plugins.keys) {
       if(hasPrefix(bytes, keyPlugin.prefix)) {
         const publicKey = keyPlugin.didToPublicKey(did)
-        return keyPlugin.checkSignature(publicKey, data, sig)
+        return keyPlugin.verifySignature(publicKey, data, sig)
       }
     }
   } else {
     for (const didPlugin of plugins.methods) {
       if(didPlugin.isMatch(didMethod, did)) {
-        return didPlugin.checkSignature(did, data, sig)
+        return didPlugin.verifySignature(did, data, sig)
       }
     }
   }
   throw new Error(`DID method not supported by plugins: ${did}`)
 }
 
-export const loadPlugins = (toLoad: Plugins): void => {
-  plugins = toLoad
+export const didToPublicKeyBytes = (did: string): { publicKey: Uint8Array, jwtAlg: string } => {
+  if(plugins === null) {
+    throw new Error("No plugins loaded")
+  }
+  const didMethod = parseDidMethod(did)
+  if(didMethod === 'key') {
+    const bytes = parsePrefixedBytes(did)
+    for (const keyPlugin of plugins.keys) {
+      if(hasPrefix(bytes, keyPlugin.prefix)) {
+        return { 
+          publicKey: keyPlugin.didToPublicKey(did),
+          jwtAlg: keyPlugin.jwtAlg
+        }
+      }
+    }
+  }
+  throw new Error(`DID method not supported by plugins: ${did}`)
+}
+
+export const publicKeyBytesToDid = (publicKey: Uint8Array, jwtAlg: string): string => {
+  if(plugins === null) {
+    throw new Error("No plugins loaded")
+  }
+  for(const keyPlugin of plugins.keys) {
+    if(keyPlugin.jwtAlg === jwtAlg) {
+      return keyPlugin.publicKeyToDid(publicKey)
+    }
+  }
+  throw new Error(`JWT alg not supported by plugins: ${jwtAlg}`)
 }
 
 export const hasPrefix = (

@@ -7,7 +7,7 @@ export const rsaPlugin: DidKeyPlugin = {
   jwtAlg: 'RS256',
   didToPublicKey: crypto.didToPublicKey,
   publicKeyToDid: crypto.publicKeyToDid,
-  checkSignature: crypto.verify,
+  verifySignature: crypto.verify,
 }
 
 export const rsaOldPlugin: DidKeyPlugin = {
@@ -15,6 +15,6 @@ export const rsaOldPlugin: DidKeyPlugin = {
   jwtAlg: 'RS256',
   didToPublicKey: crypto.oldDidToPublicKey,
   publicKeyToDid: crypto.publicKeyToOldDid,
-  checkSignature: crypto.verify,
+  verifySignature: crypto.verify,
 }
 

@@ -7,5 +7,5 @@ export const p256Plugin: DidKeyPlugin = {
   jwtAlg: 'ES256',
   didToPublicKey: crypto.didToPublicKey,
   publicKeyToDid: crypto.publicKeyToDid,
-  checkSignature: crypto.verify,
+  verifySignature: crypto.verify,
 }

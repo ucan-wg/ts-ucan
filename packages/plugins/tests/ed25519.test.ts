@@ -1,5 +1,5 @@
-import * as did from "../src/did"
-import EdwardsKey from "../src/keypair/ed25519"
+import { ed25519Plugin } from "../src/ed25519/plugin.js"
+import EdwardsKey from "../src/ed25519/keypair.js"
 
 describe("ed25519", () => {
 
@@ -11,12 +11,15 @@ describe("ed25519", () => {
     keypair = await EdwardsKey.create()
   })
 
-  it("returns a publicKeyStr and did", () => {
-    const publicKey = keypair.publicKeyStr()
-    const keyDid = keypair.did()
-    const transformed = did.didToPublicKey(keyDid)
-    expect(transformed.publicKey).toEqual(publicKey)
-    expect(transformed.type).toEqual("ed25519")
+  it("has the correct JWT alg", async () => {
+    expect(keypair.jwtAlg).toEqual("EdDSA")
+  })
+
+  it("can transform between DID & public key", () => {
+    const did = keypair.did()
+    const publicKey = ed25519Plugin.didToPublicKey(did)
+    const didAgain = ed25519Plugin.publicKeyToDid(publicKey)
+    expect(did).toEqual(didAgain)
   })
 
   it("signs data", async () => {
@@ -24,8 +27,9 @@ describe("ed25519", () => {
   })
 
   it("can verify signature", async () => {
-    const isValid = await did.verifySignature(data, signature, keypair.did())
-    expect(isValid).toEqual(true)
+    const publicKey = ed25519Plugin.didToPublicKey(keypair.did())
+    const isValid = await ed25519Plugin.verifySignature(publicKey, data, signature)
+    expect(isValid).toBeTruthy()
   })
 
 })
