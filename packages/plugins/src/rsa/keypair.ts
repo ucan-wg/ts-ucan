@@ -1,19 +1,21 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
 
-import * as rsa from "../crypto/rsa.js"
-import BaseKeypair from "./base.js"
+import * as crypto from "./crypto.js"
 import { AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types.js"
-import { Encodings } from "@ucans/core"
+import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
 
 
-export class RsaKeypair extends BaseKeypair {
+export class RsaKeypair implements Keypair, Didable, ExportableKey {
 
+  private publicKey: Uint8Array
   private keypair: AvailableCryptoKeyPair
+  private exportable: boolean
 
   constructor(keypair: AvailableCryptoKeyPair, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, "rsa", exportable)
     this.keypair = keypair
+    this.publicKey = publicKey
+    this.exportable = exportable
   }
 
   static async create(params?: {
@@ -21,16 +23,20 @@ export class RsaKeypair extends BaseKeypair {
     exportable?: boolean
   }): Promise<RsaKeypair> {
     const { size = 2048, exportable = false } = params || {}
-    const keypair = await rsa.generateKeypair(size)
+    const keypair = await crypto.generateKeypair(size)
     if (!isAvailableCryptoKeyPair(keypair)) {
       throw new Error(`Couldn't generate valid keypair`)
     }
-    const publicKey = await rsa.exportKey(keypair.publicKey)
+    const publicKey = await crypto.exportKey(keypair.publicKey)
     return new RsaKeypair(keypair, publicKey, exportable)
   }
 
+  did(): string {
+    return crypto.publicKeyToDid(this.publicKey)
+  }
+
   async sign(msg: Uint8Array): Promise<Uint8Array> {
-    return await rsa.sign(msg, this.keypair.privateKey)
+    return await crypto.sign(msg, this.keypair.privateKey)
   }
 
   async export(format: Encodings = "base64pad"): Promise<string> {

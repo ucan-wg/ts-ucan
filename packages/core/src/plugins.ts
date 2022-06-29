@@ -3,7 +3,9 @@ import * as uint8arrays from 'uint8arrays'
 export type DidKeyPlugin = {
   prefix: Uint8Array
   jwtAlg: string
-  checkSignature: (did: string, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
+  didToPublicKey: (did: string) => Uint8Array
+  publicKeyToDid: (pubkey: Uint8Array) => string
+  checkSignature: (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => Promise<boolean>
 }
 
 export type DidMethodPlugin = {
@@ -50,7 +52,8 @@ export const checkSignature = async (did: string, data: Uint8Array, sig: Uint8Ar
     const bytes = parsePrefixedBytes(did)
     for (const keyPlugin of plugins.keys) {
       if(hasPrefix(bytes, keyPlugin.prefix)) {
-        return keyPlugin.checkSignature(did, data, sig)
+        const publicKey = keyPlugin.didToPublicKey(did)
+        return keyPlugin.checkSignature(publicKey, data, sig)
       }
     }
   } else {

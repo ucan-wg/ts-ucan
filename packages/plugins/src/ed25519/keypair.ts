@@ -1,17 +1,20 @@
-import * as ed25519 from "@stablelib/ed25519"
 import * as uint8arrays from "uint8arrays"
+import * as ed25519 from "@stablelib/ed25519"
+import * as crypto from "./crypto.js"
 
-import BaseKeypair from "./base.js"
-import { Encodings } from "@ucans/core"
+import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
 
 
-export class EdKeypair extends BaseKeypair {
+export class EdKeypair implements Keypair, Didable, ExportableKey {
 
   private secretKey: Uint8Array
+  private publicKey: Uint8Array
+  private exportable: boolean
 
   constructor(secretKey: Uint8Array, publicKey: Uint8Array, exportable: boolean) {
-    super(publicKey, "ed25519", exportable)
     this.secretKey = secretKey
+    this.publicKey = publicKey
+    this.exportable = exportable
   }
 
   static async create(params?: {
@@ -30,6 +33,10 @@ export class EdKeypair extends BaseKeypair {
     const secretKey = uint8arrays.fromString(key, format)
     const publicKey = ed25519.extractPublicKeyFromSecretKey(secretKey)
     return new EdKeypair(secretKey, publicKey, exportable)
+  }
+
+  did(): string {
+    return crypto.publicKeyToDid(this.publicKey)
   }
 
   async sign(msg: Uint8Array): Promise<Uint8Array> {

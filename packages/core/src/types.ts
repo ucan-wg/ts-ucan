@@ -58,7 +58,6 @@ export type Fact = Record<string, unknown>
 /** Unlike tslib's CryptoKeyPair, this requires the `privateKey` and `publicKey` fields */
 
 export interface Didable {
-  publicKeyStr: (format?: Encodings) => string
   did: () => string
 }
 
@@ -67,8 +66,6 @@ export interface ExportableKey {
 }
 
 export interface Keypair {
-  publicKey: Uint8Array
-  keyType: KeyType
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 

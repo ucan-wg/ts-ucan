@@ -168,9 +168,11 @@ export async function signWithKeypair(
   payload: UcanPayload,
   keypair: Keypair,
 ): Promise<Ucan> {
+  // @TODO FIX THIS
   return sign(
     payload,
-    keypair.keyType,
+    {} as any,
+    // keypair.keyType,
     data => keypair.sign(data),
   )
 }

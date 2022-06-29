@@ -1,5 +1,7 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
+import { RSA_DID_PREFIX } from "../prefixes"
+import { didFromKeyBytes, keyBytesFromDid } from "../util.js"
 
 export const RSA_ALG = "RSASSA-PKCS1-v1_5"
 export const DEFAULT_KEY_SIZE = 2048
@@ -44,7 +46,7 @@ export const sign = async (msg: Uint8Array, privateKey: CryptoKey): Promise<Uint
   return new Uint8Array(buf)
 }
 
-export const verify = async (msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Array): Promise<boolean> => {
+export const verify = async (pubKey: Uint8Array, msg: Uint8Array, sig: Uint8Array): Promise<boolean> => {
   return await webcrypto.subtle.verify(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
     await importKey(pubKey),
@@ -52,6 +54,36 @@ export const verify = async (msg: Uint8Array, sig: Uint8Array, pubKey: Uint8Arra
     msg.buffer
   )
 }
+
+export const didToPublicKey = (did: string): Uint8Array => {
+  // DID RSA keys are ASN.1 DER encoded "RSAPublicKeys" (PKCS #1).
+  // But the WebCrypto API mostly works with "SubjectPublicKeyInfo" (SPKI),
+  // which wraps RSAPublicKey with some metadata.
+  // In an unofficial RSA multiformat we were using, we used SPKI,
+  // so we have to be careful not to transform *every* RSA DID to SPKI, but
+  // only newer DIDs.
+  const keyBytes = keyBytesFromDid(did, RSA_DID_PREFIX)
+  return convertRSAPublicKeyToSubjectPublicKeyInfo(keyBytes)
+}
+
+export const oldDidToPublicKey = (did: string): Uint8Array => {
+  return keyBytesFromDid(did, RSA_DID_PREFIX)
+}
+
+export const publicKeyToDid = (pubkey: Uint8Array): string => {
+  // See also the comment in rsaDidToPublicKeyBytes
+  // In this library, we're assuming a single byte encoding for all types of keys.
+  // For RSA that is "SubjectPublicKeyInfo", because that's what the WebCrypto API understands.
+  // But DIDs assume that all public keys are encoded as "RSAPublicKey".
+  const convertedBytes = convertSubjectPublicKeyInfoToRSAPublicKey(pubkey)
+  return didFromKeyBytes(convertedBytes, RSA_DID_PREFIX)
+}
+
+export const publicKeyToOldDid = (pubkey: Uint8Array): string => {
+  return didFromKeyBytes(pubkey, RSA_DID_PREFIX)
+}
+
+
 
 /**
  * The ASN.1 DER encoded header that needs to be added to an
