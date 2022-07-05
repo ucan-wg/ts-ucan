@@ -5,5 +5,5 @@ import { rsaPlugin, rsaOldPlugin } from "./rsa/plugin.js"
 
 export const defaults: Plugins = {
   keys: [ed25519Plugin, p256Plugin, rsaPlugin, rsaOldPlugin],
-  methods: [],
+  methods: {},
 }

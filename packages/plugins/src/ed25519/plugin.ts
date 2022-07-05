@@ -7,9 +7,8 @@ import { EDWARDS_DID_PREFIX } from "../prefixes.js"
 export const ed25519Plugin: DidKeyPlugin = {
   prefix: EDWARDS_DID_PREFIX,
   jwtAlg: "EdDSA",
-  didToPublicKey: crypto.didToPublickey,
-  publicKeyToDid: crypto.publicKeyToDid,
-  verifySignature: async (publicKey: Uint8Array, data: Uint8Array, sig: Uint8Array) => {
+  verifySignature: async (did: string, data: Uint8Array, sig: Uint8Array) => {
+    const publicKey = crypto.didToPublicKey(did)
     return ed25519.verify(publicKey, data, sig)
   }
 }

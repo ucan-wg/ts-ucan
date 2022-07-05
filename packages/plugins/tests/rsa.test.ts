@@ -19,20 +19,12 @@ describe("rsa", () => {
     expect(keypair.jwtAlg).toEqual("RS256")
   })
 
-  it("returns a publicKeyStr and did", () => {
-    const did = keypair.did()
-    const publicKey = rsaPlugin.didToPublicKey(did)
-    const didAgain = rsaPlugin.publicKeyToDid(publicKey)
-    expect(did).toEqual(didAgain)
-  })
-
   it("signs data", async () => {
     signature = await keypair.sign(data)
   })
 
   it("can verify signature", async () => {
-    const publicKey = rsaPlugin.didToPublicKey(keypair.did())
-    const isValid = await rsaPlugin.verifySignature(publicKey, data, signature)
+    const isValid = await rsaPlugin.verifySignature(keypair.did(), data, signature)
     expect(isValid).toBeTruthy()
   })
 

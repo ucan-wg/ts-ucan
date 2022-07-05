@@ -16,20 +16,12 @@ describe("ecdsa", () => {
     expect(keypair.jwtAlg).toEqual("ES256")
   })
 
-  it("can transform between DID & public key", () => {
-    const did = keypair.did()
-    const publicKey = p256Plugin.didToPublicKey(did)
-    const didAgain = p256Plugin.publicKeyToDid(publicKey)
-    expect(did).toEqual(didAgain)
-  })
-
   it("signs data", async () => {
     signature = await keypair.sign(data)
   })
 
   it("can verify signature", async () => {
-    const publicKey = p256Plugin.didToPublicKey(keypair.did())
-    const isValid = await p256Plugin.verifySignature(publicKey, data, signature)
+    const isValid = await p256Plugin.verifySignature(keypair.did(), data, signature)
     expect(isValid).toBeTruthy()
   })
 

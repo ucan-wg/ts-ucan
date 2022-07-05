@@ -15,20 +15,12 @@ describe("ed25519", () => {
     expect(keypair.jwtAlg).toEqual("EdDSA")
   })
 
-  it("can transform between DID & public key", () => {
-    const did = keypair.did()
-    const publicKey = ed25519Plugin.didToPublicKey(did)
-    const didAgain = ed25519Plugin.publicKeyToDid(publicKey)
-    expect(did).toEqual(didAgain)
-  })
-
   it("signs data", async () => {
     signature = await keypair.sign(data)
   })
 
   it("can verify signature", async () => {
-    const publicKey = ed25519Plugin.didToPublicKey(keypair.did())
-    const isValid = await ed25519Plugin.verifySignature(publicKey, data, signature)
+    const isValid = await ed25519Plugin.verifySignature(keypair.did(), data, signature)
     expect(isValid).toBeTruthy()
   })
 

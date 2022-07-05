@@ -54,9 +54,6 @@ export type Fact = Record<string, unknown>
 
 // CRYPTOGRAPHY
 
-
-/** Unlike tslib's CryptoKeyPair, this requires the `privateKey` and `publicKey` fields */
-
 export interface Didable {
   did: () => string
 }

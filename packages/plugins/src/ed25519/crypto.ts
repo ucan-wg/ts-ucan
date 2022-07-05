@@ -1,7 +1,7 @@
 import { EDWARDS_DID_PREFIX } from "../prefixes"
 import { didFromKeyBytes, keyBytesFromDid } from "../util"
 
-export const didToPublickey = (did: string): Uint8Array => {
+export const didToPublicKey = (did: string): Uint8Array => {
   return keyBytesFromDid(did, EDWARDS_DID_PREFIX)
 }
 
