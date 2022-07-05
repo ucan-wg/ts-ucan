@@ -20,7 +20,7 @@
     "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
     "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
     "dist:pkg": "node ../../scripts/package.js",
-    "dist:prep": "copyfiles --error ../../tsconfig.json ./dist/",
+    "dist:prep": "copyfiles --error tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
     "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
