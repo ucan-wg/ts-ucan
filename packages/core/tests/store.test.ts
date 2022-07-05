@@ -2,7 +2,7 @@ import { alice, bob, mallory } from "./fixtures"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { Ucan } from "../src/types"
 import { all } from "../src/util"
-import * as ucans from "./setup"
+import * as ucans from "./lib"
 
 describe("Store.add", () => {
 

@@ -4,7 +4,7 @@ import { DelegationSemantics, DelegatedCapability, DelegatedOwnership, rootIssue
 import { SUPERUSER } from "../../src/capability/super-user"
 import { Ucan } from "../../src/types"
 import { ResourcePointer } from "../../src/capability/resource-pointer"
-import * as ucans from "../setup"
+import * as ucans from "../lib"
 
 
 export const WNFS_ABILITY_LEVELS = {

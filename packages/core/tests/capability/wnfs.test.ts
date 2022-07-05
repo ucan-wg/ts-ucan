@@ -3,7 +3,7 @@ import { wnfsCapability, wnfsPrivateCapabilities, wnfsPublicCapabilities } from 
 
 import { alice, bob, mallory } from "../fixtures"
 import { all } from "../../src/util"
-import * as ucans from "../setup"
+import * as ucans from "../lib"
 
 
 describe("wnfs public capability", () => {

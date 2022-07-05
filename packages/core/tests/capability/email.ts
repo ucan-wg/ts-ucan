@@ -4,7 +4,7 @@ import { Ability } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
 import { SUPERUSER } from "../../src/capability/super-user"
 import { ResourcePointer } from "../../src/capability/resource-pointer"
-import * as ucans from "../setup"
+import * as ucans from "../lib"
 
 // 🌸
 

@@ -1,6 +1,6 @@
 import * as uint8arrays from "uint8arrays"
 import { alice, bob } from "./fixtures"
-import * as ucans from "./setup"
+import * as ucans from "./lib"
 
 // COMPOSING
 

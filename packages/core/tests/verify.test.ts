@@ -1,6 +1,6 @@
 import { emailCapability } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import * as ucans from "./setup"
+import * as ucans from "./lib"
 
 describe("verify", () => {
 

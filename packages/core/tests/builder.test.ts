@@ -3,7 +3,7 @@ import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
 import { first } from "../src/util"
-import * as ucans from "./setup"
+import * as ucans from "./lib"
 
 
 describe("Builder", () => {
