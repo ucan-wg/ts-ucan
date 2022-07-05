@@ -4,7 +4,7 @@ import * as core from "@ucans/core"
 export * from "@ucans/core"
 export * from "@ucans/plugins"
 
-const injected = core.injectPlugins(plugins.defaults)
+const injected = core.getPluginInjectedApi(plugins.defaults)
 
 export const build = injected.build
 export const sign = injected.sign

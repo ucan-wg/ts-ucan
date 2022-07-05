@@ -3,7 +3,7 @@ import * as plugins from "@ucans/plugins"
 
 export * from "../src"
 
-const injected = core.injectPlugins(plugins.defaults)
+const injected = core.getPluginInjectedApi(plugins.defaults)
 
 export const build = injected.build
 export const sign = injected.sign

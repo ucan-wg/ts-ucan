@@ -18,7 +18,7 @@ export * as ability from "./capability/ability.js"
 
 export { Capability, EncodedCapability, isCapability } from "./capability/index.js"
 
-export const injectPlugins = (plugins: Plugins) => {
+export const getPluginInjectedApi = (plugins: Plugins) => {
   const build = token.build(plugins)
   const sign = token.sign(plugins)
   const signWithKeypair = token.signWithKeypair(plugins)
