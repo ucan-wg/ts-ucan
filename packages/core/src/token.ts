@@ -3,7 +3,7 @@ import * as uint8arrays from "uint8arrays" // @IMPORT
 import * as semver from "./semver.js"
 import * as capability from "./capability/index.js"
 import * as util from "./util.js"
-import * as plugins from "./plugins.js"
+import Plugins from "./plugins.js"
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import { Fact, Keypair, DidableKey } from "./types.js"
@@ -43,28 +43,28 @@ const VERSION = { major: 0, minor: 8, patch: 1 }
  * `prf`, Proofs, nested tokens with equal or greater privileges.
  *
  */
-export async function build(params: {
-  // from/to
-  issuer: DidableKey
-  audience: string
+export const build = (plugins: Plugins) =>
+  ( params: {
+    // from/to
+    issuer: DidableKey
+    audience: string
 
-  // capabilities
-  capabilities?: Array<Capability>
+    // capabilities
+    capabilities?: Array<Capability>
 
-  // time bounds
-  lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
-  expiration?: number
-  notBefore?: number
+    // time bounds
+    lifetimeInSeconds?: number // expiration overrides lifetimeInSeconds
+    expiration?: number
+    notBefore?: number
 
-  // proofs / other info
-  facts?: Array<Fact>
-  proofs?: Array<string>
-  addNonce?: boolean
-}
-): Promise<Ucan> {
+    // proofs / other info
+    facts?: Array<Fact>
+    proofs?: Array<string>
+    addNonce?: boolean
+  }): Promise<Ucan> => {
   const keypair = params.issuer
   const payload = buildPayload({ ...params, issuer: keypair.did() })
-  return signWithKeypair(payload, keypair)
+  return signWithKeypair(plugins)(payload, keypair)
 }
 
 /**
@@ -124,11 +124,11 @@ export function buildPayload(params: {
 /**
  * Encloses a UCAN payload as to form a finalised UCAN.
  */
-export async function sign(
-  payload: UcanPayload,
-  jwtAlg: string,
-  signFn: (data: Uint8Array) => Promise<Uint8Array>
-): Promise<Ucan> {
+export const sign = (plugins: Plugins) =>
+  async (payload: UcanPayload,
+    jwtAlg: string,
+    signFn: (data: Uint8Array) => Promise<Uint8Array>,
+  ): Promise<Ucan> => {
   const header: UcanHeader = {
     alg: jwtAlg,
     typ: TYPE,
@@ -163,11 +163,11 @@ export async function sign(
 /**
  * `sign` with a `Keypair`.
  */
-export async function signWithKeypair(
-  payload: UcanPayload,
-  keypair: Keypair,
-): Promise<Ucan> {
-  return sign(
+export const signWithKeypair = (plugins: Plugins) =>
+  ( payload: UcanPayload,
+    keypair: Keypair,
+  ): Promise<Ucan> => {
+  return sign(plugins)(
     payload,
     keypair.jwtAlg,
     data => keypair.sign(data),
@@ -318,7 +318,8 @@ export interface ValidateOptions {
  * @returns the parsed & validated UCAN (one layer)
  * @throws Error if the UCAN is invalid
  */
-export async function validate(encodedUcan: string, opts?: Partial<ValidateOptions>): Promise<Ucan> {
+export const validate = (plugins: Plugins) => 
+  async (encodedUcan: string, opts?: Partial<ValidateOptions>): Promise<Ucan> => {
   const { checkIssuer = true, checkSignature = true, checkIsExpired = true, checkIsTooEarly = true } = opts ?? {}
 
   const { header, payload } = parse(encodedUcan)
@@ -383,15 +384,16 @@ export interface ValidateProofsOptions extends ValidateOptions {
  * @return an async iterator of the given ucan's proofs parsed & validated, or an `Error`
  *         for each proof that couldn't be validated or parsed.
  */
-export async function* validateProofs(
-  ucan: Ucan,
-  opts?: Partial<ValidateProofsOptions>
-): AsyncIterable<Ucan | Error> {
+
+export const validateProofs = (plugins: Plugins) => 
+  async function* ( ucan: Ucan,
+    opts?: Partial<ValidateProofsOptions>
+  ): AsyncIterable<Ucan | Error> {
   const { checkAddressing = true, checkTimeBoundsSubset = true, checkVersionMonotonic = true } = opts || {}
 
   for (const prf of ucan.payload.prf) {
     try {
-      const proof = await validate(prf, opts)
+      const proof = await validate(plugins)(prf, opts)
 
       if (checkAddressing && ucan.payload.iss !== proof.payload.aud) {
         throw new Error(`Invalid Proof: Issuer ${ucan.payload.iss} doesn't match parent's audience ${proof.payload.aud}`)

@@ -1,4 +1,5 @@
 import * as token from "./token.js"
+import Plugins from "./plugins.js"
 import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegationChains, rootIssuer } from "./attenuation.js"
 import { Ucan } from "./types.js"
 import { Capability } from "./capability/index.js"
@@ -11,23 +12,34 @@ export interface IndexByAudience {
   }>
 }
 
+export const storeFromTokens = (plugins: Plugins) =>
+  async ( 
+    knownSemantics: DelegationSemantics,
+    tokens: Iterable<string> | AsyncIterable<string>,
+  ): Promise<Store> => {
+  const store = new Store(plugins, knownSemantics, {})
+  for await (const encodedUcan of tokens) {
+    const ucan = await token.validate(plugins)(encodedUcan)
+    await store.add(ucan)
+  }
+  return store
+}
+
+export const emptyStore = (plugins: Plugins) => 
+  (knownSemantics: DelegationSemantics) => {
+  return new Store(plugins, knownSemantics, {})
+}
+
 export class Store {
 
+  private plugins: Plugins
   private index: IndexByAudience
   private knownSemantics: DelegationSemantics
 
-  constructor(knownSemantics: DelegationSemantics, index: IndexByAudience) {
+  constructor(plugins: Plugins, knownSemantics: DelegationSemantics, index: IndexByAudience) {
+    this.plugins = plugins
     this.index = index
     this.knownSemantics = knownSemantics
-  }
-
-  static async fromTokens(knownSemantics: DelegationSemantics, tokens: Iterable<string> | AsyncIterable<string>): Promise<Store> {
-    const store = new Store(knownSemantics, {})
-    for await (const encodedUcan of tokens) {
-      const ucan = await token.validate(encodedUcan)
-      await store.add(ucan)
-    }
-    return store
   }
 
   async add(ucan: Ucan): Promise<void> {
@@ -40,7 +52,7 @@ export class Store {
     }
 
     const chains = []
-    for await (const delegationChain of delegationChains(this.knownSemantics, ucan)) {
+    for await (const delegationChain of delegationChains(this.plugins)(this.knownSemantics, ucan)) {
       if (delegationChain instanceof Error) {
         console.warn(`Delegation chain error while storing UCAN:`, delegationChain)
         continue

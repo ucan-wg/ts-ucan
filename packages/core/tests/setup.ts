@@ -1,6 +1,17 @@
+import * as core from "../src"
 import * as plugins from "@ucans/plugins"
-import { loadPlugins } from "../src/plugins"
 
-export const loadTestPlugins = () => {
-  loadPlugins(plugins.defaults)
-}
+export * from "../src"
+
+const injected = core.injectPlugins(plugins.defaults)
+
+export const build = injected.build
+export const sign = injected.sign
+export const signWithKeypair = injected.signWithKeypair
+export const validate = injected.validate
+export const validateProofs = injected.validateProofs
+export const verify = injected.verify
+export const createBuilder = injected.createBuilder
+export const storeFromTokens = injected.storeFromTokens
+export const emptyStore = injected.emptyStore
+export const delegationChains = injected.delegationChains

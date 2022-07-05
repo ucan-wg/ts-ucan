@@ -1,20 +1,16 @@
 import * as uint8arrays from "uint8arrays"
-
-import * as capability from "../src/capability"
-import * as token from "../src/token"
-import { loadTestPlugins } from "./setup.js"
 import { alice, bob } from "./fixtures"
-
+import * as ucans from "./setup"
 
 // COMPOSING
 
 
 describe("token.build", () => {
 
-  beforeAll(loadTestPlugins)
+  // beforeAll(loadTestPlugins)
 
   it("can build payloads without nbf", () => {
-    const payload = token.buildPayload({
+    const payload = ucans.buildPayload({
       issuer: alice.did(),
       audience: bob.did(),
     })
@@ -22,7 +18,7 @@ describe("token.build", () => {
   })
 
   it("builds payloads that expire in the future", () => {
-    const payload = token.buildPayload({
+    const payload = ucans.buildPayload({
       issuer: alice.did(),
       audience: bob.did(),
 
@@ -33,12 +29,12 @@ describe("token.build", () => {
 
   it("throws when enclosing tokens with an invalid key type", async () => {
     await expect(() => {
-      const payload = token.buildPayload({
+      const payload = ucans.buildPayload({
         issuer: alice.did(),
         audience: bob.did(),
       })
 
-      return token.sign(
+      return ucans.sign(
         payload,
         "rsa",
         data => alice.sign(data)
@@ -55,21 +51,19 @@ describe("token.build", () => {
 
 describe("token.encodePayload", () => {
 
-  beforeAll(loadTestPlugins)
-
   it("encodes capabilities", () => {
     const encodedCaps = {
       with: "wnfs://boris.fission.name/public/photos/",
       can: "crud/DELETE"
     }
 
-    const payload = token.buildPayload({
+    const payload = ucans.buildPayload({
       issuer: alice.did(),
       audience: bob.did(),
-      capabilities: [ capability.parse(encodedCaps) ]
+      capabilities: [ ucans.capability.parse(encodedCaps) ]
     })
 
-    const encoded = token.encodePayload(payload)
+    const encoded = ucans.encodePayload(payload)
     const decodedString = uint8arrays.toString(
       uint8arrays.fromString(encoded, "base64url"),
       "utf8"
@@ -93,10 +87,8 @@ describe("token.encodePayload", () => {
 
 describe("token.validate", () => {
 
-  beforeAll(loadTestPlugins)
-
   async function makeUcan() {
-    return await token.build({
+    return await ucans.build({
       audience: bob.did(),
       issuer: alice,
       capabilities: [
@@ -118,7 +110,7 @@ describe("token.validate", () => {
 
   it("round-trips with token.build", async () => {
     const ucan = await makeUcan()
-    const parsedUcan = await token.validate(token.encode(ucan))
+    const parsedUcan = await ucans.validate(ucans.encode(ucan))
     expect(parsedUcan).toBeDefined()
   })
 
@@ -128,8 +120,8 @@ describe("token.validate", () => {
       ...ucan.payload,
       aud: "fakeaudience"
     }
-    const badUcan = `${token.encodeHeader(ucan.header)}.${token.encodePayload(badPayload)}.${ucan.signature}`
-    await expect(() => token.validate(badUcan)).rejects.toBeDefined()
+    const badUcan = `${ucans.encodeHeader(ucan.header)}.${ucans.encodePayload(badPayload)}.${ucan.signature}`
+    await expect(() => ucans.validate(badUcan)).rejects.toBeDefined()
   })
 
   it("throws with a bad issuer", async () => {
@@ -138,8 +130,8 @@ describe("token.validate", () => {
       ...ucan.header,
       alg: "RS256"
     }
-    const badUcan = `${token.encodeHeader(badHeader)}.${token.encodePayload(ucan.payload)}.${ucan.signature}`
-    await expect(() => token.validate(badUcan)).rejects.toBeDefined()
+    const badUcan = `${ucans.encodeHeader(badHeader)}.${ucans.encodePayload(ucan.payload)}.${ucan.signature}`
+    await expect(() => ucans.validate(badUcan)).rejects.toBeDefined()
   })
 
   it("identifies a ucan that is not active yet", async () => {
@@ -152,7 +144,7 @@ describe("token.validate", () => {
         exp: 2637352774
       }
     }
-    expect(token.isTooEarly(badUcan)).toBe(true)
+    expect(ucans.isTooEarly(badUcan)).toBe(true)
   })
 
   it("identifies a ucan that has become active", async () => {
@@ -165,6 +157,6 @@ describe("token.validate", () => {
         lifetimeInSeonds: 30
       }
     }
-    expect(token.isTooEarly(activeUcan)).toBe(false)
+    expect(ucans.isTooEarly(activeUcan)).toBe(false)
   })
 })

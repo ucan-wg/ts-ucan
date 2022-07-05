@@ -1,17 +1,16 @@
 import * as ability from "./ability.js"
 import * as resourcePointer from "./resource-pointer.js"
-import * as superUser from "./super-user.js"
 import * as util from "../util.js"
 
 import { Ability, isAbility } from "./ability.js"
 import { ResourcePointer, isResourcePointer } from "./resource-pointer.js"
-import { Superuser, SUPERUSER } from "./super-user.js"
+import { Superuser } from "./super-user.js"
 
 
 // RE-EXPORTS
 
 
-export { ability, resourcePointer, superUser }
+export { ability, resourcePointer }
 
 
 
@@ -53,7 +52,7 @@ export function isEncodedCapability(obj: unknown): obj is EncodedCapability {
 export function as(did: string, resource: Superuser | string): Capability {
   return {
     with: resourcePointer.as(did, resource),
-    can: SUPERUSER
+    can: ability.SUPERUSER
   }
 }
 
@@ -61,7 +60,7 @@ export function as(did: string, resource: Superuser | string): Capability {
 export function my(resource: Superuser | string): Capability {
   return {
     with: resourcePointer.my(resource),
-    can: SUPERUSER
+    can: ability.SUPERUSER
   }
 }
 

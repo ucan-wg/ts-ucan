@@ -1,4 +1,5 @@
 import * as token from "./token.js"
+import Plugins from "./plugins.js"
 import { Capability } from "./capability/index.js"
 import { Ucan } from "./types.js"
 import { ResourcePointer } from "./capability/resource-pointer.js"
@@ -119,11 +120,12 @@ export type OwnershipScope
  * out different ways of delegating a capability from the attenuations.
  * It also makes it possible to return early if a valid delegation chain has been found.
  */
-export async function* delegationChains(
-  semantics: DelegationSemantics,
-  ucan: Ucan,
-  isRevoked: (ucan: Ucan) => Promise<boolean> = async () => false
-): AsyncIterable<DelegationChain | Error> {
+export const delegationChains = (plugins: Plugins) =>
+  async function* ( 
+    semantics: DelegationSemantics,
+    ucan: Ucan,
+    isRevoked: (ucan: Ucan) => Promise<boolean> = async () => false,
+  ): AsyncIterable<DelegationChain | Error> {
 
   if (await isRevoked(ucan)) {
     yield new Error(`UCAN Revoked: ${token.encode(ucan)}`)
@@ -131,7 +133,7 @@ export async function* delegationChains(
   }
 
   yield* capabilitiesFromParenthood(ucan)
-  yield* capabilitiesFromDelegation(semantics, ucan, isRevoked)
+  yield* capabilitiesFromDelegation(plugins, semantics, ucan, isRevoked)
 }
 
 
@@ -265,14 +267,15 @@ function* capabilitiesFromParenthood(ucan: Ucan): Iterable<DelegationChain> {
 
 
 async function* capabilitiesFromDelegation(
+  plugins: Plugins,
   semantics: DelegationSemantics,
   ucan: Ucan,
-  isRevoked: (ucan: Ucan) => Promise<boolean>
+  isRevoked: (ucan: Ucan) => Promise<boolean>,
 ): AsyncIterable<DelegationChain | Error> {
 
   let proofIndex = 0
 
-  for await (const proof of token.validateProofs(ucan)) {
+  for await (const proof of token.validateProofs(plugins)(ucan)) {
     if (proof instanceof Error) {
       yield proof
       continue
@@ -283,15 +286,15 @@ async function* capabilitiesFromDelegation(
         switch (capability.with.scheme.toLowerCase()) {
           case "my": continue // cannot be delegated, only introduced by parenthood.
           case "as": {
-            yield* handleAsDelegation(semantics, capability, ucan, proof, isRevoked)
+            yield* handleAsDelegation(plugins, semantics, capability, ucan, proof, isRevoked)
             break
           }
           case "prf": {
-            yield* handlePrfDelegation(semantics, capability, ucan, proof, proofIndex, isRevoked)
+            yield* handlePrfDelegation(plugins, semantics, capability, ucan, proof, proofIndex, isRevoked)
             break
           }
           default: {
-            yield* handleNormalDelegation(semantics, capability, ucan, proof, isRevoked)
+            yield* handleNormalDelegation(plugins, semantics, capability, ucan, proof, isRevoked)
           }
         }
       } catch (e) {
@@ -313,11 +316,12 @@ async function* capabilitiesFromDelegation(
 
 
 async function* handleAsDelegation(
+  plugins: Plugins,
   semantics: DelegationSemantics,
   capability: Capability,
   ucan: Ucan,
   proof: Ucan,
-  isRevoked: (ucan: Ucan) => Promise<boolean>
+  isRevoked: (ucan: Ucan) => Promise<boolean>,
 ): AsyncIterable<DelegatedOwnership | Error> {
   const split = capability.with.hierPart.split(":")
   const scheme = split[ split.length - 1 ]
@@ -326,7 +330,7 @@ async function* handleAsDelegation(
     ? SUPERUSER
     : { scheme, ability: capability.can }
 
-  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+  for await (const delegationChain of delegationChains(plugins)(semantics, proof, isRevoked)) {
     if (delegationChain instanceof Error) {
       yield delegationChain
       continue
@@ -352,12 +356,13 @@ async function* handleAsDelegation(
 
 
 async function* handlePrfDelegation(
+  plugins: Plugins,
   semantics: DelegationSemantics,
   capability: Capability,
   ucan: Ucan,
   proof: Ucan,
   proofIndex: number,
-  isRevoked: (ucan: Ucan) => Promise<boolean>
+  isRevoked: (ucan: Ucan) => Promise<boolean>,
 ): AsyncIterable<DelegatedCapability | Error> {
   if (
     capability.with.hierPart !== SUPERUSER
@@ -367,7 +372,7 @@ async function* handlePrfDelegation(
     // we only process the delegation if proofIndex === 2
     return
   }
-  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+  for await (const delegationChain of delegationChains(plugins)(semantics, proof, isRevoked)) {
     if (delegationChain instanceof Error) {
       yield delegationChain
       continue
@@ -385,13 +390,14 @@ async function* handlePrfDelegation(
 
 
 async function* handleNormalDelegation(
+  plugins: Plugins,
   semantics: DelegationSemantics,
   capability: Capability,
   ucan: Ucan,
   proof: Ucan,
-  isRevoked: (ucan: Ucan) => Promise<boolean>
+  isRevoked: (ucan: Ucan) => Promise<boolean>,
 ): AsyncIterable<DelegatedCapability | Error> {
-  for await (const delegationChain of delegationChains(semantics, proof, isRevoked)) {
+  for await (const delegationChain of delegationChains(plugins)(semantics, proof, isRevoked)) {
     if (delegationChain instanceof Error) {
       yield delegationChain
       continue

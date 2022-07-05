@@ -1,16 +1,12 @@
-import * as token from "../../src/token"
 import { Capability } from "../../src/capability"
 import { wnfsCapability, wnfsPrivateCapabilities, wnfsPublicCapabilities } from "./wnfs"
 
 import { alice, bob, mallory } from "../fixtures"
-import { loadTestPlugins } from "../setup.js"
 import { all } from "../../src/util"
-
+import * as ucans from "../setup"
 
 
 describe("wnfs public capability", () => {
-
-  beforeAll(loadTestPlugins)
 
   it("works with a simple example", async () => {
     const { ucan } = await makeSimpleDelegation(
@@ -69,8 +65,6 @@ describe("wnfs public capability", () => {
 })
 
 describe("wnfs private capability", () => {
-
-  beforeAll(loadTestPlugins)
 
   it("works with a simple example", async () => {
     const { ucan } = await makeSimpleDelegation(
@@ -195,17 +189,17 @@ describe("wnfs private capability", () => {
  * The arguments are the capabilities delegated in the first and second arrow, respectively.
  */
 async function makeSimpleDelegation(aliceCapabilities: Capability[], bobCapabilities: Capability[]) {
-  const leaf = await token.build({
+  const leaf = await ucans.build({
     issuer: alice,
     audience: bob.did(),
     capabilities: aliceCapabilities
   })
 
-  const ucan = await token.build({
+  const ucan = await ucans.build({
     issuer: bob,
     audience: mallory.did(),
     capabilities: bobCapabilities,
-    proofs: [ token.encode(leaf) ]
+    proofs: [ ucans.encode(leaf) ]
   })
 
   return { leaf, ucan }
@@ -220,23 +214,23 @@ async function makeSimpleDelegation(aliceCapabilities: Capability[], bobCapabili
  * the second argument are the capabilities delegated in the last arrow.
  */
 async function makeComplexDelegation(proofs: { alice: Capability[]; bob: Capability[] }, final: Capability[]) {
-  const leafAlice = await token.build({
+  const leafAlice = await ucans.build({
     issuer: alice,
     audience: mallory.did(),
     capabilities: proofs.alice,
   })
 
-  const leafBob = await token.build({
+  const leafBob = await ucans.build({
     issuer: bob,
     audience: mallory.did(),
     capabilities: proofs.bob,
   })
 
-  const ucan = await token.build({
+  const ucan = await ucans.build({
     issuer: mallory,
     audience: alice.did(),
     capabilities: final,
-    proofs: [ token.encode(leafAlice), token.encode(leafBob) ],
+    proofs: [ ucans.encode(leafAlice), ucans.encode(leafBob) ],
   })
 
   return { leafAlice, leafBob, ucan }

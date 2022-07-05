@@ -1,17 +1,12 @@
-import * as token from "../src/token"
-import { Builder } from "../src/builder"
 import { emailCapability } from "./capability/email"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import { delegationChains } from "../src/attenuation"
 import { first } from "../src/util"
-import { loadTestPlugins } from "./setup.js"
+import * as ucans from "./setup"
 
 
 describe("Builder", () => {
-  
-  beforeAll(loadTestPlugins)
 
   it("builds with a simple example", async () => {
     const fact1 = { test: true }
@@ -21,7 +16,7 @@ describe("Builder", () => {
     const expiration = Math.floor(Date.now() / 1000) + 30
     const notBefore = Math.floor(Date.now() / 1000) - 30
 
-    const ucan = await Builder.create()
+    const ucan = await ucans.createBuilder()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withExpiration(expiration)
@@ -41,7 +36,7 @@ describe("Builder", () => {
   })
 
   it("builds with lifetimeInSeconds", async () => {
-    const payload = Builder.create()
+    const payload = ucans.createBuilder()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(300)
@@ -51,14 +46,14 @@ describe("Builder", () => {
   })
 
   it("prevents duplicate proofs", async () => {
-    const ucan = await Builder.create()
+    const ucan = await ucans.createBuilder()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
       .claimCapability(wnfsCapability("alice.fission.name/public/", "SUPER_USER"))
       .build()
 
-    const publicCapability = await first(delegationChains(wnfsPublicSemantics, ucan))
+    const publicCapability = await first(ucans.delegationChains(wnfsPublicSemantics, ucan))
 
     if (publicCapability == null) {
       throw "no capabilities"
@@ -68,7 +63,7 @@ describe("Builder", () => {
       throw publicCapability
     }
 
-    const payload = Builder.create()
+    const payload = ucans.createBuilder()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
@@ -76,31 +71,31 @@ describe("Builder", () => {
       .delegateCapability(wnfsCapability("alice.fission.name/public/Documents", "OVERWRITE"), publicCapability, wnfsPublicSemantics)
       .buildPayload()
 
-    expect(payload.prf).toEqual([ token.encode(ucan) ])
+    expect(payload.prf).toEqual([ ucans.encode(ucan) ])
   })
 
   it("throws when it's not ready to be built", () => {
     expect(() => {
-      Builder.create()
+      ucans.createBuilder()
         .buildPayload()
     }).toThrow()
     // issuer missing
     expect(() => {
-      Builder.create()
+      ucans.createBuilder()
         .toAudience(bob.did())
         .withLifetimeInSeconds(1)
         .buildPayload()
     }).toThrow()
     // audience missing
     expect(() => {
-      Builder.create()
+      ucans.createBuilder()
         .issuedBy(alice)
         .withLifetimeInSeconds(1)
         .buildPayload()
     }).toThrow()
     // expiration missing
     expect(() => {
-      Builder.create()
+      ucans.createBuilder()
         .issuedBy(alice)
         .toAudience(bob.did())
         .buildPayload()
@@ -108,14 +103,14 @@ describe("Builder", () => {
   })
 
   it("throws when trying to delegate unproven capabilities", async () => {
-    const ucan = await Builder.create()
+    const ucan = await ucans.createBuilder()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
       .claimCapability(emailCapability("alice@email.com"))
       .build()
 
-    const delegationChain = await first(delegationChains(EMAIL_SEMANTICS, ucan))
+    const delegationChain = await first(ucans.delegationChains(EMAIL_SEMANTICS, ucan))
 
     if (delegationChain == null) {
       throw "no capabilities"
@@ -126,7 +121,7 @@ describe("Builder", () => {
     }
 
     expect(() => {
-      Builder.create()
+      ucans.createBuilder()
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)

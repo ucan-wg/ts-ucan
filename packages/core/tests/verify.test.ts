@@ -1,37 +1,29 @@
-import * as token from "../src/token"
-import * as capability from "../src/capability"
-import { SUPERUSER } from "../src/capability/super-user"
-import { verify } from "../src/verify"
 import { emailCapability } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import { REDELEGATE } from "../src/capability/ability"
-import { loadTestPlugins } from "./setup"
-
+import * as ucans from "./setup"
 
 describe("verify", () => {
-
-  beforeAll(loadTestPlugins)
 
   async function aliceEmailDelegationExample(expiration?: number) {
     // alice -> bob, bob -> mallory
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       expiration,
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       expiration,
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    return token.encode(ucan)
+    return ucans.encode(ucan)
   }
 
   const alicesEmail = {
@@ -42,7 +34,7 @@ describe("verify", () => {
   it("verifies a delegation chain", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, {
+    const result = await ucans.verify(ucan, {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -62,12 +54,12 @@ describe("verify", () => {
   it("rejects an invalid escalation", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, {
+    const result = await ucans.verify(ucan, {
       audience: mallory.did(),
       requiredCapabilities: [ {
         capability: {
           ...emailCapability("alice@email.com"),
-          can: SUPERUSER,
+          can: ucans.ability.SUPERUSER,
         },
         rootIssuer: alice.did()
       } ]
@@ -79,7 +71,7 @@ describe("verify", () => {
   it("rejects for an invalid audience", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, {
+    const result = await ucans.verify(ucan, {
       audience: bob.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -90,7 +82,7 @@ describe("verify", () => {
   it("rejects for an invalid rootIssuer", async () => {
     const ucan = await aliceEmailDelegationExample()
 
-    const result = await verify(ucan, {
+    const result = await ucans.verify(ucan, {
       audience: mallory.did(),
       requiredCapabilities: [ {
         capability: emailCapability("alice@email.com"),
@@ -108,7 +100,7 @@ describe("verify", () => {
     // expiry is in the past
     const ucan = await aliceEmailDelegationExample(nowInSeconds - 60 * 60 * 24)
 
-    const result = await verify(ucan, {
+    const result = await ucans.verify(ucan, {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -120,20 +112,20 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ capability.prf(capability.superUser.SUPERUSER, REDELEGATE) ],
-      proofs: [ token.encode(leafUcan) ]
+      capabilities: [ ucans.capability.prf(ucans.ability.SUPERUSER, ucans.ability.REDELEGATE) ],
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -150,26 +142,26 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcanA = await token.build({
+    const leafUcanA = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("ignore-me@email.com") ]
     })
 
-    const leafUcanB = await token.build({
+    const leafUcanB = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ capability.prf(1, REDELEGATE) ],
-      proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
+      capabilities: [ ucans.capability.prf(1, ucans.ability.REDELEGATE) ],
+      proofs: [ ucans.encode(leafUcanA), ucans.encode(leafUcanB) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -183,26 +175,26 @@ describe("verify", () => {
   })
 
   it("ignores other proofs not referred to by `prf:0`", async () => {
-    const leafUcanA = await token.build({
+    const leafUcanA = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("ignore-me@email.com") ]
     })
 
-    const leafUcanB = await token.build({
+    const leafUcanB = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const faultyUcan = await token.build({
+    const faultyUcan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ capability.prf(0, REDELEGATE) ],
-      proofs: [ token.encode(leafUcanA), token.encode(leafUcanB) ]
+      capabilities: [ ucans.capability.prf(0, ucans.ability.REDELEGATE) ],
+      proofs: [ ucans.encode(leafUcanA), ucans.encode(leafUcanB) ]
     })
 
-    const result = await verify(token.encode(faultyUcan), {
+    const result = await ucans.verify(ucans.encode(faultyUcan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -214,20 +206,20 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("invalid@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ capability.prf(capability.superUser.SUPERUSER, REDELEGATE) ],
-      proofs: [ token.encode(leafUcan) ]
+      capabilities: [ ucans.capability.prf(ucans.ability.SUPERUSER, ucans.ability.REDELEGATE) ],
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -239,20 +231,20 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ capability.my(capability.superUser.SUPERUSER) ]
+      capabilities: [ ucans.capability.my(ucans.ability.SUPERUSER) ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ],
     })
@@ -268,27 +260,27 @@ describe("verify", () => {
     // alice -> bob, bob -> mallory, mallory -> "someone"
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ capability.my(capability.superUser.SUPERUSER) ]
+      capabilities: [ ucans.capability.my(ucans.ability.SUPERUSER) ]
     })
 
-    const middleUcan = await token.build({
+    const middleUcan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ capability.as(alice.did(), SUPERUSER) ],
-      proofs: [ token.encode(leafUcan) ]
+      capabilities: [ ucans.capability.as(alice.did(), ucans.ability.SUPERUSER) ],
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: mallory,
       audience: "did:key:someone",
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(middleUcan) ]
+      proofs: [ ucans.encode(middleUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: "did:key:someone",
       requiredCapabilities: [ alicesEmail ]
     })
@@ -304,20 +296,20 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: []
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })
@@ -329,20 +321,20 @@ describe("verify", () => {
     // alice -> bob
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ capability.as(bob.did(), SUPERUSER) ]
+      capabilities: [ ucans.capability.as(bob.did(), ucans.ability.SUPERUSER) ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
-    const result = await verify(token.encode(ucan), {
+    const result = await ucans.verify(ucans.encode(ucan), {
       audience: mallory.did(),
       requiredCapabilities: [ alicesEmail ]
     })

@@ -1,6 +1,11 @@
 import { Superuser, SUPERUSER } from "./super-user.js"
 import * as util from "../util.js"
 
+// RE-EXPORTS
+
+
+export { Superuser, SUPERUSER }
+
 
 // 💎
 

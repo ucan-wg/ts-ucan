@@ -1,5 +1,6 @@
 import * as token from "./token.js"
 import * as util from "./util.js"
+import Plugins from "./plugins.js"
 
 import { Keypair, Fact, UcanPayload, isKeypair, Ucan, DidableKey } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
@@ -40,6 +41,21 @@ function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCa
     && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
 }
 
+
+  /**
+   * Create an empty builder.
+   * Before finalising the builder, you need to at least call
+   * - `issuedBy`
+   * - `toAudience` and
+   * - `withLifetimeInSeconds` or `withExpiration`.
+   * To finalise the builder, call its `build` or `buildPayload` method.
+   */
+
+export const createBuilder = (plugins: Plugins) => 
+  (): Builder<Record<string, never>> => {
+    return new Builder(plugins, {}, { capabilities: [], facts: [], proofs: [], addNonce: false })
+}
+
 /**
  * A builder API for UCANs.
  *
@@ -59,24 +75,14 @@ function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCa
  */
 export class Builder<State extends Partial<BuildableState>> {
 
+  private plugins: Plugins
   private state: State // portion of the state that's required to be set before building
   private defaultable: DefaultableState // portion of the state that has sensible defaults
 
-  private constructor(state: State, defaultable: DefaultableState) {
+  constructor(plugins: Plugins, state: State, defaultable: DefaultableState) {
+    this.plugins = plugins
     this.state = state
     this.defaultable = defaultable
-  }
-
-  /**
-   * Create an empty builder.
-   * Before finalising the builder, you need to at least call
-   * - `issuedBy`
-   * - `toAudience` and
-   * - `withLifetimeInSeconds` or `withExpiration`.
-   * To finalise the builder, call its `build` or `buildPayload` method.
-   */
-  static create(): Builder<Record<string, never>> {
-    return new Builder({}, { capabilities: [], facts: [], proofs: [], addNonce: false })
   }
 
   /**
@@ -88,7 +94,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (!isKeypair(issuer)) {
       throw new TypeError(`Expected a Keypair, but got ${issuer}`)
     }
-    return new Builder({ ...this.state, issuer }, this.defaultable)
+    return new Builder(this.plugins, { ...this.state, issuer }, this.defaultable)
   }
 
   /**
@@ -103,7 +109,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (typeof audience !== "string") {
       throw new TypeError(`Expected audience DID as string, but got ${audience}`)
     }
-    return new Builder({ ...this.state, audience }, this.defaultable)
+    return new Builder(this.plugins, { ...this.state, audience }, this.defaultable)
   }
 
   /**
@@ -130,7 +136,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (this.defaultable.notBefore != null && expiration < this.defaultable.notBefore) {
       throw new Error(`Can't set expiration to ${expiration} which is before 'notBefore': ${this.defaultable.notBefore}`)
     }
-    return new Builder({ ...this.state, expiration }, this.defaultable)
+    return new Builder(this.plugins, { ...this.state, expiration }, this.defaultable)
   }
 
   /**
@@ -143,7 +149,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (util.hasProp(this.state, "expiration") && typeof this.state.expiration === "number" && this.state.expiration < notBeforeTimestamp) {
       throw new Error(`Can't set 'notBefore' to ${notBeforeTimestamp} which is after expiration: ${this.state.expiration}`)
     }
-    return new Builder(this.state, { ...this.defaultable, notBefore: notBeforeTimestamp })
+    return new Builder(this.plugins, this.state, { ...this.defaultable, notBefore: notBeforeTimestamp })
   }
 
   /**
@@ -156,7 +162,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (!util.isRecord(fact) || facts.some(fct => !util.isRecord(fct))) {
       throw new TypeError(`Expected fact(s) to be a record, but got ${fact}`)
     }
-    return new Builder(this.state, {
+    return new Builder(this.plugins, this.state, {
       ...this.defaultable,
       facts: [ ...this.defaultable.facts, fact, ...facts ]
     })
@@ -166,7 +172,7 @@ export class Builder<State extends Partial<BuildableState>> {
    * Will ensure that the built UCAN includes a number used once.
    */
   withNonce(): Builder<State> {
-    return new Builder(this.state, { ...this.defaultable, addNonce: true })
+    return new Builder(this.plugins, this.state, { ...this.defaultable, addNonce: true })
   }
 
   /**
@@ -178,7 +184,7 @@ export class Builder<State extends Partial<BuildableState>> {
     if (!isCapability(capability)) {
       throw new TypeError(`Expected capability, but got ${JSON.stringify(capability, null, " ")}`)
     }
-    return new Builder(this.state, {
+    return new Builder(this.plugins, this.state, {
       ...this.defaultable,
       capabilities: [ ...this.defaultable.capabilities, capability, ...capabilities ]
     })
@@ -221,7 +227,7 @@ export class Builder<State extends Partial<BuildableState>> {
       if (!capabilityCanBeDelegated(semantics, requiredCapability, proof)) {
         throw new Error(`Can't add capability to UCAN: Given proof doesn't give required rights to delegate.`)
       }
-      return new Builder(this.state, {
+      return new Builder(this.plugins, this.state, {
         ...this.defaultable,
         capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
         proofs: this.defaultable.proofs.find(p => token.encode(p) === token.encode(ucan)) == null
@@ -236,7 +242,7 @@ export class Builder<State extends Partial<BuildableState>> {
       if (result != null) {
         const ucan = result.ucan
         const ucanEncoded = token.encode(ucan)
-        return new Builder(this.state, {
+        return new Builder(this.plugins, this.state, {
           ...this.defaultable,
           capabilities: [ ...this.defaultable.capabilities, requiredCapability ],
           proofs: this.defaultable.proofs.find(proof => token.encode(proof) === ucanEncoded) == null
@@ -282,7 +288,7 @@ export class Builder<State extends Partial<BuildableState>> {
       throw new Error(`Builder is missing one of the required properties before it can be built: issuer, audience and expiration.`)
     }
     const payload = this.buildPayload()
-    return await token.signWithKeypair(payload, this.state.issuer)
+    return await token.signWithKeypair(this.plugins)(payload, this.state.issuer)
   }
 
 }

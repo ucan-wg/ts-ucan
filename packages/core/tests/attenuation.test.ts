@@ -1,30 +1,27 @@
-import * as token from "../src/token"
 import { emailCapabilities, emailCapability } from "./capability/email"
 
 import { alice, bob, mallory } from "./fixtures"
 import { all } from "../src/util"
-import { loadTestPlugins } from "./setup.js"
+import * as ucans from "./setup"
 
 
 describe("attenuation.emailCapabilities", () => {
-
-  beforeAll(loadTestPlugins)
 
   it("works with a simple example", async () => {
     // alice -> bob, bob -> mallory
     // alice delegates access to sending email as her to bob
     // and bob delegates it further to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("alice@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
     expect(await all(emailCapabilities(ucan))).toEqual([
@@ -43,16 +40,16 @@ describe("attenuation.emailCapabilities", () => {
     // alice -> bob, bob -> mallory
     // alice delegates nothing to bob
     // and bob delegates his email to mallory
-    const leafUcan = await token.build({
+    const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("bob@email.com") ],
-      proofs: [ token.encode(leafUcan) ]
+      proofs: [ ucans.encode(leafUcan) ]
     })
 
     // we implicitly expect the originator to become bob
@@ -66,26 +63,26 @@ describe("attenuation.emailCapabilities", () => {
     // alice -> mallory, bob -> mallory, mallory -> alice
     // both alice and bob delegate their email access to mallory
     // mallory then creates a UCAN with capability to send both
-    const leafUcanAlice = await token.build({
+    const leafUcanAlice = await ucans.build({
       issuer: alice,
       audience: mallory.did(),
       capabilities: [ emailCapability("alice@email.com") ]
     })
 
-    const leafUcanBob = await token.build({
+    const leafUcanBob = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ emailCapability("bob@email.com") ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: mallory,
       audience: alice.did(),
       capabilities: [
         emailCapability("alice@email.com"),
         emailCapability("bob@email.com")
       ],
-      proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
+      proofs: [ ucans.encode(leafUcanAlice), ucans.encode(leafUcanBob) ]
     })
 
     const chains = await all(emailCapabilities(ucan))
@@ -120,23 +117,23 @@ describe("attenuation.emailCapabilities", () => {
 
     const aliceEmail = emailCapability("alice@email.com")
 
-    const leafUcanAlice = await token.build({
+    const leafUcanAlice = await ucans.build({
       issuer: alice,
       audience: mallory.did(),
       capabilities: [ aliceEmail ]
     })
 
-    const leafUcanBob = await token.build({
+    const leafUcanBob = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
       capabilities: [ aliceEmail ]
     })
 
-    const ucan = await token.build({
+    const ucan = await ucans.build({
       issuer: mallory,
       audience: alice.did(),
       capabilities: [ aliceEmail ],
-      proofs: [ token.encode(leafUcanAlice), token.encode(leafUcanBob) ]
+      proofs: [ ucans.encode(leafUcanAlice), ucans.encode(leafUcanBob) ]
     })
 
     expect(await all(emailCapabilities(ucan))).toEqual([

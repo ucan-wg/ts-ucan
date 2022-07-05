@@ -1,9 +1,10 @@
 import { Ability, isAbility } from "../../src/capability/ability"
 import { Capability } from "../../src/capability"
-import { DelegationSemantics, DelegatedCapability, DelegatedOwnership, delegationChains, rootIssuer } from "../../src/attenuation"
+import { DelegationSemantics, DelegatedCapability, DelegatedOwnership, rootIssuer } from "../../src/attenuation"
 import { SUPERUSER } from "../../src/capability/super-user"
 import { Ucan } from "../../src/types"
 import { ResourcePointer } from "../../src/capability/resource-pointer"
+import * as ucans from "../setup"
 
 
 export const WNFS_ABILITY_LEVELS = {
@@ -118,7 +119,7 @@ export const wnfsPublicSemantics: DelegationSemantics = {
 }
 
 export async function * wnfsPublicCapabilities(ucan: Ucan) {
-  for await (const delegationChain of delegationChains(wnfsPublicSemantics, ucan)) {
+  for await (const delegationChain of ucans.delegationChains(wnfsPublicSemantics, ucan)) {
     if (delegationChain instanceof Error || "ownershipDID" in delegationChain) {
       continue
     }
@@ -189,7 +190,7 @@ const wnfsPrivateSemantics: DelegationSemantics = {
 }
 
 export async function * wnfsPrivateCapabilities(ucan: Ucan) {
-  for await (const delegationChain of delegationChains(wnfsPrivateSemantics, ucan)) {
+  for await (const delegationChain of ucans.delegationChains(wnfsPrivateSemantics, ucan)) {
     if (delegationChain instanceof Error || "ownershipDID" in delegationChain) {
       continue
     }

@@ -1,4 +1,5 @@
 import * as token from "./token.js"
+import Plugins from "./plugins.js"
 import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegationChains, equalCanDelegate, rootIssuer } from "./attenuation.js"
 import { Capability, isCapability } from "./capability/index.js"
 import { Fact, Ucan } from "./types.js"
@@ -53,7 +54,8 @@ export interface VerifyOptions {
  *
  * @throws TypeError if the passed arguments don't match what is expected
  */
-export async function verify(ucan: string, options: VerifyOptions): Promise<Result<Verification[], Error[]>> {
+export const verify = (plugins: Plugins) => 
+  async (ucan: string, options: VerifyOptions): Promise<Result<Verification[], Error[]>> => {
   const { audience, requiredCapabilities } = options
   const semantics = options.semantics ?? equalCanDelegate
   const isRevoked = options.isRevoked ?? (async () => false)
@@ -86,7 +88,7 @@ export async function verify(ucan: string, options: VerifyOptions): Promise<Resu
 
   try {
     // Verify the UCAN
-    const decoded = await token.validate(ucan)
+    const decoded = await token.validate(plugins)(ucan)
 
     // Check that it's addressed to us
     if (decoded.payload.aud !== audience) {
@@ -98,7 +100,7 @@ export async function verify(ucan: string, options: VerifyOptions): Promise<Resu
     const proven: Verification[] = []
 
     // Check that all required capabilities are verified
-    loop: for await (const delegationChain of delegationChains(semantics, decoded, isRevoked)) {
+    loop: for await (const delegationChain of delegationChains(plugins)(semantics, decoded, isRevoked)) {
       if (delegationChain instanceof Error) {
         errors.push(delegationChain)
         continue
