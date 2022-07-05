@@ -1,6 +1,6 @@
 {
   "name": "@ucans/core",
-  "version": "0.9.1",
+  "version": "0.0.1-alpha",
   "description": "Core UCAN implementation",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
@@ -25,8 +25,8 @@
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
     "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
     "prepare": "yarn build",
-    "publish-alpha": "yarn publish --tag alpha",
-    "publish-stable": "yarn publish --tag latest",
+    "publish-alpha": "yarn publish --tag alpha --access public",
+    "publish-stable": "yarn publish --tag latest --access public",
     "test": "jest",
     "test:watch": "jest --watch"
   },
