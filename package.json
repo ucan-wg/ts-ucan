@@ -15,5 +15,8 @@
   "private": true,
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "ts-node": "^10.8.2"
+  }
 }
