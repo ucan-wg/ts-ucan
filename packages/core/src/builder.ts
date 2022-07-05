@@ -1,14 +1,14 @@
 import * as token from "./token.js"
 import * as util from "./util.js"
 
-import { Keypair, Fact, UcanPayload, isKeypair, Ucan, Didable } from "./types.js"
+import { Keypair, Fact, UcanPayload, isKeypair, Ucan, DidableKey } from "./types.js"
 import { Capability, isCapability } from "./capability/index.js"
 import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain } from "./attenuation.js"
 import { Store } from "./store.js"
 
 
 export interface BuildableState {
-  issuer: Keypair & Didable
+  issuer: DidableKey
   audience: string
   expiration: number
 }
@@ -84,7 +84,7 @@ export class Builder<State extends Partial<BuildableState>> {
    *
    * The UCAN must be signed with the private key of the issuer to be valid.
    */
-  issuedBy(issuer: Keypair & Didable): Builder<State & { issuer: Keypair & Didable }> {
+  issuedBy(issuer: DidableKey): Builder<State & { issuer: DidableKey }> {
     if (!isKeypair(issuer)) {
       throw new TypeError(`Expected a Keypair, but got ${issuer}`)
     }

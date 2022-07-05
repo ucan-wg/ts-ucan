@@ -3,10 +3,10 @@ import * as uint8arrays from "uint8arrays"
 
 import * as crypto from "./crypto.js"
 import { AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types.js"
-import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
+import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
 
 
-export class RsaKeypair implements Keypair, Didable, ExportableKey {
+export class RsaKeypair implements DidableKey, ExportableKey {
 
   public jwtAlg = "RS256"
 

@@ -1,6 +1,6 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
-import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
+import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
 
 import * as crypto from "./crypto.js"
 import {
@@ -10,7 +10,7 @@ import {
 } from "../types.js"
 
 
-export class EcdsaKeypair implements Keypair, Didable, ExportableKey {
+export class EcdsaKeypair implements DidableKey, ExportableKey {
 
   public jwtAlg = "ES256"
 

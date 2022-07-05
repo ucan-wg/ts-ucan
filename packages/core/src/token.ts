@@ -6,7 +6,7 @@ import * as util from "./util.js"
 import * as plugins from "./plugins.js"
 
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
-import { Fact, Keypair, Didable } from "./types.js"
+import { Fact, Keypair, DidableKey } from "./types.js"
 import { Ucan, UcanHeader, UcanParts, UcanPayload } from "./types.js"
 import { handleCompatibility } from "./compatibility.js"
 
@@ -45,7 +45,7 @@ const VERSION = { major: 0, minor: 8, patch: 1 }
  */
 export async function build(params: {
   // from/to
-  issuer: Keypair & Didable
+  issuer: DidableKey
   audience: string
 
   // capabilities

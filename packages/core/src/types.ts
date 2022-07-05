@@ -67,6 +67,8 @@ export interface Keypair {
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 
+export interface DidableKey extends Didable, Keypair {}
+
 // MISC
 
 

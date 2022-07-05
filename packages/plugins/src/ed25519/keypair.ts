@@ -2,10 +2,10 @@ import * as uint8arrays from "uint8arrays"
 import * as ed25519 from "@stablelib/ed25519"
 import * as crypto from "./crypto.js"
 
-import { Didable, Encodings, ExportableKey, Keypair } from "@ucans/core"
+import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
 
 
-export class EdKeypair implements Keypair, Didable, ExportableKey {
+export class EdKeypair implements DidableKey, ExportableKey {
 
   public jwtAlg = "EdDSA"
 
