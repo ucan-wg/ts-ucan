@@ -3,6 +3,7 @@ import { SemVer } from "./semver.js"
 import { SupportedEncodings } from "uint8arrays/util/bases.js" // @IMPORT
 import { Capability, isCapability, isEncodedCapability } from "./capability/index.js"
 import * as util from "./util.js"
+import { DelegationChain, DelegationSemantics } from "./attenuation.js"
 
 
 // 💎
@@ -74,6 +75,72 @@ export interface DidableKey extends Didable, Keypair {}
 
 export type Encodings = SupportedEncodings
 
+
+// STORE
+
+
+export interface IndexByAudience {
+  [ audienceDID: string ]: Array<{
+    processedUcan: Ucan
+    capabilities: DelegationChain[]
+  }>
+}
+
+export interface StoreI {
+  add(ucan: Ucan): Promise<void> 
+  getByAudience(audience: string): Ucan[] 
+  findByAudience(audience: string, predicate: (ucan: Ucan) => boolean): Ucan | null 
+  findWithCapability(
+    audience: string,
+    requiredCapability: Capability,
+    requiredIssuer: string,
+  ): Iterable<DelegationChain>   
+}
+
+// BUILDER
+
+export interface BuildableState {
+  issuer: DidableKey
+  audience: string
+  expiration: number
+}
+
+
+export interface DefaultableState {
+  capabilities: Capability[]
+  facts: Fact[]
+  proofs: Ucan[]
+  addNonce: boolean
+  notBefore?: number
+}
+
+// the state neccessary for being able to lookup fitting capabilities in the UCAN store
+export interface CapabilityLookupCapableState {
+  issuer: Keypair
+  expiration: number
+}
+
+export interface BuilderI<State extends Partial<BuildableState>> {
+  issuedBy(issuer: DidableKey): BuilderI<State & { issuer: DidableKey }>
+  toAudience(audience: string): BuilderI<State & { audience: string }>
+  withLifetimeInSeconds(seconds: number): BuilderI<State & { expiration: number }>
+  withExpiration(expiration: number): BuilderI<State & { expiration: number }>
+  withNotBefore(notBeforeTimestamp: number): BuilderI<State>
+  withFact(fact: Fact): BuilderI<State>
+  withFact(fact: Fact, ...facts: Fact[]): BuilderI<State>
+  withFact(fact: Fact, ...facts: Fact[]): BuilderI<State>
+  withNonce(): BuilderI<State>
+  claimCapability(capability: Capability): BuilderI<State>
+  claimCapability(capability: Capability, ...capabilities: Capability[]): BuilderI<State>
+  claimCapability(capability: Capability, ...capabilities: Capability[]): BuilderI<State>
+  delegateCapability(requiredCapability: Capability, store: StoreI): State extends CapabilityLookupCapableState ? BuilderI<State> : never
+  delegateCapability(requiredCapability: Capability, proof: DelegationChain, semantics: DelegationSemantics): State extends CapabilityLookupCapableState ? BuilderI<State> : never
+  delegateCapability(requiredCapability: Capability, storeOrProof: StoreI | DelegationChain, semantics?: DelegationSemantics): BuilderI<State>
+  buildPayload(): State extends BuildableState ? UcanPayload : never
+  buildPayload(): UcanPayload
+  build(): Promise<State extends BuildableState ? Ucan : never>
+  build(): Promise<Ucan>
+}
 
 
 // TYPE CHECKS

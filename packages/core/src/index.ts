@@ -2,8 +2,8 @@ import Plugins from "./plugins.js"
 import * as token from "./token.js"
 import * as verifyLib from "./verify.js"
 import * as attenuation from "./attenuation.js"
-import * as builder from "./builder.js"
-import * as store from "./store.js"
+import mkBuilderClass from "./builder.js"
+import mkStoreClass from "./store.js"
 
 export * from "./attenuation.js"
 export * from "./builder.js"
@@ -12,6 +12,7 @@ export * from "./token.js"
 export * from "./types.js"
 export * from "./verify.js"
 export * from "./plugins.js"
+export * from "./util.js"
 
 export * as capability from "./capability/index.js"
 export * as ability from "./capability/ability.js"
@@ -25,10 +26,9 @@ export const getPluginInjectedApi = (plugins: Plugins) => {
   const validate = token.validate(plugins)
   const validateProofs = token.validateProofs(plugins)
   const verify = verifyLib.verify(plugins)
-  const createBuilder = builder.createBuilder(plugins)
-  const storeFromTokens = store.storeFromTokens(plugins)
-  const emptyStore = store.emptyStore(plugins)
   const delegationChains = attenuation.delegationChains(plugins)
+  const Builder = mkBuilderClass(plugins)
+  const Store = mkStoreClass(plugins)
 
   return {
     build,
@@ -37,9 +37,8 @@ export const getPluginInjectedApi = (plugins: Plugins) => {
     validate,
     validateProofs,
     verify,
-    createBuilder,
-    storeFromTokens,
-    emptyStore,
     delegationChains,
+    Builder,
+    Store
   }
 }
