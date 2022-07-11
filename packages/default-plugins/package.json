@@ -1,5 +1,5 @@
 {
-  "name": "@ucans/plugins",
+  "name": "@ucans/default-plugins",
   "version": "0.9.1",
   "description": "Default UCAN plugin set",
   "author": "Daniel Holmgren <daniel@fission.codes>",

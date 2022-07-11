@@ -2,8 +2,8 @@ import { emailCapability } from "./capability/email"
 import { wnfsCapability, wnfsPublicSemantics } from "./capability/wnfs"
 import { EMAIL_SEMANTICS } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import { first } from "../src/util"
-import * as ucans from "./lib"
+import * as ucans from "../src"
+import { first } from "../src"
 
 
 describe("Builder", () => {
@@ -16,7 +16,7 @@ describe("Builder", () => {
     const expiration = Math.floor(Date.now() / 1000) + 30
     const notBefore = Math.floor(Date.now() / 1000) - 30
 
-    const ucan = await ucans.createBuilder()
+    const ucan = await ucans.Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withExpiration(expiration)
@@ -36,7 +36,7 @@ describe("Builder", () => {
   })
 
   it("builds with lifetimeInSeconds", async () => {
-    const payload = ucans.createBuilder()
+    const payload = ucans.Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(300)
@@ -46,7 +46,7 @@ describe("Builder", () => {
   })
 
   it("prevents duplicate proofs", async () => {
-    const ucan = await ucans.createBuilder()
+    const ucan = await ucans.Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
@@ -63,7 +63,7 @@ describe("Builder", () => {
       throw publicCapability
     }
 
-    const payload = ucans.createBuilder()
+    const payload = ucans.Builder.create()
       .issuedBy(bob)
       .toAudience(mallory.did())
       .withLifetimeInSeconds(30)
@@ -76,26 +76,26 @@ describe("Builder", () => {
 
   it("throws when it's not ready to be built", () => {
     expect(() => {
-      ucans.createBuilder()
+      ucans.Builder.create()
         .buildPayload()
     }).toThrow()
     // issuer missing
     expect(() => {
-      ucans.createBuilder()
+      ucans.Builder.create()
         .toAudience(bob.did())
         .withLifetimeInSeconds(1)
         .buildPayload()
     }).toThrow()
     // audience missing
     expect(() => {
-      ucans.createBuilder()
+      ucans.Builder.create()
         .issuedBy(alice)
         .withLifetimeInSeconds(1)
         .buildPayload()
     }).toThrow()
     // expiration missing
     expect(() => {
-      ucans.createBuilder()
+      ucans.Builder.create()
         .issuedBy(alice)
         .toAudience(bob.did())
         .buildPayload()
@@ -103,7 +103,7 @@ describe("Builder", () => {
   })
 
   it("throws when trying to delegate unproven capabilities", async () => {
-    const ucan = await ucans.createBuilder()
+    const ucan = await ucans.Builder.create()
       .issuedBy(alice)
       .toAudience(bob.did())
       .withLifetimeInSeconds(30)
@@ -121,7 +121,7 @@ describe("Builder", () => {
     }
 
     expect(() => {
-      ucans.createBuilder()
+      ucans.Builder.create()
         .issuedBy(bob)
         .toAudience(mallory.did())
         .withLifetimeInSeconds(30)

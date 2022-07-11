@@ -1,8 +1,8 @@
 import { emailCapabilities, emailCapability } from "./capability/email"
 
 import { alice, bob, mallory } from "./fixtures"
-import { all } from "../src/util"
-import * as ucans from "./lib"
+import { all } from "../src"
+import * as ucans from "../src"
 
 
 describe("attenuation.emailCapabilities", () => {

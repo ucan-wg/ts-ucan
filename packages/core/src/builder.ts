@@ -21,7 +21,11 @@ function isCapabilityLookupCapableState(obj: unknown): obj is CapabilityLookupCa
     && util.hasProp(obj, "expiration") && typeof obj.expiration === "number"
 }
 
-type BuilderConstructor = new <State extends Partial<BuildableState>>(state: State, defaultable: DefaultableState) => BuilderI<State>
+// type BuilderConstructor = new <State extends Partial<BuildableState>>(state: State, defaultable: DefaultableState) => BuilderI<State>
+type BuilderConstructor = { 
+  new <State extends Partial<BuildableState>>(state: State, defaultable: DefaultableState): BuilderI<State> 
+  create(): BuilderI<Record<string, never>> 
+}
 
 /**
  * A builder API for UCANs.

@@ -17,6 +17,8 @@ export * from "./util.js"
 export * as capability from "./capability/index.js"
 export * as ability from "./capability/ability.js"
 
+export { ResourcePointer, isResourcePointer } from "./capability/resource-pointer.js"
+export { Ability, isAbility, Superuser, SUPERUSER } from "./capability/ability.js"
 export { Capability, EncodedCapability, isCapability } from "./capability/index.js"
 
 export const getPluginInjectedApi = (plugins: Plugins) => {

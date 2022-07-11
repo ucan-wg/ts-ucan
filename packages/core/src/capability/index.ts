@@ -10,7 +10,7 @@ import { Superuser } from "./super-user.js"
 // RE-EXPORTS
 
 
-export { ability, resourcePointer }
+export { ability, resourcePointer, Ability, isAbility }
 
 
 

@@ -1,10 +1,11 @@
-import { Ucan } from "../../src/types"
-import { DelegationSemantics } from "../../src/attenuation"
-import { Ability } from "../../src/capability/ability"
-import { Capability } from "../../src/capability"
-import { SUPERUSER } from "../../src/capability/super-user"
-import { ResourcePointer } from "../../src/capability/resource-pointer"
-import * as ucans from "../lib"
+import * as ucans from "../../src"
+import {
+  Ucan, 
+  DelegationSemantics,
+  Ability,
+  Capability,
+  ResourcePointer
+} from "../../src"
 
 // 🌸
 
@@ -35,10 +36,10 @@ export const EMAIL_SEMANTICS: DelegationSemantics = {
   },
 
   canDelegateAbility(parentAbility, ability) {
-    if (parentAbility === SUPERUSER) {
+    if (parentAbility === ucans.SUPERUSER) {
       return true
     }
-    if (ability === SUPERUSER) {
+    if (ability === ucans.SUPERUSER) {
       return false
     }
     return parentAbility.namespace === "msg"

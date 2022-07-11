@@ -1,10 +1,14 @@
-import { Ability, isAbility } from "../../src/capability/ability"
-import { Capability } from "../../src/capability"
-import { DelegationSemantics, DelegatedCapability, DelegatedOwnership, rootIssuer } from "../../src/attenuation"
-import { SUPERUSER } from "../../src/capability/super-user"
-import { Ucan } from "../../src/types"
-import { ResourcePointer } from "../../src/capability/resource-pointer"
-import * as ucans from "../lib"
+import * as ucans from "../../src"
+import { 
+  Ucan,
+  Capability,
+  DelegationSemantics,
+  DelegatedCapability,
+  DelegatedOwnership,
+  Ability,
+  ResourcePointer,
+  rootIssuer
+} from "../../src"
 
 
 export const WNFS_ABILITY_LEVELS = {
@@ -24,15 +28,15 @@ export function isWnfsCap(cap: Capability): boolean {
 }
 
 export function isWnfsAbility(ability: unknown): ability is WnfsAbility {
-  if (!isAbility(ability)) return false
-  if (ability === SUPERUSER) return true
+  if (!ucans.isAbility(ability)) return false
+  if (ability === ucans.SUPERUSER) return true
   const abilitySegment = ability.segments[ 0 ]
   const isWnfsAbilitySegment = !!abilitySegment && WNFS_ABILITIES.includes(abilitySegment)
   return isWnfsAbilitySegment && ability.namespace.toLowerCase() === "wnfs"
 }
 
 export function wnfsAbilityFromAbility(ability: Ability): WnfsAbility | null {
-  if (ability === SUPERUSER) return "SUPER_USER"
+  if (ability === ucans.SUPERUSER) return "SUPER_USER"
   if (isWnfsAbility(ability)) return ability.segments[ 0 ] as WnfsAbility
   return null
 }

@@ -4,7 +4,11 @@ import { capabilityCanBeDelegated, DelegationSemantics, DelegationChain, delegat
 import { IndexByAudience, StoreI, Ucan } from "./types.js"
 import { Capability } from "./capability/index.js"
 
-type StoreConstructor = new (knownSemantics: DelegationSemantics, index: IndexByAudience) => StoreI
+type StoreConstructor = {
+  new (knownSemantics: DelegationSemantics, index: IndexByAudience): StoreI
+  empty(knownSemantics: DelegationSemantics): StoreI
+  fromTokens(knownSemantics: DelegationSemantics, tokens: Iterable<string> | AsyncIterable<string>): Promise<StoreI>
+}
 
 const mkStoreClass = (plugins: Plugins): StoreConstructor => {
   return class Store implements StoreI{

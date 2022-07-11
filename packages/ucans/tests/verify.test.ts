@@ -1,6 +1,6 @@
 import { emailCapability } from "./capability/email"
 import { alice, bob, mallory } from "./fixtures"
-import * as ucans from "./lib"
+import * as ucans from "../src"
 
 describe("verify", () => {
 
@@ -59,7 +59,7 @@ describe("verify", () => {
       requiredCapabilities: [ {
         capability: {
           ...emailCapability("alice@email.com"),
-          can: ucans.ability.SUPERUSER,
+          can: ucans.SUPERUSER,
         },
         rootIssuer: alice.did()
       } ]
@@ -121,7 +121,7 @@ describe("verify", () => {
     const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ ucans.capability.prf(ucans.ability.SUPERUSER, ucans.ability.REDELEGATE) ],
+      capabilities: [ ucans.capability.prf(ucans.SUPERUSER, ucans.ability.REDELEGATE) ],
       proofs: [ ucans.encode(leafUcan) ]
     })
 
@@ -215,7 +215,7 @@ describe("verify", () => {
     const ucan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ ucans.capability.prf(ucans.ability.SUPERUSER, ucans.ability.REDELEGATE) ],
+      capabilities: [ ucans.capability.prf(ucans.SUPERUSER, ucans.ability.REDELEGATE) ],
       proofs: [ ucans.encode(leafUcan) ]
     })
 
@@ -234,7 +234,7 @@ describe("verify", () => {
     const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ ucans.capability.my(ucans.ability.SUPERUSER) ]
+      capabilities: [ ucans.capability.my(ucans.SUPERUSER) ]
     })
 
     const ucan = await ucans.build({
@@ -263,13 +263,13 @@ describe("verify", () => {
     const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ ucans.capability.my(ucans.ability.SUPERUSER) ]
+      capabilities: [ ucans.capability.my(ucans.SUPERUSER) ]
     })
 
     const middleUcan = await ucans.build({
       issuer: bob,
       audience: mallory.did(),
-      capabilities: [ ucans.capability.as(alice.did(), ucans.ability.SUPERUSER) ],
+      capabilities: [ ucans.capability.as(alice.did(), ucans.SUPERUSER) ],
       proofs: [ ucans.encode(leafUcan) ]
     })
 
@@ -324,7 +324,7 @@ describe("verify", () => {
     const leafUcan = await ucans.build({
       issuer: alice,
       audience: bob.did(),
-      capabilities: [ ucans.capability.as(bob.did(), ucans.ability.SUPERUSER) ]
+      capabilities: [ ucans.capability.as(bob.did(), ucans.SUPERUSER) ]
     })
 
     const ucan = await ucans.build({

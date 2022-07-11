@@ -1,9 +1,8 @@
-import { Capability } from "../../src/capability"
 import { wnfsCapability, wnfsPrivateCapabilities, wnfsPublicCapabilities } from "./wnfs"
-
 import { alice, bob, mallory } from "../fixtures"
-import { all } from "../../src/util"
-import * as ucans from "../lib"
+
+import * as ucans from "../../src"
+import { Capability, all } from "../../src"
 
 
 describe("wnfs public capability", () => {
