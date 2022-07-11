@@ -1,5 +1,12 @@
 # Changelog
 
+### v0.10.0
+
+- Added a new verify function for checking UCANs  
+- Removed `hasCapability` and chained interface in favor of verify  
+- Added public key compression for NIST P-256 keys  
+- Added re-delegation to capability checking  
+
 ### v0.9.1
 
 Fixed ESM build.
