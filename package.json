@@ -12,6 +12,11 @@
   "engines": {
     "node": ">=15"
   },
+  "scripts": {
+    "build": "yarn workspace @ucans/core build && yarn workspace @ucans/default-plugins build && yarn workspace @ucans/ucans build",
+    "test": "yarn workspace @ucans/core test && yarn workspace @ucans/default-plugins test && yarn workspace @ucans/ucans test",
+    "lint": "yarn workspace @ucans/core lint && yarn workspace @ucans/default-plugins lint && yarn workspace @ucans/ucans lint"
+  },
   "private": true,
   "workspaces": [
     "packages/*"
