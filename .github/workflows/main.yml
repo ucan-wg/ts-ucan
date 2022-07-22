@@ -46,7 +46,10 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile --network-concurrency 1
 
-      - name: Build & Test
+      - name: Build
+        run: yarn build
+
+      - name: Test
         run: yarn test
 
       # Run lint after testing for more info

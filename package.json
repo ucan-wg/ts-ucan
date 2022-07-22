@@ -1,11 +1,10 @@
 {
   "name": "ucans",
-  "version": "0.10.0",
   "description": "Typescript implementation of UCANs",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fission-suite/ucan"
+    "url": "https://github.com/ucan-wg/ts-ucan"
   },
   "homepage": "https://guide.fission.codes",
   "license": "Apache-2.0",
@@ -13,75 +12,15 @@
     "node": ">=15"
   },
   "scripts": {
-    "prebuild": "rimraf dist",
-    "build": "yarn run dist",
-    "dev": "tsc --watch --module commonjs --outDir ./dist/cjs/ --sourceMap",
-    "dist": "yarn run dist:prep && yarn run dist:src && yarn run dist:cjs && yarn run dist:esm && yarn run dist:types && yarn run dist:pkg",
-    "dist:cjs": "tsc --project ./dist/ --module commonjs --outDir ./dist/cjs/ --sourceMap",
-    "dist:esm": "tsc --project ./dist/ --module es2020 --outDir ./dist/esm/ --sourceMap",
-    "dist:pkg": "node ./scripts/package.js",
-    "dist:prep": "copyfiles --error tsconfig.json ./dist/",
-    "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
-    "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
-    "lint": "eslint src/**/*.ts src/*.ts tests/**/*.ts tests/*.ts",
-    "prepare": "yarn build",
-    "publish-alpha": "yarn publish --tag alpha",
-    "publish-stable": "yarn publish --tag latest",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "build": "yarn workspace @ucans/core build && yarn workspace @ucans/default-plugins build && yarn workspace @ucans/ucans build",
+    "test": "yarn workspace @ucans/core test && yarn workspace @ucans/default-plugins test && yarn workspace @ucans/ucans test",
+    "lint": "yarn workspace @ucans/core lint && yarn workspace @ucans/default-plugins lint && yarn workspace @ucans/ucans lint"
   },
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
-    },
-    "./*.js": {
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js",
-      "types": "./dist/types/*.d.ts"
-    },
-    "./*": {
-      "import": "./dist/esm/*.js",
-      "require": "./dist/cjs/*.js",
-      "types": "./dist/types/*.d.ts"
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "index.d.ts": [
-        "dist/types/index.d.ts"
-      ],
-      "*": [
-        "dist/types/*"
-      ]
-    }
-  },
-  "files": [
-    "dist",
-    "docs",
-    "CHANGELOG.md",
-    "LICENSE",
-    "README.md"
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
-  "dependencies": {
-    "@stablelib/ed25519": "^1.0.2",
-    "big-integer": "^1.6.51",
-    "one-webcrypto": "^1.0.3",
-    "uint8arrays": "^3.0.0"
-  },
   "devDependencies": {
-    "@types/jest": "^27.4.1",
-    "@types/node": "^17.0.23",
-    "@typescript-eslint/eslint-plugin": "^5.18.0",
-    "@typescript-eslint/parser": "^5.18.0",
-    "copyfiles": "^2.4.1",
-    "eslint": "^8.12.0",
-    "fast-check": "^2.24.0",
-    "jest": "^27.5.1",
-    "rimraf": "^3.0.2",
-    "ts-jest": "^27.1.4",
-    "typescript": "^4.6.3",
-    "yarn": "^1.22.18"
+    "ts-node": "^10.8.2"
   }
 }
