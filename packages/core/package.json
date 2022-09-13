@@ -1,6 +1,6 @@
 {
   "name": "@ucans/core",
-  "version": "0.11.0",
+  "version": "0.11.0-alpha",
   "description": "Core UCAN implementation",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
@@ -65,7 +65,7 @@
     "README.md"
   ],
   "dependencies": {
-    "uint8arrays": "^3.0.0"
+    "uint8arrays": "3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
