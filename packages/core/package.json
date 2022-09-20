@@ -65,7 +65,7 @@
     "README.md"
   ],
   "dependencies": {
-    "uint8arrays": "^3.0.0"
+    "uint8arrays": "3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
