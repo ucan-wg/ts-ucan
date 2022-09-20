@@ -30,7 +30,7 @@ export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
 export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
   return await webcrypto.subtle.importKey(
     "spki",
-    key.buffer,
+    key,
     { name: RSA_ALG, hash: { name: DEFAULT_HASH_ALG } },
     true,
     [ "verify" ]
@@ -41,7 +41,7 @@ export const sign = async (msg: Uint8Array, privateKey: CryptoKey): Promise<Uint
   const buf = await webcrypto.subtle.sign(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
     privateKey,
-    msg.buffer
+    msg
   )
   return new Uint8Array(buf)
 }
@@ -50,8 +50,8 @@ export const verify = async (pubKey: Uint8Array, msg: Uint8Array, sig: Uint8Arra
   return await webcrypto.subtle.verify(
     { name: RSA_ALG, saltLength: SALT_LEGNTH },
     await importKey(pubKey),
-    sig.buffer,
-    msg.buffer
+    sig,
+    msg
   )
 }
 
