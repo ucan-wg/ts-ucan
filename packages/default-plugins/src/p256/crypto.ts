@@ -59,7 +59,7 @@ export const importKey = async (
 ): Promise<CryptoKey> => {
   return await webcrypto.subtle.importKey(
     "raw",
-    key.buffer,
+    key,
     { name: ALG, namedCurve: DEFAULT_CURVE },
     true,
     [ "verify" ]
@@ -73,7 +73,7 @@ export const sign = async (
   const buf = await webcrypto.subtle.sign(
     { name: ALG, hash: { name: DEFAULT_HASH_ALG } },
     privateKey,
-    msg.buffer
+    msg
   )
   return new Uint8Array(buf)
 }
@@ -86,8 +86,8 @@ export const verify = async (
   return await webcrypto.subtle.verify(
     { name: ALG, hash: { name: DEFAULT_HASH_ALG } },
     await importKey(pubKey),
-    sig.buffer,
-    msg.buffer
+    sig,
+    msg
   )
 }
 
