@@ -1,5 +1,16 @@
 # Changelog
 
+### v0.11.0
+
+- Refactors `ucans` to use a plugin system for DIDs & keys. It is now 3 packages in a monorepo:
+  - `@ucans/core` - core functionality & logic around UCANs
+  - `@ucans/default-plugins` - support for ed25519, NIST P-256, & RSA
+  - `@ucans/ucans` - `core` with `default-plugins` injected
+- Locked `uint8arrays` to `v3.0.0`
+- Removed `KeyType` in favor of `jwtAlg`
+- Removed `BaseKey` class
+
+
 ### v0.10.0
 
 - Added a new verify function for checking UCANs  
