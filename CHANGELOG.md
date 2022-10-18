@@ -1,6 +1,6 @@
 # Changelog
 
-### v0.11.1
+### v0.11.2
 
 - Add `.js` suffixes to imports for ESM builds
 
