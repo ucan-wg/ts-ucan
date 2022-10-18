@@ -1,6 +1,6 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
-import { RSA_DID_PREFIX, RSA_DID_PREFIX_OLD } from "../prefixes"
+import { RSA_DID_PREFIX, RSA_DID_PREFIX_OLD } from "../prefixes.js"
 import { didFromKeyBytes, keyBytesFromDid } from "../util.js"
 
 export const RSA_ALG = "RSASSA-PKCS1-v1_5"
