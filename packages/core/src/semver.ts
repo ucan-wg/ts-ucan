@@ -1,4 +1,4 @@
-import { hasProp, isRecord } from "./util"
+import { hasProp, isRecord } from "./util.js"
 
 
 // Types
