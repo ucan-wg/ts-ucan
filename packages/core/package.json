@@ -1,6 +1,6 @@
 {
   "name": "@ucans/core",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Core UCAN implementation",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {

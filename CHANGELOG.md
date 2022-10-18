@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.11.1
+
+- Add `.js` suffixes to imports for ESM builds
+
 ### v0.11.0
 
 - Refactors `ucans` to use a plugin system for DIDs & keys. It is now 3 packages in a monorepo:
