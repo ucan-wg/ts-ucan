@@ -98,18 +98,18 @@ type BuildParams = {
 ### NPM:
 
 ```
-npm install --save ucans
+npm install --save @ucans/ucans
 ```
 
 ### yarn:
 
 ```
-yarn add ucans
+yarn add @ucans/ucans
 ```
 
 ## Example
 ```ts
-import * as ucans from "ucans"
+import * as ucans from "@ucans/ucans"
 
 // in-memory keypair
 const keypair = await ucans.EdKeypair.create()
@@ -147,7 +147,7 @@ Using a UCAN to authorize an action is called "invocation".
 To verify invocations, you need to use the `verify` function.
 
 ```ts
-import * as ucans from "ucans"
+import * as ucans from "@ucans/ucans"
 
 const serviceDID = "did:key:zabcde..."
 
@@ -196,7 +196,7 @@ in combination may result in a delegation being possible. Please talk to us
 with your use-case and ideas for how a good API for that may work.)
 
 ```ts
-import * as ucans from "ucans"
+import * as ucans from "@ucans/ucans"
 
 // Delegation semantics for path-like capabilities (e.g. "path:/home/abc/")
 const PATH_SEMANTICS = {
