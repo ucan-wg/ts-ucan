@@ -1,6 +1,6 @@
 {
   "name": "@ucans/ucans",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "description": "Typescript implementation of UCANs with default plugins",
   "author": "Daniel Holmgren <daniel@fission.codes>",
   "repository": {
@@ -23,7 +23,7 @@
     "dist:prep": "copyfiles --error tsconfig.json ./dist/",
     "dist:src": "copyfiles --error --up 1 \"./src/**/*\" ./dist/src/",
     "dist:types": "tsc --project ./dist/ --emitDeclarationOnly --declaration --declarationDir ./dist/types/",
-    "dist:readme": "copyfiles --error --up 2 ../../README.md ./dist/",
+    "dist:readme": "copyfiles --error --up 2 ../../README.md ./",
     "lint": "eslint src/**/*.ts src/*.ts",
     "prepare": "yarn build",
     "publish-alpha": "yarn publish --tag alpha --access public",
