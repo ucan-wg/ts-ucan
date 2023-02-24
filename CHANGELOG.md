@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.11.3
+
+- Upload `README.md` to `@ucans/ucans` on npm.
+
 ### v0.11.2
 
 - Add `.js` suffixes to imports for ESM builds
