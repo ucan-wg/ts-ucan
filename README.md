@@ -234,7 +234,7 @@ To get started working with this repository:
  - `cd ts-ucan`
  - `yarn`
 
-Note that usign npm with this repository will likely fail, please use yan instead.
+Note that using npm with this repository will likely fail, please use yarn instead.
 
 
 ## Sponsors
