@@ -226,6 +226,16 @@ const PATH_SEMANTICS = {
 }
 ```
 
+## Contributing
+
+To get started working with this repository:
+
+ - `git clone git@github.com:ucan-wg/ts-ucan.git`
+ - `cd ts-ucan`
+ - `yarn`
+
+Note that using npm with this repository will likely fail, please use yarn instead.
+
 
 ## Sponsors
 
