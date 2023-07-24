@@ -53,7 +53,7 @@ export function handleCompatibility(header: unknown, payload: unknown): UcanPart
 
   // parse either the "ucv" or "uav" as a version in the header
   // we translate 'uav: 1.0.0' into 'ucv: 0.3.0'
-  let version: "0.8.1" | "0.3.0" = "0.8.1"
+  let version: "0.9.1" | "0.3.0" = "0.9.1"
   if (!util.hasProp(header, "ucv") || typeof header.ucv !== "string") {
     if (!util.hasProp(header, "uav") || typeof header.uav !== "string") {
       throw fail("header", "Invalid format: Missing version indicator")
