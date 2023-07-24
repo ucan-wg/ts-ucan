@@ -1,4 +1,5 @@
 # ts-ucan
+![UCAN](https://img.shields.io/badge/UCAN-v0.8.1-blue)
 [![NPM](https://img.shields.io/npm/v/ucans)](https://www.npmjs.com/package/ucans)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/fission-suite/blob/master/LICENSE)
 [![Discussions](https://img.shields.io/github/discussions/ucan-wg/ts-ucan)](https://github.com/ucan-wg/ts-ucan/discussions)
