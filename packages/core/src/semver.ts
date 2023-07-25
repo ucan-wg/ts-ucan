@@ -28,9 +28,10 @@ const matchesRegex = (regex: RegExp) => (str: string) => {
 }
 
 export function parse(version: string): SemVer | null {
-  let sv = version.match(
+  const sv = version.match(
     /^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-(?<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
   )
+
   if (sv === null) {
     return null
   }
@@ -45,9 +46,9 @@ export function parse(version: string): SemVer | null {
   if (!parts.every(matchesRegex(NUM_REGEX))) {
     return null
   }
-  
-  const [ major, minor, patch ] = parts.map(part => parseInt(part, 10))
-  
+
+  const [major, minor, patch] = parts.map(part => parseInt(part, 10))
+
   if (!Number.isSafeInteger(major) || !Number.isSafeInteger(minor) || !Number.isSafeInteger(patch)) {
     return null
   }
