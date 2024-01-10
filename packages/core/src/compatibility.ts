@@ -5,8 +5,8 @@ import * as semver from "./semver.js"
 
 import * as util from "./util.js"
 import { SUPERUSER } from "./capability/super-user.js"
-import { UcanParts, isUcanHeader, isUcanPayload } from "./types.js"
-import { my } from "./capability/index.js"
+import { isUcanHeader, isUcanPayload, Fact } from "./types.js"
+import { Capability, EncodedCapability, isCapability, isEncodedCapability, my } from "./capability/index.js"
 
 
 const VERSION_0_3 = { major: 0, minor: 3, patch: 0 }
@@ -44,12 +44,60 @@ function isUcanPayload_0_3_0(obj: unknown): obj is UcanPayload_0_3_0 {
     && util.hasProp(obj, "ptc") && typeof obj.ptc === "string"
     && (!util.hasProp(obj, "prf") || typeof obj.prf === "string")
 }
+type UcanHeader_0_8_0 = {
+  alg: string
+  typ: string
+  uav: string
+}
+
+type UcanPayload_0_8_0 = {
+  iss: string
+  aud: string
+  exp: number
+  nbf?: number
+  nnc?: string
+  att: Array<EncodedCapability | Capability>
+  fct?: Array<Fact>
+  prf: Array<string>
+}
+
+function isUcanHeader_0_8_0(obj: unknown): obj is UcanHeader_0_8_0 {
+  return isUcanHeader_0_3_0(obj)
+}
+
+function isUcanPayload_0_8_0(obj: unknown): obj is UcanPayload_0_8_0 {
+  return util.isRecord(obj)
+    && util.hasProp(obj, "iss") && typeof obj.iss === "string"
+    && util.hasProp(obj, "aud") && typeof obj.aud === "string"
+    && util.hasProp(obj, "exp") && typeof obj.exp === "number"
+    && (!util.hasProp(obj, "nbf") || typeof obj.nbf === "number")
+    && (!util.hasProp(obj, "nnc") || typeof obj.nnc === "string")
+    && util.hasProp(obj, "att") && Array.isArray(obj.att) && obj.att.every(a => isCapability(a) || isEncodedCapability(a))
+    && (!util.hasProp(obj, "fct") || Array.isArray(obj.fct) && obj.fct.every(util.isRecord))
+    && util.hasProp(obj, "prf") && Array.isArray(obj.prf) && obj.prf.every(str => typeof str === "string")
+}
 
 
-export function handleCompatibility(header: unknown, payload: unknown): UcanParts {
+export function handleCompatibility(header: unknown, payload: unknown) {
   const fail = (place: string, reason: string) => new Error(`Can't parse UCAN ${place}: ${reason}`)
 
   if (!util.isRecord(header)) throw fail("header", "Invalid format: Expected a record")
+
+  if (util.hasProp(payload, "ucv")) {
+    // Version >= 0.10
+    if (typeof payload.ucv !== "string") {
+      throw fail("payload", "Invalid format: field 'ucv' is not a string")
+    }
+    payload.ucv = semver.parse(payload.ucv)
+    if (payload.ucv == null) {
+      throw fail("payload", "Invalid format: 'ucv' string cannot be parsed into a semantic version")
+    }
+    if (!isUcanHeader(header)) throw fail("header", "Invalid format")
+    if (!isUcanPayload(payload)) throw fail("payload", "Invalid format")
+    return { header, payload }
+  }
+
+  // Handle < 0.10 (actually, only <= 0.8 are supported, afaik) //
 
   // parse either the "ucv" or "uav" as a version in the header
   // we translate 'uav: 1.0.0' into 'ucv: 0.3.0'
@@ -69,13 +117,22 @@ export function handleCompatibility(header: unknown, payload: unknown): UcanPart
     if (typeof header.ucv !== "string") {
       throw fail("header", "Invalid format: Missing 'ucv' key or 'ucv' is not a string")
     }
-    header.ucv = semver.parse(header.ucv)
-    if (header.ucv == null) {
+    const ucv = semver.parse(header.ucv)
+    if (ucv == null) {
       throw fail("header", "Invalid format: 'ucv' string cannot be parsed into a semantic version")
     }
-    if (!isUcanHeader(header)) throw fail("header", "Invalid format")
-    if (!isUcanPayload(payload)) throw fail("payload", "Invalid format")
-    return { header, payload }
+    if (!isUcanHeader_0_8_0(header)) throw fail("header", "Invalid format")
+    if (!isUcanPayload_0_8_0(payload)) throw fail("payload", "Invalid format")
+    return {
+      header: {
+        alg: header.alg,
+        typ: header.typ,
+      },
+      payload: {
+        ...payload,
+        ucv: ucv,
+      }
+    }
   }
 
   // we know it's version 0.3.0
@@ -86,9 +143,9 @@ export function handleCompatibility(header: unknown, payload: unknown): UcanPart
     header: {
       alg: header.alg,
       typ: header.typ,
-      ucv: VERSION_0_3,
     },
     payload: {
+      ucv: VERSION_0_3,
       iss: payload.iss,
       aud: payload.aud,
       nbf: payload.nbf,

@@ -30,10 +30,10 @@ export interface UcanParts<Prf = string> {
 export type UcanHeader = {
   alg: string
   typ: string
-  ucv: SemVer
 }
 
 export type UcanPayload<Prf = string> = {
+  ucv: SemVer
   iss: string
   aud: string
   exp: number
@@ -156,11 +156,11 @@ export function isUcanHeader(obj: unknown): obj is UcanHeader {
   return util.isRecord(obj)
     && util.hasProp(obj, "alg") && typeof obj.alg === "string"
     && util.hasProp(obj, "typ") && typeof obj.typ === "string"
-    && util.hasProp(obj, "ucv") && semver.isSemVer(obj.ucv)
 }
 
 export function isUcanPayload(obj: unknown): obj is UcanPayload {
   return util.isRecord(obj)
+    && util.hasProp(obj, "ucv") && semver.isSemVer(obj.ucv)
     && util.hasProp(obj, "iss") && typeof obj.iss === "string"
     && util.hasProp(obj, "aud") && typeof obj.aud === "string"
     && util.hasProp(obj, "exp") && typeof obj.exp === "number"

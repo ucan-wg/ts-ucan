@@ -15,7 +15,7 @@ import { handleCompatibility } from "./compatibility.js"
 
 
 const TYPE = "JWT"
-const VERSION = { major: 0, minor: 8, patch: 1 }
+const VERSION = { major: 0, minor: 10, patch: 0 }
 
 
 
@@ -29,10 +29,10 @@ const VERSION = { major: 0, minor: 8, patch: 1 }
  *
  * `alg`, Algorithm, the type of signature.
  * `typ`, Type, the type of this data structure, JWT.
- * `ucv`, UCAN version.
  *
  * ### Payload
  *
+ * `ucv`, UCAN Semantic Version.
  * `att`, Attenuation, a list of resources and capabilities that the ucan grants.
  * `aud`, Audience, the ID of who it's intended for.
  * `exp`, Expiry, unix timestamp of when the jwt is no longer valid.
@@ -110,6 +110,7 @@ export function buildPayload(params: {
 
   // 📦
   return {
+    ucv: VERSION,
     aud: audience,
     att: capabilities,
     exp,
@@ -132,7 +133,6 @@ export const sign = (plugins: Plugins) =>
   const header: UcanHeader = {
     alg: jwtAlg,
     typ: TYPE,
-    ucv: VERSION,
   }
 
   // Issuer key type must match UCAN algorithm
@@ -195,12 +195,8 @@ export function encode(ucan: Ucan<unknown>): string {
  * @returns The header of a UCAN encoded as url-safe base64 JSON
  */
 export function encodeHeader(header: UcanHeader): string {
-  const headerFormatted = {
-    ...header,
-    ucv: semver.format(header.ucv)
-  }
   return uint8arrays.toString(
-    uint8arrays.fromString(JSON.stringify(headerFormatted), "utf8"),
+    uint8arrays.fromString(JSON.stringify(header), "utf8"),
     "base64url"
   )
 }
@@ -217,6 +213,7 @@ export function encodeHeader(header: UcanHeader): string {
 export function encodePayload(payload: UcanPayload): string {
   const payloadWithEncodedCaps = {
     ...payload,
+    ucv: semver.format(payload.ucv),
     att: payload.att.map(capability.encode)
   }
 
@@ -282,8 +279,8 @@ export function parse(encodedUcan: string): UcanParts {
   // Ensure proper types/structure
   const parsedAttenuations = payload.att.reduce((acc: Capability[], cap: unknown): Capability[] => {
     return isEncodedCapability(cap)
-      ? [ ...acc, capability.parse(cap) ]
-      : isCapability(cap) ? [ ...acc, cap ] : acc
+      ? [...acc, capability.parse(cap)]
+      : isCapability(cap) ? [...acc, cap] : acc // ?! silently dropping if not valid
   }, [])
 
   // Fin
@@ -407,8 +404,8 @@ export const validateProofs = (plugins: Plugins) =>
         throw new Error(`Invalid Proof: Expiration (${proof.payload.exp}) is before parent's 'not before' (${ucan.payload.nbf})`)
       }
 
-      if (checkVersionMonotonic && semver.lt(ucan.header.ucv, proof.header.ucv)) {
-        throw new Error(`Invalid Proof: Version (${proof.header.ucv}) is higher than parent's version (${ucan.header.ucv})`)
+        if (checkVersionMonotonic && semver.lt(ucan.payload.ucv, proof.payload.ucv)) {
+          throw new Error(`Invalid Proof: Version (${proof.payload.ucv}) is higher than parent's version (${ucan.payload.ucv})`)
       }
 
       yield proof
