@@ -32,7 +32,7 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     exportable?: boolean
   }): Promise<EcdsaKeypair> {
     const { exportable = false } = params || {}
-    const keypair = await crypto.generateKeypair()
+    const keypair = await crypto.generateKeypair(exportable)
 
     if (!isAvailableCryptoKeyPair(keypair)) {
       throw new Error(`Couldn't generate valid keypair`)
@@ -47,12 +47,12 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     params?: {
       exportable?: boolean
     }): Promise<EcdsaKeypair> {
-      const { exportable = false } = params || {}
-      const keypair = await crypto.importKeypairJwk(jwk, exportable)
+    const { exportable = false } = params || {}
+    const keypair = await crypto.importKeypairJwk(jwk, exportable)
 
-      if (!isAvailableCryptoKeyPair(keypair)) {
-        throw new Error(`Couldn't generate valid keypair`)
-      }
+    if (!isAvailableCryptoKeyPair(keypair)) {
+      throw new Error(`Couldn't generate valid keypair`)
+    }
 
     const publicKey = await crypto.exportKey(keypair.publicKey)
     return new EcdsaKeypair(keypair, publicKey, exportable)
