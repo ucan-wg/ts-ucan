@@ -1,6 +1,6 @@
 import { webcrypto } from "one-webcrypto"
 import * as uint8arrays from "uint8arrays"
-import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { DidableKey, Encodings, ExportableKey, ImportableKey } from "@ucans/core"
 
 import * as crypto from "./crypto.js"
 import {
@@ -70,11 +70,20 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    const arrayBuffer = await webcrypto.subtle.exportKey(
-      "pkcs8",
-      this.keypair.privateKey
-    )
-    return uint8arrays.toString(new Uint8Array(arrayBuffer), format)
+    return JSON.stringify(await crypto.exportPrivateKeyJwk(this.keypair))
+  }
+
+  /**
+   * Convenience function on the Keypair class to allow for keys to be exported / persisted.
+   * This is most useful for situations where you want to have consistent keys between restarts.
+   * A Developer can export a key, save it in a vault, and rehydrate it for use in a later run.
+   * @param jwk 
+   * @returns 
+   */
+  static async import(jwk: PrivateKeyJwk): Promise<EcdsaKeypair> {
+    const keypair = await crypto.importKeypairJwk(jwk, true)
+    const publickey = await crypto.exportKey(keypair.publicKey)
+    return new EcdsaKeypair(keypair, publickey, true)
   }
 }
 
