@@ -1,4 +1,3 @@
-import * as uint8arrays from "uint8arrays"
 import * as ed25519 from "@stablelib/ed25519"
 import * as crypto from "./crypto.js"
 
@@ -28,11 +27,11 @@ export class EdKeypair implements DidableKey, ExportableKey {
   }
 
   static fromSecretKey(key: string, params?: {
-    format?: Encodings
     exportable?: boolean
   }): EdKeypair {
-    const { format = "base64pad", exportable = false } = params || {}
-    const secretKey = uint8arrays.fromString(key, format)
+    const { exportable = false } = params || {}
+
+    const secretKey = new Uint8Array(Buffer.from(key, 'base64'))
     const publicKey = ed25519.extractPublicKeyFromSecretKey(secretKey)
     return new EdKeypair(secretKey, publicKey, exportable)
   }
@@ -45,11 +44,12 @@ export class EdKeypair implements DidableKey, ExportableKey {
     return ed25519.sign(this.secretKey, msg)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<string> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    return uint8arrays.toString(this.secretKey, format)
+    const buf = Buffer.from(this.secretKey)
+    return buf.toString('base64')
   }
 
   static async import(secretKey: string, params?: { exportable: boolean }): Promise<EdKeypair> {
