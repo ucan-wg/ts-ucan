@@ -81,9 +81,7 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
    * @returns 
    */
   static async import(jwk: PrivateKeyJwk): Promise<EcdsaKeypair> {
-    const keypair = await crypto.importKeypairJwk(jwk, true)
-    const publickey = await crypto.exportKey(keypair.publicKey)
-    return new EcdsaKeypair(keypair, publickey, true)
+    return EcdsaKeypair.importFromJwk(jwk, { exportable: true })
   }
 }
 
