@@ -52,6 +52,10 @@ export class EdKeypair implements DidableKey, ExportableKey {
     return uint8arrays.toString(this.secretKey, format)
   }
 
+  static async import(secretKey: string, params?: { exportable: boolean }): Promise<EdKeypair> {
+    const { exportable = false } = params || {}
+    return EdKeypair.fromSecretKey(secretKey, { exportable })
+  }
 }
 
 

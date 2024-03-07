@@ -1,5 +1,5 @@
 import { ed25519Plugin } from "../src/ed25519/plugin.js"
-import EdwardsKey from "../src/ed25519/keypair.js"
+import EdwardsKey, { EdKeypair } from "../src/ed25519/keypair.js"
 
 describe("ed25519", () => {
 
@@ -24,4 +24,40 @@ describe("ed25519", () => {
     expect(isValid).toBeTruthy()
   })
 
+})
+
+describe("Import / Export", () => {
+  let exportableKey: EdKeypair
+  let nonExportableKey: EdKeypair
+
+  beforeAll(async () => {
+    exportableKey = await EdKeypair.create({ exportable: true })
+    nonExportableKey = await EdKeypair.create({ exportable: false })
+  })
+
+  it("Will export a key that is exportable", async () => {
+    const exported = exportableKey.export()
+    expect(exported).not.toBe(null)
+  })
+
+  it("Will not export a key that is not exportable", async () => {
+    await expect(nonExportableKey.export())
+      .rejects
+      .toThrow("Key is not exportable")
+  })
+
+  it("Will import an exported key", async () => {
+    const exported = await exportableKey.export()
+    const newKey = await EdKeypair.import(exported)
+
+    expect(newKey.did()).toEqual(exportableKey.did())
+
+    // Sign and verify
+    const msg = new Uint8Array(Buffer.from("test signing", "utf-8"))
+    let signed = await exportableKey.sign(msg)
+    expect(await ed25519Plugin.verifySignature(await newKey.did(), msg, signed)).toBe(true)
+
+    signed = await newKey.sign(msg)
+    expect(await ed25519Plugin.verifySignature(await exportableKey.did(), msg, signed)).toBe(true)
+  })
 })
