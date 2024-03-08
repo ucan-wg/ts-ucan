@@ -1,6 +1,4 @@
-import { webcrypto } from "one-webcrypto"
-import * as uint8arrays from "uint8arrays"
-import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { DidableKey, ExportableKey } from "@ucans/core"
 
 import * as crypto from "./crypto.js"
 import {
@@ -66,11 +64,11 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     return await crypto.sign(msg, this.keypair.privateKey)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<PrivateKeyJwk> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    return JSON.stringify(await crypto.exportPrivateKeyJwk(this.keypair))
+    return await crypto.exportPrivateKeyJwk(this.keypair)
   }
 
   /**

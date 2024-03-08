@@ -6,8 +6,15 @@ export interface AvailableCryptoKeyPair {
 export type PublicKeyJwk = {
   kty: string
   crv: string
-  x: string
-  y: string
+
+  // For P256 curves
+  x?: string
+  y?: string
+
+  // For RSA curves
+  n?: string
+  e?: string
+
 }
 
 export type PrivateKeyJwk = PublicKeyJwk & { d: string }

@@ -3,6 +3,7 @@ import * as ed25519 from "@stablelib/ed25519"
 import * as crypto from "./crypto.js"
 
 import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { PrivateKeyJwk } from "../types.js"
 
 
 export class EdKeypair implements DidableKey, ExportableKey {
@@ -28,7 +29,7 @@ export class EdKeypair implements DidableKey, ExportableKey {
   }
 
   static fromSecretKey(key: string, params?: {
-    format?: Encodings,
+    format?: Encodings
     exportable?: boolean
   }): EdKeypair {
     const { format = "base64pad", exportable = false } = params || {}
@@ -45,17 +46,27 @@ export class EdKeypair implements DidableKey, ExportableKey {
     return ed25519.sign(this.secretKey, msg)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<PrivateKeyJwk> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
 
-    return uint8arrays.toString(this.secretKey, format)
+    const jwk: PrivateKeyJwk = {
+      kty: "EC",
+      crv: "Ed25519",
+      d: uint8arrays.toString(this.secretKey, "base64pad"),
+    }
+    return jwk
   }
 
-  static async import(secretKey: string, params?: { exportable: boolean }): Promise<EdKeypair> {
+  static async import(jwk: PrivateKeyJwk, params?: { exportable: boolean }): Promise<EdKeypair> {
     const { exportable = false } = params || {}
-    return EdKeypair.fromSecretKey(secretKey, { exportable })
+
+    if (jwk.kty !== "EC" || jwk.crv !== "Ed25519") {
+      throw new Error("Cannot import key of type: ${jwk.kty} curve: ${jwk.crv} into ED25519 key")
+    }
+
+    return EdKeypair.fromSecretKey(jwk.d, { exportable })
   }
 }
 

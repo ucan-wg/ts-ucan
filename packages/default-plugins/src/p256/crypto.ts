@@ -53,8 +53,8 @@ export const importKeypairJwk = async (
 
 export const exportPrivateKeyJwk = async (
   keyPair: AvailableCryptoKeyPair
-): Promise<JsonWebKey> => {
-  return await webcrypto.subtle.exportKey("jwk", keyPair.privateKey)
+): Promise<PrivateKeyJwk> => {
+  return await webcrypto.subtle.exportKey("jwk", keyPair.privateKey) as PrivateKeyJwk
 }
 
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {

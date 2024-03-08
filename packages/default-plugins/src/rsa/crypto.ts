@@ -43,7 +43,7 @@ export const importKey = async (key: Uint8Array): Promise<CryptoKey> => {
 }
 
 export const importKeypairJwk = async (
-  privKeyJwk: JsonWebKey,
+  privKeyJwk: PrivateKeyJwk,
   exportable = false
 ): Promise<AvailableCryptoKeyPair> => {
   const privateKey = await webcrypto.subtle.importKey(

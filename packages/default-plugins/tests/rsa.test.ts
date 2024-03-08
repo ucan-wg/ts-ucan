@@ -121,7 +121,7 @@ describe("ASN", () => {
 
     it("can import an exported key", async () => {
       const exported = await exportableKey.export()
-      const newKey = await RsaKeypair.import(JSON.parse(exported))
+      const newKey = await RsaKeypair.import(exported)
 
       expect(newKey.did()).toEqual(exportableKey.did())
 

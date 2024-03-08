@@ -1,4 +1,4 @@
-import * as uint8arrays from 'uint8arrays'
+import * as uint8arrays from "uint8arrays"
 import { p256Plugin } from "../src/p256/plugin.js"
 import EcdsaKeypair from "../src/p256/keypair.js"
 
@@ -63,8 +63,8 @@ describe("ecdsa did:key", () => {
 })
 
 describe("import and exporting a key", () => {
-  let exportableKeypair: EcdsaKeypair;
-  let nonExportableKeypair: EcdsaKeypair;
+  let exportableKeypair: EcdsaKeypair
+  let nonExportableKeypair: EcdsaKeypair
 
   beforeAll(async () => {
     exportableKeypair = await EcdsaKeypair.create({ exportable: true })
@@ -73,19 +73,20 @@ describe("import and exporting a key", () => {
 
   it("can export a key using jwk", async () => {
     const exported = await exportableKeypair.export()
-    expect(exported.length).toBeGreaterThan(0)
+    expect(exported.kty).toBe("EC")
+    expect(exported.crv).toBe("P-256")
   })
 
   it("won't export a non exportable keypar", async () => {
     await expect(nonExportableKeypair.export())
       .rejects
-      .toThrow('Key is not exportable')
+      .toThrow("Key is not exportable")
   })
 
-  it('Can export a key and re-import from it', async () => {
+  it("Can export a key and re-import from it", async () => {
     const exported = await exportableKeypair.export()
 
-    const jwk = JSON.parse(exported)
+    const jwk = exported
     const newKey = await EcdsaKeypair.import(jwk)
 
     const msg = uint8arrays.fromString("test message", "utf-8")
