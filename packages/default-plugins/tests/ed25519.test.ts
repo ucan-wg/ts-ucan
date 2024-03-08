@@ -1,3 +1,4 @@
+import * as uint8arrays from "uint8arrays"
 import { ed25519Plugin } from "../src/ed25519/plugin.js"
 import EdwardsKey, { EdKeypair } from "../src/ed25519/keypair.js"
 
@@ -53,7 +54,7 @@ describe("Import / Export", () => {
     expect(newKey.did()).toEqual(exportableKey.did())
 
     // Sign and verify
-    const msg = new Uint8Array(Buffer.from("test signing", "utf-8"))
+    const msg = uint8arrays.fromString("test signing", "utf-8")
     let signed = await exportableKey.sign(msg)
     expect(await ed25519Plugin.verifySignature(await newKey.did(), msg, signed)).toBe(true)
 

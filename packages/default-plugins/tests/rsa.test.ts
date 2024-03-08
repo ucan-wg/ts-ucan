@@ -126,7 +126,7 @@ describe("ASN", () => {
       expect(newKey.did()).toEqual(exportableKey.did())
 
       // Cross sign and verify
-      const msg = new Uint8Array(Buffer.from("test string", "utf-8"))
+      const msg = uint8arrays.fromString("test signing", "utf-8")
       let signed = await exportableKey.sign(msg)
       expect(await rsaPlugin.verifySignature(newKey.did(), msg, signed)).toBe(true)
 

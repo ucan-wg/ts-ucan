@@ -1,3 +1,4 @@
+import * as uint8arrays from 'uint8arrays'
 import { p256Plugin } from "../src/p256/plugin.js"
 import EcdsaKeypair from "../src/p256/keypair.js"
 
@@ -87,9 +88,7 @@ describe("import and exporting a key", () => {
     const jwk = JSON.parse(exported)
     const newKey = await EcdsaKeypair.import(jwk)
 
-    const input = new Uint8Array(Buffer.from("test", "utf-8"));
-    const msg = new Uint8Array(Buffer.from("test message", "utf-8"))
-
+    const msg = uint8arrays.fromString("test message", "utf-8")
 
     // Expect the public keys to match
     expect(exportableKeypair.did()).toEqual(newKey.did())
