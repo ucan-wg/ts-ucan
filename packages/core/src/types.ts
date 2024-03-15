@@ -59,8 +59,8 @@ export interface Didable {
   did: () => string
 }
 
-export interface ExportableKey {
-  export: (format?: Encodings) => Promise<string>
+export interface ExportableKey<T> {
+  export: () => Promise<T>
 }
 
 export interface Keypair {
@@ -68,7 +68,7 @@ export interface Keypair {
   sign: (msg: Uint8Array) => Promise<Uint8Array>
 }
 
-export interface DidableKey extends Didable, Keypair {}
+export interface DidableKey extends Didable, Keypair { }
 
 // MISC
 
@@ -80,21 +80,21 @@ export type Encodings = SupportedEncodings
 
 
 export interface IndexByAudience {
-  [ audienceDID: string ]: Array<{
+  [audienceDID: string]: Array<{
     processedUcan: Ucan
     capabilities: DelegationChain[]
   }>
 }
 
 export interface StoreI {
-  add(ucan: Ucan): Promise<void> 
-  getByAudience(audience: string): Ucan[] 
-  findByAudience(audience: string, predicate: (ucan: Ucan) => boolean): Ucan | null 
+  add(ucan: Ucan): Promise<void>
+  getByAudience(audience: string): Ucan[]
+  findByAudience(audience: string, predicate: (ucan: Ucan) => boolean): Ucan | null
   findWithCapability(
     audience: string,
     requiredCapability: Capability,
     requiredIssuer: string,
-  ): Iterable<DelegationChain>   
+  ): Iterable<DelegationChain>
 }
 
 // BUILDER

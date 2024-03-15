@@ -8,7 +8,7 @@ import {
 } from "../types.js"
 
 
-export class EcdsaKeypair implements DidableKey, ExportableKey {
+export class EcdsaKeypair implements DidableKey, ExportableKey<PrivateKeyJwk> {
 
   public jwtAlg = "ES256"
 

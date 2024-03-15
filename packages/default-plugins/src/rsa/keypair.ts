@@ -3,7 +3,7 @@ import { AvailableCryptoKeyPair, PrivateKeyJwk, isAvailableCryptoKeyPair } from 
 import { DidableKey, ExportableKey } from "@ucans/core"
 
 
-export class RsaKeypair implements DidableKey, ExportableKey {
+export class RsaKeypair implements DidableKey, ExportableKey<PrivateKeyJwk>{
 
   public jwtAlg = "RS256"
 

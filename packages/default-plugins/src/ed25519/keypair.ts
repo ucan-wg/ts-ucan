@@ -6,7 +6,7 @@ import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
 import { PrivateKeyJwk } from "../types.js"
 
 
-export class EdKeypair implements DidableKey, ExportableKey {
+export class EdKeypair implements DidableKey, ExportableKey<PrivateKeyJwk> {
 
   public jwtAlg = "EdDSA"
 
