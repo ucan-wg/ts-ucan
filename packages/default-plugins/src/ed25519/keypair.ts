@@ -62,6 +62,10 @@ export class EdKeypair implements DidableKey, ExportableKey {
     * as the `d` parameter seems to make sense and have some compatibility with other tools.
     * 
     * [Link](https://gist.github.com/kousu/f3174af57e1fc42a0a88586b5a5ffdc9)
+    * 
+    * While `kty` and `crv` are not absolutely required for this to work within the library,
+    * including them is an attempt to be closer to the [JWK Spec](https://datatracker.ietf.org/doc/html/rfc7517)
+    * since we are hand rolling this export.
     */
     const jwk: PrivateKeyJwk = {
       kty: "EC",
