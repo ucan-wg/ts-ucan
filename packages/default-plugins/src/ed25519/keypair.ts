@@ -3,9 +3,10 @@ import * as ed25519 from "@stablelib/ed25519"
 import * as crypto from "./crypto.js"
 
 import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { PrivateKeyJwk } from "../types.js"
 
 
-export class EdKeypair implements DidableKey, ExportableKey {
+export class EdKeypair implements DidableKey, ExportableKey<PrivateKeyJwk> {
 
   public jwtAlg = "EdDSA"
 
@@ -45,13 +46,44 @@ export class EdKeypair implements DidableKey, ExportableKey {
     return ed25519.sign(this.secretKey, msg)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<PrivateKeyJwk> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    return uint8arrays.toString(this.secretKey, format)
+
+    /*
+    * EdDSA is relatively new and not supported everywhere. There's no good documentation
+    * within the JWK spec or parameter export to be able to reconstruct the key via parameters
+    * Example, there's no good documentation on parameterizing like other curves: (x, y, n, e)
+    * 
+    * In an effort to remain compatible with other tooling in the space, the following article
+    * describes a way of encoding JWK that is at least consistent with other tooling. As our current
+    * libraries are only able to reconstruct a key via importing a secret key, encoding the secret
+    * as the `d` parameter seems to make sense and have some compatibility with other tools.
+    * 
+    * [Link](https://gist.github.com/kousu/f3174af57e1fc42a0a88586b5a5ffdc9)
+    * 
+    * While `kty` and `crv` are not absolutely required for this to work within the library,
+    * including them is an attempt to be closer to the [JWK Spec](https://datatracker.ietf.org/doc/html/rfc7517)
+    * since we are hand rolling this export.
+    */
+    const jwk: PrivateKeyJwk = {
+      kty: "EC",
+      crv: "Ed25519",
+      d: uint8arrays.toString(this.secretKey, "base64pad"),
+    }
+    return jwk
   }
 
+  static async import(jwk: PrivateKeyJwk, params?: { exportable: boolean }): Promise<EdKeypair> {
+    const { exportable = false } = params || {}
+
+    if (jwk.kty !== "EC" || jwk.crv !== "Ed25519") {
+      throw new Error("Cannot import key of type: ${jwk.kty} curve: ${jwk.crv} into ED25519 key")
+    }
+
+    return EdKeypair.fromSecretKey(jwk.d, { exportable })
+  }
 }
 
 

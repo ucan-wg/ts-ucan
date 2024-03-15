@@ -1,6 +1,4 @@
-import { webcrypto } from "one-webcrypto"
-import * as uint8arrays from "uint8arrays"
-import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { DidableKey, ExportableKey } from "@ucans/core"
 
 import * as crypto from "./crypto.js"
 import {
@@ -10,7 +8,7 @@ import {
 } from "../types.js"
 
 
-export class EcdsaKeypair implements DidableKey, ExportableKey {
+export class EcdsaKeypair implements DidableKey, ExportableKey<PrivateKeyJwk> {
 
   public jwtAlg = "ES256"
 
@@ -32,7 +30,7 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     exportable?: boolean
   }): Promise<EcdsaKeypair> {
     const { exportable = false } = params || {}
-    const keypair = await crypto.generateKeypair()
+    const keypair = await crypto.generateKeypair(exportable)
 
     if (!isAvailableCryptoKeyPair(keypair)) {
       throw new Error(`Couldn't generate valid keypair`)
@@ -47,12 +45,12 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     params?: {
       exportable?: boolean
     }): Promise<EcdsaKeypair> {
-      const { exportable = false } = params || {}
-      const keypair = await crypto.importKeypairJwk(jwk, exportable)
+    const { exportable = false } = params || {}
+    const keypair = await crypto.importKeypairJwk(jwk, exportable)
 
-      if (!isAvailableCryptoKeyPair(keypair)) {
-        throw new Error(`Couldn't generate valid keypair`)
-      }
+    if (!isAvailableCryptoKeyPair(keypair)) {
+      throw new Error(`Couldn't generate valid keypair`)
+    }
 
     const publicKey = await crypto.exportKey(keypair.publicKey)
     return new EcdsaKeypair(keypair, publicKey, exportable)
@@ -66,15 +64,22 @@ export class EcdsaKeypair implements DidableKey, ExportableKey {
     return await crypto.sign(msg, this.keypair.privateKey)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<PrivateKeyJwk> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    const arrayBuffer = await webcrypto.subtle.exportKey(
-      "pkcs8",
-      this.keypair.privateKey
-    )
-    return uint8arrays.toString(new Uint8Array(arrayBuffer), format)
+    return await crypto.exportPrivateKeyJwk(this.keypair)
+  }
+
+  /**
+   * Convenience function on the Keypair class to allow for keys to be exported / persisted.
+   * This is most useful for situations where you want to have consistent keys between restarts.
+   * A Developer can export a key, save it in a vault, and rehydrate it for use in a later run.
+   * @param jwk 
+   * @returns 
+   */
+  static async import(jwk: PrivateKeyJwk): Promise<EcdsaKeypair> {
+    return EcdsaKeypair.importFromJwk(jwk, { exportable: true })
   }
 }
 

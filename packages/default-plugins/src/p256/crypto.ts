@@ -9,14 +9,16 @@ export const ALG = "ECDSA"
 export const DEFAULT_CURVE = "P-256"
 export const DEFAULT_HASH_ALG = "SHA-256"
 
-export const generateKeypair = async (): Promise<AvailableCryptoKeyPair> => {
+export const generateKeypair = async (
+  exportable = false
+): Promise<AvailableCryptoKeyPair> => {
   return await webcrypto.subtle.generateKey(
     {
       name: ALG,
       namedCurve: DEFAULT_CURVE,
     },
-    false,
-    [ "sign", "verify" ]
+    exportable,
+    ["sign", "verify"]
   )
 }
 
@@ -32,10 +34,10 @@ export const importKeypairJwk = async (
       namedCurve: DEFAULT_CURVE,
     },
     exportable,
-    ["sign" ]
+    ["sign"]
   )
-  const { kty, crv, x, y} = privKeyJwk
-  const pubKeyJwk = { kty, crv, x, y}
+  const { kty, crv, x, y } = privKeyJwk
+  const pubKeyJwk = { kty, crv, x, y }
   const publicKey = await webcrypto.subtle.importKey(
     "jwk",
     pubKeyJwk,
@@ -44,9 +46,15 @@ export const importKeypairJwk = async (
       namedCurve: DEFAULT_CURVE,
     },
     true,
-    [ "verify" ]
+    ["verify"]
   )
   return { privateKey, publicKey }
+}
+
+export const exportPrivateKeyJwk = async (
+  keyPair: AvailableCryptoKeyPair
+): Promise<PrivateKeyJwk> => {
+  return await webcrypto.subtle.exportKey("jwk", keyPair.privateKey) as PrivateKeyJwk
 }
 
 export const exportKey = async (key: CryptoKey): Promise<Uint8Array> => {
@@ -62,7 +70,7 @@ export const importKey = async (
     key,
     { name: ALG, namedCurve: DEFAULT_CURVE },
     true,
-    [ "verify" ]
+    ["verify"]
   )
 }
 

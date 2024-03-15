@@ -1,6 +1,6 @@
+import * as uint8arrays from "uint8arrays"
 import { p256Plugin } from "../src/p256/plugin.js"
 import EcdsaKeypair from "../src/p256/keypair.js"
-
 
 describe("ecdsa", () => {
 
@@ -54,10 +54,51 @@ const testVectors = [
 
 describe("ecdsa did:key", () => {
   it("derives the correct DID from the JWK", async () => {
-    for(const vector of testVectors) {
+    for (const vector of testVectors) {
       const keypair = await EcdsaKeypair.importFromJwk(vector.jwk)
       const did = keypair.did()
       expect(did).toEqual(vector.id)
     }
+  })
+})
+
+describe("import and exporting a key", () => {
+  let exportableKeypair: EcdsaKeypair
+  let nonExportableKeypair: EcdsaKeypair
+
+  beforeAll(async () => {
+    exportableKeypair = await EcdsaKeypair.create({ exportable: true })
+    nonExportableKeypair = await EcdsaKeypair.create({ exportable: false })
+  })
+
+  it("can export a key using jwk", async () => {
+    const exported = await exportableKeypair.export()
+    expect(exported.kty).toBe("EC")
+    expect(exported.crv).toBe("P-256")
+  })
+
+  it("won't export a non exportable keypar", async () => {
+    await expect(nonExportableKeypair.export())
+      .rejects
+      .toThrow("Key is not exportable")
+  })
+
+  it("Can export a key and re-import from it", async () => {
+    const exported = await exportableKeypair.export()
+
+    const jwk = exported
+    const newKey = await EcdsaKeypair.import(jwk)
+
+    const msg = uint8arrays.fromString("test message", "utf-8")
+
+    // Expect the public keys to match
+    expect(exportableKeypair.did()).toEqual(newKey.did())
+
+    // Verify old and new keys are compatible
+    let signedMessage = await exportableKeypair.sign(msg)
+    expect(await p256Plugin.verifySignature(newKey.did(), msg, signedMessage)).toBe(true)
+
+    signedMessage = await newKey.sign(msg)
+    expect(await p256Plugin.verifySignature(exportableKeypair.did(), msg, signedMessage)).toBe(true)
   })
 })

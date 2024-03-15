@@ -1,12 +1,9 @@
-import { webcrypto } from "one-webcrypto"
-import * as uint8arrays from "uint8arrays"
-
 import * as crypto from "./crypto.js"
-import { AvailableCryptoKeyPair, isAvailableCryptoKeyPair } from "../types.js"
-import { DidableKey, Encodings, ExportableKey } from "@ucans/core"
+import { AvailableCryptoKeyPair, PrivateKeyJwk, isAvailableCryptoKeyPair } from "../types.js"
+import { DidableKey, ExportableKey } from "@ucans/core"
 
 
-export class RsaKeypair implements DidableKey, ExportableKey {
+export class RsaKeypair implements DidableKey, ExportableKey<PrivateKeyJwk>{
 
   public jwtAlg = "RS256"
 
@@ -25,7 +22,7 @@ export class RsaKeypair implements DidableKey, ExportableKey {
     exportable?: boolean
   }): Promise<RsaKeypair> {
     const { size = 2048, exportable = false } = params || {}
-    const keypair = await crypto.generateKeypair(size)
+    const keypair = await crypto.generateKeypair(size, exportable)
     if (!isAvailableCryptoKeyPair(keypair)) {
       throw new Error(`Couldn't generate valid keypair`)
     }
@@ -41,14 +38,28 @@ export class RsaKeypair implements DidableKey, ExportableKey {
     return await crypto.sign(msg, this.keypair.privateKey)
   }
 
-  async export(format: Encodings = "base64pad"): Promise<string> {
+  async export(): Promise<PrivateKeyJwk> {
     if (!this.exportable) {
       throw new Error("Key is not exportable")
     }
-    const arrayBuffer = await webcrypto.subtle.exportKey("pkcs8", this.keypair.privateKey)
-    return uint8arrays.toString(new Uint8Array(arrayBuffer), format)
+    return await crypto.exportPrivateKeyJwk(this.keypair) as PrivateKeyJwk
   }
 
+  static async importFromJwk(jwk: PrivateKeyJwk, params: { exportable: true }): Promise<RsaKeypair> {
+    const { exportable = false } = params || {}
+    const keypair = await crypto.importKeypairJwk(jwk, exportable)
+
+    if (!isAvailableCryptoKeyPair(keypair)) {
+      throw new Error(`Couldn't generate valid keypair`)
+    }
+
+    const publicKey = await crypto.exportKey(keypair.publicKey)
+    return new RsaKeypair(keypair, publicKey, exportable)
+  }
+
+  static async import(jwk: PrivateKeyJwk): Promise<RsaKeypair> {
+    return RsaKeypair.importFromJwk(jwk, { exportable: true })
+  }
 }
 
 export default RsaKeypair

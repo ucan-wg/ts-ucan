@@ -2,7 +2,7 @@ import * as fc from "fast-check"
 import * as uint8arrays from "uint8arrays"
 import { rsaPlugin } from "../src/rsa/plugin.js"
 import * as rsaCrypto from "../src/rsa/crypto.js"
-import RSAKeypair from "../src/rsa/keypair.js"
+import RSAKeypair, { RsaKeypair } from "../src/rsa/keypair.js"
 
 
 describe("rsa", () => {
@@ -96,5 +96,42 @@ describe("ASN", () => {
       )
     })
 
+  })
+
+  describe("Import / Export", () => {
+    let exportableKey: RSAKeypair
+    let nonExportableKey: RSAKeypair
+
+    beforeAll(async () => {
+      exportableKey = await RSAKeypair.create({ exportable: true })
+      nonExportableKey = await RSAKeypair.create({ exportable: false })
+
+    })
+
+    it("can export a key if marked exportable", async () => {
+      const exported = await exportableKey.export()
+      expect(exported).not.toBeNull()
+    })
+
+    it("cannont export a key if not marked exportable", async () => {
+      await expect(nonExportableKey.export())
+        .rejects
+        .toThrow("Key is not exportable")
+    })
+
+    it("can import an exported key", async () => {
+      const exported = await exportableKey.export()
+      const newKey = await RsaKeypair.import(exported)
+
+      expect(newKey.did()).toEqual(exportableKey.did())
+
+      // Cross sign and verify
+      const msg = uint8arrays.fromString("test signing", "utf-8")
+      let signed = await exportableKey.sign(msg)
+      expect(await rsaPlugin.verifySignature(newKey.did(), msg, signed)).toBe(true)
+
+      signed = await newKey.sign(msg)
+      expect(await rsaPlugin.verifySignature(exportableKey.did(), msg, signed)).toBe(true)
+    })
   })
 })
