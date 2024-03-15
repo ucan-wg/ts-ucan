@@ -51,6 +51,18 @@ export class EdKeypair implements DidableKey, ExportableKey {
       throw new Error("Key is not exportable")
     }
 
+    /*
+    * EdDSA is relatively new and not supported everywhere. There's no good documentation
+    * within the JWK spec or parameter export to be able to reconstruct the key via parameters
+    * Example, there's no good documentation on parameterizing like other curves: (x, y, n, e)
+    * 
+    * In an effort to remain compatible with other tooling in the space, the following article
+    * describes a way of encoding JWK that is at least consistent with other tooling. As our current
+    * libraries are only able to reconstruct a key via importing a secret key, encoding the secret
+    * as the `d` parameter seems to make sense and have some compatibility with other tools.
+    * 
+    * [Link](https://gist.github.com/kousu/f3174af57e1fc42a0a88586b5a5ffdc9)
+    */
     const jwk: PrivateKeyJwk = {
       kty: "EC",
       crv: "Ed25519",
